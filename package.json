@@ -1,0 +1,46 @@
+{
+  "name": "fastify-ich",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node dist/index.js",
+    "dev": "tsup src/index.ts --watch --onSuccess \"node dist/index.js\"",
+    "test": "vitest run",
+    "lint": "tsc",
+    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "ci": "npm run lint && npm run test && npm run build",
+    "release": "npm run ci && npx changeset publish"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.7.0",
+  "devDependencies": {
+    "@changesets/cli": "^2.29.6",
+    "@types/amqplib": "^0.10.7",
+    "@types/node": "^24.3.0",
+    "@types/pg": "^8.15.5",
+    "ts-node": "^10.9.2",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@fastify/compress": "^8.1.0",
+    "@fastify/cors": "^11.1.0",
+    "@fastify/helmet": "^13.0.1",
+    "@sinclair/typebox": "^0.34.40",
+    "ajv-errors": "^3.0.0",
+    "ajv-formats": "^3.0.1",
+    "amqplib": "^0.10.9",
+    "dotenv": "^17.2.1",
+    "fastify": "^5.5.0",
+    "fastify-plugin": "^5.0.1",
+    "http-status-codes": "^2.3.0",
+    "ioredis": "^5.7.0",
+    "pg": "^8.16.3",
+    "pino": "^9.9.0",
+    "rotating-file-stream": "^3.2.7"
+  }
+}

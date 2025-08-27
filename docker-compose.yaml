@@ -1,0 +1,47 @@
+services:
+  redis:
+    container_name: redis_container
+    image: redis:alpine
+    restart: always
+    ports:
+      - 6379:6379
+    command: redis-server --loglevel warning
+    volumes:
+      - ./docker_volumes/cache:/data
+    networks:
+      - mynet
+
+  postgres:
+    container_name: postgres_container
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=pgdb
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    ports:
+      - 5432:5432
+    volumes:
+      - ./src/db/data:/data
+      - ./docker_volumes/postgres:/var/lib/postgresql/data
+    networks:
+      - mynet
+
+  rabbitmq:
+    container_name: rabbitmq_container
+    image: rabbitmq:4.1.0-management-alpine
+    restart: always
+    ports:
+      - 5672:5672
+      - 15672:15672
+    environment:
+      - RABBITMQ_DEFAULT_VHOST=queue
+      - RABBITMQ_DEFAULT_USER=root
+      - RABBITMQ_DEFAULT_PASS=secret
+    networks:
+      - mynet
+
+networks:
+  mynet:
+    driver: bridge

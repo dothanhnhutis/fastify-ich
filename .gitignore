@@ -1,0 +1,11 @@
+.env*
+.DS_Store
+.vscode
+
+dist
+docker_volumes
+logs
+node_modules
+uploads
+
+prisma/migrations
