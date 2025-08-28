@@ -111,5 +111,5 @@ function parseCookies(cookieHeader?: string): Map<string, string> {
 }
 
 export default fp(cookie, {
-  name: "cookiePlugin",
+  name: "cookie-plugin",
 });

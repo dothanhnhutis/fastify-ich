@@ -3,6 +3,8 @@ import { FastifyReply, FastifyRequest } from "fastify";
 
 import { SignInBodyType } from "./auth.schema";
 import { BadRequestError } from "@/shared/error-handler";
+import { cryptoCookie } from "@/shared/constants";
+import config from "@/shared/config";
 
 export async function signInController(
   req: FastifyRequest<{

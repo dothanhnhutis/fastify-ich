@@ -1,12 +1,17 @@
 import fp from "fastify-plugin";
 import Redis, { RedisOptions as RedisOpts } from "ioredis";
-import { FastifyInstance, FastifyPluginOptions } from "fastify";
+import { FastifyInstance } from "fastify";
+import SessionRepo from "../db/repositories/session.repo";
+import { CustomError } from "../error-handler";
+import { StatusCodes } from "http-status-codes";
 
 declare module "fastify" {
   interface FastifyInstance {
     redis: Redis;
   }
-  interface FastifyRequest {}
+  interface FastifyRequest {
+    sessions: SessionRepo;
+  }
 }
 
 interface RedisOptions
@@ -32,7 +37,6 @@ async function redisCache(fastify: FastifyInstance, options: RedisOptions) {
 
   // Hoặc sử dụng cách này (đơn giản hơn):
   fastify.decorate("redis", redisClient);
-
   fastify.decorateRequest("session");
 
   function sleep(ms: number) {
@@ -117,9 +121,19 @@ async function redisCache(fastify: FastifyInstance, options: RedisOptions) {
     }
   });
 
-  // fastify.addHook("onRequest", async (req) => {
-  //   req.session = new SessionRepo(fastify);
-  // });
+  fastify.addHook("onRequest", async (req) => {
+    // Create session with error handling
+    try {
+      req.sessions = new SessionRepo(fastify);
+    } catch (error: unknown) {
+      // fastify.logger.error("Session initialization failed", { error });
+      throw new CustomError({
+        message: "Session initialization failed",
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        statusText: "INTERNAL_SERVER_ERROR",
+      });
+    }
+  });
 
   fastify.addHook("onClose", async () => {
     console.log("Closing Redis connection");

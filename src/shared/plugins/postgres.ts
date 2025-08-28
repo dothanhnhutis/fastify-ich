@@ -11,10 +11,11 @@ import { FastifyInstance } from "fastify";
 import PostgeSQL, { QueryOptions } from "../db";
 import { CustomError } from "../error-handler";
 import { StatusCodes } from "http-status-codes";
+import UserRepo from "../db/repositories/user.repo";
 
 declare module "fastify" {
   interface FastifyInstance {
-    db: PostgeSQL;
+    pg: PostgeSQL;
     query: <R extends QueryResultRow = any, I = any[]>(
       queryConfig: QueryConfig<I>,
       options?: QueryOptions
@@ -24,12 +25,16 @@ declare module "fastify" {
       options?: QueryOptions
     ) => Promise<void>;
   }
+  interface FastifyRequest {
+    users: UserRepo;
+  }
 }
 
 async function postgresDB(fastify: FastifyInstance, options: PoolConfig) {
   const dbManager = new PostgeSQL(options);
 
-  fastify.decorate("db", dbManager);
+  fastify.decorate("pg", dbManager);
+  fastify.decorateRequest("users");
 
   fastify.decorate(
     "query",
@@ -64,6 +69,10 @@ async function postgresDB(fastify: FastifyInstance, options: PoolConfig) {
         statusText: "SERVICE_UNAVAILABLE",
       });
     }
+  });
+
+  fastify.addHook("onRequest", async (req, _reply) => {
+    req.users = new UserRepo(fastify);
   });
 
   fastify.addHook("onClose", async (instance) => {

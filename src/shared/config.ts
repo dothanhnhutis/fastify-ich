@@ -20,4 +20,10 @@ export default {
   RABBITMQ_PORT: parseInt(process.env.RABBITMQ_PORT || "5672"),
   RABBITMQ_VHOST: process.env.RABBITMQ_VHOST || "queue",
   RABBITMQ_FRAME_MAX: parseInt(process.env.RABBITMQ_FRAME_MAX || "131072"),
+  // Session
+  SESSION_KEY_NAME: process.env.RABBITMQ_VHOST || "sid",
+  SESSION_MAX_AGE: parseInt(process.env.SESSION_MAX_AGE || "2592000000"),
+  SESSION_SECRET_KEY:
+    process.env.SESSION_SECRET_KEY ||
+    "sD3b+3dM7mW/0i6X4KpGb4XtYcwXAXuRCuRgfKoyh2U=",
 };
