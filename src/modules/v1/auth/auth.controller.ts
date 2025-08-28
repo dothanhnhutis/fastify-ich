@@ -2,6 +2,8 @@ import { StatusCodes } from "http-status-codes";
 import { FastifyReply, FastifyRequest } from "fastify";
 
 import { SignInBodyType } from "./auth.schema";
+
+import Password from "src/shared/password";
 import { BadRequestError } from "@/shared/error-handler";
 import { cryptoCookie } from "@/shared/constants";
 import config from "@/shared/config";
