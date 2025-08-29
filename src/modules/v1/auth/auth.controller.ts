@@ -23,19 +23,20 @@ export async function signInController(
   )
     throw new BadRequestError("Email và mật khẩu không hợp lệ.");
 
-  const session = await req.sessions.create({
+  const { sessionId, cookie } = await req.sessions.create({
     userId: user.id,
     ip: req.ip || req.ips?.[0] || "",
     provider: "credential",
     userAgentRaw: req.headers["user-agent"] || "",
   });
 
-  const encryptSession = cryptoCookie.encrypt(session.sessionId);
+  const encryptSession = cryptoCookie.encrypt(sessionId);
 
   reply
     .code(StatusCodes.OK)
+    // .setSession(sessionId, { ...cookie })
     .setCookie(config.SESSION_KEY_NAME, encryptSession, {
-      ...session.cookie,
+      ...cookie,
     })
     .send({
       statusCode: StatusCodes.OK,

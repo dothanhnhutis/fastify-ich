@@ -12,6 +12,15 @@ interface CookieOptions {
   // encode?: (val: string) => string;
 }
 
+type Metadata = {
+  totalItem: number;
+  totalPage: number;
+  hasNextPage: number | boolean;
+  limit: number;
+  itemStart: number;
+  itemEnd: number;
+};
+
 type Session = {
   id: string;
   provider: "google" | "credential";

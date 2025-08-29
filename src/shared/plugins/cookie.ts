@@ -17,6 +17,7 @@ declare module "fastify" {
 
 async function cookie(fastify: FastifyInstance, options: CookieOptions = {}) {
   fastify.decorateRequest("cookies");
+
   fastify.addHook("onRequest", async (req: FastifyRequest) => {
     req.cookies = parseCookies(req.headers.cookie);
   });

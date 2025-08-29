@@ -1,18 +1,19 @@
-import { FastifyRequest } from "fastify";
+import { FastifyInstance } from "fastify";
 import { QueryConfig, QueryResult } from "pg";
 import { StatusCodes } from "http-status-codes";
 
 import { CustomError } from "@/shared/error-handler";
+
 import {
-  CreateRoleType,
-  QueryRoleType,
-  UpdateRoleByIdType,
-} from "@/modules/v1/role/role.schema";
+  CreateNewRoleBodyType,
+  QueryRolesType,
+  UpdateRoleByIdBodyType,
+} from "@/modules/v1/roles/role.schema";
 
 export default class RoleRepo {
-  constructor(private req: FastifyRequest) {}
+  constructor(private fastify: FastifyInstance) {}
 
-  async query(query: QueryRoleType): Promise<{
+  async query(query: QueryRolesType): Promise<{
     roles: Role[];
     metadata: Metadata;
   }> {
@@ -41,7 +42,7 @@ export default class RoleRepo {
         queryString.push(`WHERE ${where.join(" AND ")}`);
       }
 
-      const { rows } = await this.req.pg.query<{ count: string }>({
+      const { rows } = await this.fastify.query<{ count: string }>({
         text: queryString.join(" ").replace("*", "count(*)"),
         values,
       });
@@ -69,7 +70,7 @@ export default class RoleRepo {
         values,
       };
 
-      const { rows: roles } = await this.req.pg.query<Role>(queryConfig);
+      const { rows: roles } = await this.fastify.query<Role>(queryConfig);
 
       const limit = query.limit ?? totalItem;
       const totalPage = Math.ceil(totalItem / limit);
@@ -101,7 +102,7 @@ export default class RoleRepo {
       values: [id],
     };
     try {
-      const { rows }: QueryResult<Role> = await this.req.pg.query(queryConfig);
+      const { rows }: QueryResult<Role> = await this.fastify.query(queryConfig);
       return rows[0] ?? null;
     } catch (error: any) {
       throw new CustomError({
@@ -112,7 +113,7 @@ export default class RoleRepo {
     }
   }
 
-  async create(data: CreateRoleType["body"]): Promise<Role> {
+  async create(data: CreateNewRoleBodyType): Promise<Role> {
     const columns = ["name", "permissions"];
     const values = [data.name, data.permissions];
     const placeholders = ["$1::text", "$2::text[]"];
@@ -131,7 +132,9 @@ export default class RoleRepo {
       values,
     };
     try {
-      const { rows }: QueryResult<Role> = await this.req.pg.query(queryConfig);
+      const { rows }: QueryResult<Role> = await this.fastify.query<Role>(
+        queryConfig
+      );
       return rows[0] ?? null;
     } catch (error: unknown) {
       throw new CustomError({
@@ -142,7 +145,7 @@ export default class RoleRepo {
     }
   }
 
-  async update(id: string, data: UpdateRoleByIdType["body"]): Promise<void> {
+  async update(id: string, data: UpdateRoleByIdBodyType): Promise<void> {
     const sets: string[] = [];
     const values: any[] = [];
     let idx = 1;
@@ -174,7 +177,7 @@ export default class RoleRepo {
     };
 
     try {
-      await this.req.pg.query(queryConfig);
+      await this.fastify.query(queryConfig);
     } catch (error: unknown) {
       throw new CustomError({
         message: `RoleRepo.update() method error: ${error}`,
@@ -190,7 +193,7 @@ export default class RoleRepo {
       values: [id],
     };
     try {
-      const { rows }: QueryResult<Role> = await this.req.pg.query(queryConfig);
+      const { rows }: QueryResult<Role> = await this.fastify.query(queryConfig);
       return rows[0] ?? null;
     } catch (error: unknown) {
       /**

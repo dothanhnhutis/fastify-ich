@@ -2,15 +2,20 @@ import fp from "fastify-plugin";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import config from "../config";
 import { cryptoCookie } from "../constants";
+import { CryptoAES } from "../crypto";
 
 declare module "fastify" {
   interface FastifyRequest {
-    currUser: User | null;
+    currUser: (User & { roles: Role[] }) | null;
     sessionId: string | null;
-    userRoles: Role[];
   }
 
-  interface FastifyReply {}
+  interface FastifyReply {
+    setSession: (
+      value: string,
+      options?: CookieOptions & { name?: string }
+    ) => FastifyReply;
+  }
 }
 
 interface SessionOptions {
@@ -22,12 +27,20 @@ interface SessionOptions {
 async function session(fastify: FastifyInstance, options: SessionOptions) {
   const { cookieName, secret, refreshCookie = false } = options;
 
+  const cryptoCookie = new CryptoAES("aes-256-gcm", secret);
+
   fastify.decorateRequest("currUser", null);
   fastify.decorateRequest("sessionId", null);
-  fastify.decorateRequest("userRoles");
   fastify.decorateReply(
     "setSession",
-    function (data: string, options?: CookieOptions) {}
+    function (data: string, options?: CookieOptions & { name?: string }) {
+      const encryptData = cryptoCookie.encrypt(data);
+      const { name = cookieName, ...other } = options || {};
+      this.setCookie(name, encryptData, {
+        ...other,
+      });
+      return this;
+    }
   );
 
   fastify.addHook(
@@ -40,11 +53,11 @@ async function session(fastify: FastifyInstance, options: SessionOptions) {
       if (!sessionData) return;
       const user = await req.users.findById(sessionData.userId);
       if (!user) {
-        res.clearCookie(config.SESSION_KEY_NAME);
+        res.clearCookie(cookieName);
       } else {
         req.sessionId = sessionId;
-        req.currUser = user;
-        req.userRoles = await req.users.findRoles(user.id);
+        const roles = await req.users.findRoles(user.id);
+        req.currUser = { ...user, roles };
       }
     }
   );
