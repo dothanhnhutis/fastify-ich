@@ -1,15 +1,17 @@
 import fastify from "fastify";
+import addErrors from "ajv-errors";
+import addFormats from "ajv-formats";
 import fastifyCors from "@fastify/cors";
 import fastifyHelmet from "@fastify/helmet";
 import fastifyCompress from "@fastify/compress";
-import addFormats from "ajv-formats";
-import addErrors from "ajv-errors";
 
 import config from "./config";
 import appRoutes from "../modules";
 import logger from "./plugins/logger";
 import redisPlugin from "./plugins/redis";
 import rabbitMQPlugin from "./plugins/amqp";
+import cookiePlugin from "./plugins/cookie";
+import sessionPlugin from "./plugins/session";
 import { errorHandler } from "./error-handler";
 import postgreSQLPlugin from "./plugins/postgres";
 
@@ -178,6 +180,17 @@ export async function buildServer() {
         },
       ],
     });
+
+  server.register(cookiePlugin, {
+    httpOnly: true,
+    secure: config.NODE_ENV === "production",
+  });
+
+  server.register(sessionPlugin, {
+    secret: config.SESSION_SECRET_KEY,
+    cookieName: config.SESSION_KEY_NAME,
+    refreshCookie: true,
+  });
 
   // Routes
   server.register(appRoutes, { prefix: "/api" });

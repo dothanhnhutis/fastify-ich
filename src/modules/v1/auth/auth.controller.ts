@@ -1,12 +1,11 @@
 import { StatusCodes } from "http-status-codes";
 import { FastifyReply, FastifyRequest } from "fastify";
 
-import { SignInBodyType } from "./auth.schema";
-
-import Password from "src/shared/password";
-import { BadRequestError } from "@/shared/error-handler";
-import { cryptoCookie } from "@/shared/constants";
 import config from "@/shared/config";
+import Password from "@/shared/password";
+import { SignInBodyType } from "./auth.schema";
+import { cryptoCookie } from "@/shared/constants";
+import { BadRequestError } from "@/shared/error-handler";
 
 export async function signInController(
   req: FastifyRequest<{
@@ -16,6 +15,7 @@ export async function signInController(
 ) {
   const { email, password } = req.body;
   const user = await req.users.findByEmail(email);
+
   if (
     !user ||
     !user.password_hash ||

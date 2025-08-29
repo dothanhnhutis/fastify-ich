@@ -14,6 +14,14 @@ SET password_hash = '$argon2id$v=19$m=65536,t=3,p=4$oDdsbvL66JBFGcGtpM2bVQ$BSuYE
 WHERE email = 'gaconght@gmail.com'
 RETURNING *;
 ---
+INSERT INTO users (email, username, password_hash)
+VALUES (
+        'gaconght@gmail.com',
+        'thanh nhut',
+        '$argon2id$v=19$m=65536,t=3,p=4$oDdsbvL66JBFGcGtpM2bVQ$BSuYE86W6ALjeRJmC9I5sv/pr6xXJj3eFGvgS+aF7Io'
+    )
+RETURNING *;
+---
 INSERT INTO Roles (name, permissions)
 VALUES (
         'Admin Role',

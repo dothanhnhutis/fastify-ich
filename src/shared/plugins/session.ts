@@ -9,20 +9,26 @@ declare module "fastify" {
     sessionId: string | null;
     userRoles: Role[];
   }
+
+  interface FastifyReply {}
 }
 
 interface SessionOptions {
-  cookieName?: string;
+  cookieName: string;
   secret: string;
   refreshCookie?: boolean;
 }
 
 async function session(fastify: FastifyInstance, options: SessionOptions) {
-  const { cookieName = "sid", secret } = options;
+  const { cookieName, secret, refreshCookie = false } = options;
 
   fastify.decorateRequest("currUser", null);
   fastify.decorateRequest("sessionId", null);
   fastify.decorateRequest("userRoles");
+  fastify.decorateReply(
+    "setSession",
+    function (data: string, options?: CookieOptions) {}
+  );
 
   fastify.addHook(
     "onRequest",
@@ -37,20 +43,24 @@ async function session(fastify: FastifyInstance, options: SessionOptions) {
         res.clearCookie(config.SESSION_KEY_NAME);
       } else {
         req.sessionId = sessionId;
-        const refreshSession = await req.sessions.refresh(sessionId);
         req.currUser = user;
         req.userRoles = await req.users.findRoles(user.id);
-
-        if (refreshSession) {
-          res.setCookie(
-            config.SESSION_KEY_NAME,
-            cryptoCookie.encrypt(sessionId),
-            refreshSession.cookie
-          );
-        }
       }
     }
   );
+
+  fastify.addHook("onResponse", async (req, reply) => {
+    if (req.sessionId && refreshCookie) {
+      const refreshSession = await req.sessions.refresh(req.sessionId);
+      if (refreshSession) {
+        reply.setCookie(
+          config.SESSION_KEY_NAME,
+          cryptoCookie.encrypt(req.sessionId),
+          refreshSession.cookie
+        );
+      }
+    }
+  });
 }
 
 export default fp(session, {

@@ -1,5 +1,6 @@
-import { Type, Static } from "@sinclair/typebox";
 import { FastifySchema } from "fastify";
+import { Type, Static } from "@sinclair/typebox";
+
 const SignInBodySchema = Type.Object({
   email: Type.String({
     format: "email",

@@ -23,7 +23,7 @@ services:
     ports:
       - 5432:5432
     volumes:
-      - ./src/db/data:/data
+      - ./src/shared/db/data:/data
       - ./docker_volumes/postgres:/var/lib/postgresql/data
     networks:
       - mynet
