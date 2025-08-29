@@ -30,14 +30,14 @@ export async function signInController(
     userAgentRaw: req.headers["user-agent"] || "",
   });
 
-  const encryptSession = cryptoCookie.encrypt(sessionId);
+  // const encryptSession = cryptoCookie.encrypt(sessionId);
 
   reply
     .code(StatusCodes.OK)
-    // .setSession(sessionId, { ...cookie })
-    .setCookie(config.SESSION_KEY_NAME, encryptSession, {
-      ...cookie,
-    })
+    .setSession(sessionId, { ...cookie })
+    // .setCookie(config.SESSION_KEY_NAME, encryptSession, {
+    //   ...cookie,
+    // })
     .send({
       statusCode: StatusCodes.OK,
       statusText: "OK",

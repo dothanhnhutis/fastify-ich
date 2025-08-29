@@ -22,6 +22,7 @@ export async function buildServer() {
     ajv: {
       customOptions: {
         allErrors: true,
+        removeAdditional: true,
         $data: true,
       },
       plugins: [

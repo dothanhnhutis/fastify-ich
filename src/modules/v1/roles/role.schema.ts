@@ -7,28 +7,24 @@ const createNewRoleBodySchema = Type.Object({
       type: "Tên vai trò phải là chuỗi.",
     },
   }),
-  description: Type.Optional(
+  description: Type.String({
+    errorMessage: {
+      type: "Mô tả vai trò phải là chuỗi.",
+    },
+    default: "",
+  }),
+  permissions: Type.Array(
     Type.String({
       errorMessage: {
-        type: "Mô tả vai trò phải là chuỗi.",
+        type: " Quyền phải là chuỗi.",
       },
-      default: "",
-    })
-  ),
-  permissions: Type.Optional(
-    Type.Array(
-      Type.String({
-        errorMessage: {
-          type: " Quyền phải là chuỗi.",
-        },
-      }),
-      {
-        errorMessage: {
-          type: "Danh sách quyền phải là mãng.",
-        },
-        default: [],
-      }
-    )
+    }),
+    {
+      errorMessage: {
+        type: "Danh sách quyền phải là mãng.",
+      },
+      default: [],
+    }
   ),
 });
 
@@ -66,15 +62,43 @@ const updateRoleByIdBodySchema = Type.Partial(
 const paramsIdSchema = Type.Object({
   id: Type.String(),
 });
+const sortEnum = [
+  "name.asc",
+  "name.desc",
+  "permissions.asc",
+  "permissions.desc",
+];
 
 const queryRoles = Type.Partial(
   Type.Object({
     name: Type.String(),
     permissions: Type.Array(Type.String()),
     description: Type.String(),
-    sorts: Type.Array(Type.String({ enum: ["price:asc", "price:desc"] })),
-    limit: Type.Integer(),
-    page: Type.Integer(),
+    sort: Type.Array(
+      Type.String({
+        enum: sortEnum,
+        errorMessage: {
+          type: "sort phải là chuỗi.",
+          enum: `sort phải là một trong: ${sortEnum.join(", ")}`,
+        },
+      })
+    ),
+    limit: Type.Integer({
+      minimum: 1,
+      maximum: 50,
+      errorMessage: {
+        type: "limit phải là số nguyên.",
+        minimum: "limit quá nhỏ (min >= 1).",
+        maximum: "limit quá lớn (max >= 50).",
+      },
+    }),
+    page: Type.Integer({
+      minimum: 1,
+      errorMessage: {
+        type: "limit phải là số nguyên.",
+        minimum: "limit quá nhỏ (min >= 1).",
+      },
+    }),
   })
 );
 

@@ -48,15 +48,12 @@ export async function queryRoleController(
   reply: FastifyReply
 ) {
   console.log(req.query);
-  // const data = await req.roles.query(req.query);
+  const data = await req.roles.query(req.query);
 
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
     statusText: "OK",
-    data: {
-      roles: [],
-      metadata: {},
-    },
+    data,
   });
 }
 

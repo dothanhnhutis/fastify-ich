@@ -48,12 +48,16 @@ export default class RoleRepo {
       });
       const totalItem = parseInt(rows[0].count);
 
-      const fieldAllow = ["name", "permissions", "permissions"];
-      if (query.sorts != undefined) {
+      if (query.sort != undefined) {
+        // const fieldAllow = ["name.asc", "descript", "permissions"];
+
         queryString.push(
-          `ORDER BY ${query.sorts
-            .filter((sort) => fieldAllow.includes(sort.field))
-            .map((sort) => `${sort.field} ${sort.direction.toUpperCase()}`)
+          `ORDER BY ${query.sort
+            // .filter((sort) => fieldAllow.includes(sort))
+            .map((sort) => {
+              const [field, direction] = sort.split(".");
+              return `${field} ${direction.toUpperCase()}`;
+            })
             .join(", ")}`
         );
       }
@@ -114,16 +118,16 @@ export default class RoleRepo {
   }
 
   async create(data: CreateNewRoleBodyType): Promise<Role> {
-    const columns = ["name", "permissions"];
-    const values = [data.name, data.permissions];
-    const placeholders = ["$1::text", "$2::text[]"];
+    const columns = ["name", "description", "permissions"];
+    const values = [data.name, data.description, data.permissions];
+    const placeholders = ["$1::text", "$2::text", "$3::text[]"];
     let idx = values.length;
 
-    if (data.description !== undefined) {
-      columns.push("description");
-      values.push(data.description);
-      placeholders.push(`$${idx++}::text`);
-    }
+    // if (data.description !== undefined) {
+    //   columns.push("description");
+    //   values.push(data.description);
+    //   placeholders.push(`$${idx++}::text`);
+    // }
 
     const queryConfig: QueryConfig = {
       text: `INSERT INTO roles (${columns.join(
@@ -151,7 +155,7 @@ export default class RoleRepo {
     let idx = 1;
 
     if (data.name !== undefined) {
-      sets.push(`"name" = $${idx++}`);
+      sets.push(`"name" = $${idx++}::text`);
       values.push(data.name);
     }
     if (data.permissions !== undefined) {
@@ -159,7 +163,7 @@ export default class RoleRepo {
       values.push(data.permissions);
     }
     if (data.description !== undefined) {
-      sets.push(`"description" = $${idx++}::text[]`);
+      sets.push(`"description" = $${idx++}::text`);
       values.push(data.description);
     }
 
