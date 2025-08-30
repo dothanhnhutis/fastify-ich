@@ -50,7 +50,7 @@ export interface AMQPConnection {
 }
 
 export interface AMQPConnectionPoolOptions {
-  connections?: AMQPConnection[];
+  connections: AMQPConnection[];
   server: amqplib.Options.Connect;
   exchanges?: ExchangeConfig[];
   queues?: QueueConfig[];
@@ -66,7 +66,7 @@ export default class AMQPConnectionPool {
   }
 
   public async connect() {
-    if (!this.options.connections) return;
+    // if (!this.options.connections) return;
     try {
       for (let connection of this.options.connections) {
         const { clientProperties, name, channels = [] } = connection;

@@ -1,10 +1,8 @@
 import { StatusCodes } from "http-status-codes";
 import { FastifyReply, FastifyRequest } from "fastify";
 
-import config from "@/shared/config";
 import Password from "@/shared/password";
 import { SignInBodyType } from "./auth.schema";
-import { cryptoCookie } from "@/shared/constants";
 import { BadRequestError } from "@/shared/error-handler";
 
 export async function signInController(
@@ -30,14 +28,9 @@ export async function signInController(
     userAgentRaw: req.headers["user-agent"] || "",
   });
 
-  // const encryptSession = cryptoCookie.encrypt(sessionId);
-
   reply
     .code(StatusCodes.OK)
     .setSession(sessionId, { ...cookie })
-    // .setCookie(config.SESSION_KEY_NAME, encryptSession, {
-    //   ...cookie,
-    // })
     .send({
       statusCode: StatusCodes.OK,
       statusText: "OK",

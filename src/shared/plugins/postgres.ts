@@ -21,10 +21,10 @@ declare module "fastify" {
       queryConfig: QueryConfig<I>,
       options?: QueryOptions
     ) => Promise<QueryResult<R>>;
-    transaction: (
-      callback: (client: PoolClient) => Promise<void>,
+    transaction: <T>(
+      callback: (client: PoolClient) => Promise<T>,
       options?: QueryOptions
-    ) => Promise<void>;
+    ) => Promise<T>;
   }
   interface FastifyRequest {
     users: UserRepo;
@@ -51,11 +51,11 @@ async function postgresDB(fastify: FastifyInstance, options: PoolConfig) {
   // Add transaction method
   fastify.decorate(
     "transaction",
-    async (
-      callback: (client: PoolClient) => Promise<void>,
+    async <T>(
+      callback: (client: PoolClient) => Promise<T>,
       options?: QueryOptions
     ) => {
-      return await dbManager.transaction(callback, options);
+      return await dbManager.transaction<T>(callback, options);
     }
   );
 

@@ -16,7 +16,7 @@ const createNewUserBodySchema = Type.Object({
       format: "Email không đúng định dạng.",
     },
   }),
-  roles: Type.Array(
+  roleIds: Type.Array(
     Type.String({
       errorMessage: {
         type: "Vai trò phải là chuỗi.",

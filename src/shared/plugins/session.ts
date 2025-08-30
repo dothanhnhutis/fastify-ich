@@ -1,7 +1,6 @@
 import fp from "fastify-plugin";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import config from "../config";
-import { cryptoCookie } from "../constants";
 import { CryptoAES } from "../crypto";
 
 declare module "fastify" {
@@ -31,6 +30,7 @@ async function session(fastify: FastifyInstance, options: SessionOptions) {
 
   fastify.decorateRequest("currUser", null);
   fastify.decorateRequest("sessionId", null);
+
   fastify.decorateReply(
     "setSession",
     function (data: string, options?: CookieOptions & { name?: string }) {
@@ -62,7 +62,7 @@ async function session(fastify: FastifyInstance, options: SessionOptions) {
     }
   );
 
-  fastify.addHook("onResponse", async (req, reply) => {
+  fastify.addHook("onSend", async (req, reply) => {
     if (req.sessionId && refreshCookie) {
       const refreshSession = await req.sessions.refresh(req.sessionId);
       if (refreshSession) {

@@ -62,23 +62,23 @@ export default class RoleRepo {
         );
       }
 
-      if (query.page != undefined) {
-        const limit = query.limit ?? totalItem;
-        const offset = (query.page - 1) * limit;
-        queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
-        values.push(limit, offset);
-      }
+      let limit = query.limit ?? totalItem;
+      let page = query.page ?? 1;
+      let offset = (page - 1) * limit;
+
+      queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
+      values.push(limit, offset);
 
       const queryConfig: QueryConfig = {
         text: queryString.join(" "),
         values,
       };
 
+      console.log(queryConfig);
+
       const { rows: roles } = await this.fastify.query<Role>(queryConfig);
 
-      const limit = query.limit ?? totalItem;
       const totalPage = Math.ceil(totalItem / limit);
-      const page = query.page ?? 1;
 
       return {
         roles,
@@ -86,8 +86,8 @@ export default class RoleRepo {
           totalItem,
           totalPage,
           hasNextPage: page < totalPage,
-          limit,
-          itemStart: (page - 1) * limit + 1,
+          limit: totalItem > 0 ? limit : 0,
+          itemStart: totalItem > 0 ? (page - 1) * limit + 1 : 0,
           itemEnd: Math.min(page * limit, totalItem),
         },
       };
@@ -121,8 +121,8 @@ export default class RoleRepo {
     const columns = ["name", "description", "permissions"];
     const values = [data.name, data.description, data.permissions];
     const placeholders = ["$1::text", "$2::text", "$3::text[]"];
-    let idx = values.length;
 
+    // let idx = values.length;
     // if (data.description !== undefined) {
     //   columns.push("description");
     //   values.push(data.description);
@@ -135,6 +135,7 @@ export default class RoleRepo {
       )}) VALUES (${placeholders.join(", ")}) RETURNING *;`,
       values,
     };
+
     try {
       const { rows }: QueryResult<Role> = await this.fastify.query<Role>(
         queryConfig

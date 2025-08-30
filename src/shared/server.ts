@@ -66,31 +66,40 @@ export async function buildServer() {
         vhost: config.RABBITMQ_VHOST,
         frameMax: config.RABBITMQ_FRAME_MAX,
       },
+      connections: [
+        {
+          name: "publisher-conn",
+          channels: [
+            {
+              name: "publish-user-channel",
+            },
+          ],
+          maxRetries: 10,
+          retryDelay: 5000,
+          clientProperties: {
+            connection_name: "publisher-conn",
+            purpose: "publisher",
+          },
+        },
+        {
+          name: "consumer-conn",
+          channels: [
+            {
+              name: "consume-user-channel",
+            },
+          ],
+          maxRetries: 10,
+          retryDelay: 5000,
+          clientProperties: {
+            connection_name: "consumer-conn",
+            purpose: "consumer",
+          },
+        },
+      ],
       exchanges: [
         {
-          name: "exchange-fanout",
-          type: "fanout",
-          options: {
-            durable: true,
-          },
-        },
-        {
-          name: "exchange-headers",
-          type: "headers",
-          options: {
-            durable: true,
-          },
-        },
-        {
-          name: "exchange-direct",
+          name: "user-mail-direct",
           type: "direct",
-          options: {
-            durable: true,
-          },
-        },
-        {
-          name: "exchange-topic",
-          type: "topic",
           options: {
             durable: true,
           },
@@ -98,85 +107,10 @@ export async function buildServer() {
       ],
       queues: [
         {
-          type: "queue",
-          name: "test-queue",
-          options: { durable: true },
-        },
-        {
-          type: "fanout",
-          name: "queue-exchange-fanout",
-          exchange: "exchange-fanout",
-          options: { durable: true },
-        },
-        {
-          type: "headers",
-          name: "queue-exchange-headers-any",
-          exchange: "exchange-headers",
-          options: { durable: true },
-          headers: {
-            "x-match": "any",
-            error: "1",
-            warning: "2",
-          },
-        },
-        {
-          type: "headers",
-          name: "queue-exchange-headers-all",
-          exchange: "exchange-headers",
-          options: { durable: true },
-          headers: {
-            "x-match": "all",
-            text: "123",
-            ok: "456",
-          },
-        },
-        {
           type: "direct",
-          name: "queue-exchange-direct-error",
-          exchange: "exchange-direct",
-          routingKey: "error",
-          options: { durable: true },
-        },
-        {
-          type: "direct",
-          name: "queue-exchange-direct-warning",
-          exchange: "exchange-direct",
-          routingKey: "warning",
-          options: { durable: true },
-        },
-        {
-          type: "direct",
-          name: "queue-exchange-direct-info",
-          exchange: "exchange-direct",
-          routingKey: "info",
-          options: { durable: true },
-        },
-        {
-          type: "topic",
-          name: "queue-exchange-topic-1",
-          exchange: "exchange-topic",
-          routingKey: "*.orange.*",
-          options: { durable: true },
-        },
-        {
-          type: "topic",
-          name: "queue-exchange-topic-2",
-          exchange: "exchange-topic",
-          routingKey: "*.*.rabbit",
-          options: { durable: true },
-        },
-        {
-          type: "topic",
-          name: "queue-exchange-topic-2",
-          exchange: "exchange-topic",
-          routingKey: "lazy.#",
-          options: { durable: true },
-        },
-        {
-          type: "topic",
-          name: "queue-exchange-topic-3",
-          exchange: "exchange-topic",
-          routingKey: "lazy.#",
+          name: "create-new-user-mail-queue",
+          exchange: "user-mail-direct",
+          routingKey: "create-new-user",
           options: { durable: true },
         },
       ],

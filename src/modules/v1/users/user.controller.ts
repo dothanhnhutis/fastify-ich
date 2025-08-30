@@ -18,8 +18,8 @@ export async function createUserController(
   const existsUser = await req.users.findByEmail(req.body.email);
   if (existsUser) throw new BadRequestError("Email đã tồn tại.");
 
-  if (req.body.roles) {
-    for (let id of req.body.roles) {
+  if (req.body.roleIds) {
+    for (let id of req.body.roleIds) {
       const role = await req.roles.findById(id);
       if (role) throw new BadRequestError(`Quyền id=${id} không tồn tại.`);
     }
@@ -27,7 +27,7 @@ export async function createUserController(
 
   const password = Password.generate();
   const password_hash = await Password.hash(password);
-  console.log({ ...req.body, password });
+
   const newUser = await req.users.create({
     ...req.body,
     password_hash,

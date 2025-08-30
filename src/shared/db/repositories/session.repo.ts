@@ -3,10 +3,10 @@ import { FastifyInstance } from "fastify";
 import { StatusCodes } from "http-status-codes";
 
 import config from "@/shared/config";
-import Helper from "@/shared/helper";
+import { v4 as uuidv4 } from "uuid";
 import { CustomError } from "@/shared/error-handler";
 
-const SCAN_COUNT = 100;
+const SCAN_COUNT = 2;
 
 export default class SessionRepo {
   constructor(private fastify: FastifyInstance) {}
@@ -14,7 +14,8 @@ export default class SessionRepo {
   async create(
     data: ReqInfo
   ): Promise<{ sessionId: string; cookie: CookieOptions }> {
-    const id = await Helper.generateId();
+    // const id = await Helper.generateId();
+    const id = uuidv4();
     const now = new Date();
 
     const cookieOpt: CookieOptions = {
