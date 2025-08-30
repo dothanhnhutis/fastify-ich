@@ -96,13 +96,13 @@ export default class UserRepo {
         return userRow[0];
       });
 
-      const channel = this.fastify.getChannel("publish-user-channel");
-      channel.publish(
-        "user-mail-direct",
-        "create-new-user",
-        Buffer.from(JSON.stringify(newUser)),
-        { persistent: true }
-      );
+      // const channel = this.fastify.getChannel("publish-user-channel");
+      // channel.publish(
+      //   "user-mail-direct",
+      //   "create-new-user",
+      //   Buffer.from(JSON.stringify(newUser)),
+      //   { persistent: true }
+      // );
 
       return newUser;
     } catch (err: unknown) {

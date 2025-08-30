@@ -133,7 +133,8 @@ export default class AMQPConnectionPool {
 
   public getChannel(name: string): amqplib.Channel {
     const channel = this.channels.get(name);
-    if (!channel) throw new Error(`Channel ${name} not exists.`);
+    if (!channel || this.isConfirmChannel(channel))
+      throw new Error(`Channel ${name} not exists.`);
     return channel;
   }
 

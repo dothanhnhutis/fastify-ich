@@ -25,8 +25,7 @@ export async function createUserController(
     }
   }
 
-  const password = Password.generate();
-  const password_hash = await Password.hash(password);
+  const password_hash = await Password.genAndHash();
 
   const newUser = await req.users.create({
     ...req.body,
