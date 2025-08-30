@@ -9,15 +9,14 @@ export default class Password {
     return await argon2.verify(hashData, data).catch(() => false);
   }
 
-  static genAndHash() {
-    return Password.hash(
-      genPass.generate({
-        length: 15,
-        numbers: true,
-        uppercase: true,
-        lowercase: true,
-        symbols: "@$!%*?&",
-      })
-    );
+  static generate() {
+    return genPass.generate({
+      length: 15,
+      numbers: true,
+      uppercase: true,
+      lowercase: true,
+      symbols: "@$!%*?&",
+      strict: true,
+    });
   }
 }

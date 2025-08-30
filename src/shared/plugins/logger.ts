@@ -113,7 +113,7 @@ async function logger(
   // Tạo logger với multiple streams
   const logger = pino(
     {
-      level: options.level ?? "info",
+      level: "info",
       timestamp: () => `,"time":"${new Date().toISOString()}"`,
       formatters: {
         level: (label: string) => {
@@ -177,7 +177,7 @@ async function logger(
   fastify.addHook("onResponse", async (request, reply: FastifyReply) => {
     const diff = process.hrtime(request.startTime);
     const responseTime = (diff[0] * 1e3 + diff[1] / 1e6).toFixed(2); // ms
-    request.logger.info(
+    logger.info(
       {
         requestId: request.id,
         method: request.method,
@@ -193,7 +193,7 @@ async function logger(
 
   // Hook để log errors
   fastify.addHook("onError", async (request, reply, error) => {
-    request.logger.error(
+    logger.error(
       {
         requestId: request.id,
         method: request.method,

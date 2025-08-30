@@ -44,8 +44,31 @@ const createNewUserBodySchema = Type.Object({
   //   }),
 });
 
+const sortEnum = [
+  "username.asc",
+  "username.desc",
+  "roleIds.asc",
+  "roleIds.desc",
+];
+
+const updateUserByIdBodySchema = Type.Object({
+  disable: Type.Boolean(),
+  roleIds: Type.Array(Type.String()),
+});
+
 export const createNewUserSchema: FastifySchema = {
   body: createNewUserBodySchema,
 };
 
+const paramsIdSchema = Type.Object({
+  id: Type.String(),
+});
+
+export const updateUserByIdSchema: FastifySchema = {
+  params: paramsIdSchema,
+  body: updateUserByIdBodySchema,
+};
+
 export type CreateNewUserBodyType = Static<typeof createNewUserBodySchema>;
+export type UpdateUserByIdParamsType = Static<typeof paramsIdSchema>;
+export type UpdateUserByIdBodyType = Static<typeof updateUserByIdBodySchema>;

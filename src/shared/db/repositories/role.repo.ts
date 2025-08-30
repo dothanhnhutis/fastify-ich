@@ -49,11 +49,8 @@ export default class RoleRepo {
       const totalItem = parseInt(rows[0].count);
 
       if (query.sort != undefined) {
-        // const fieldAllow = ["name.asc", "descript", "permissions"];
-
         queryString.push(
           `ORDER BY ${query.sort
-            // .filter((sort) => fieldAllow.includes(sort))
             .map((sort) => {
               const [field, direction] = sort.split(".");
               return `${field} ${direction.toUpperCase()}`;
@@ -73,8 +70,6 @@ export default class RoleRepo {
         text: queryString.join(" "),
         values,
       };
-
-      console.log(queryConfig);
 
       const { rows: roles } = await this.fastify.query<Role>(queryConfig);
 

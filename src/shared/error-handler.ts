@@ -87,7 +87,7 @@ export async function errorHandler(
   reply: FastifyReply
 ) {
   if (error.code == "FST_ERR_VALIDATION" && error.validation) {
-    reply.status(StatusCodes.BAD_REQUEST).send({
+    return reply.status(StatusCodes.BAD_REQUEST).send({
       statusText: "BAD_REQUEST",
       statusCode: StatusCodes.BAD_REQUEST,
       data: {
@@ -97,11 +97,11 @@ export async function errorHandler(
   }
 
   if (reply.sent || (reply.raw && reply.raw.headersSent) || config.DEBUG) {
-    reply.status(StatusCodes.INTERNAL_SERVER_ERROR).send(error);
+    return reply.status(StatusCodes.INTERNAL_SERVER_ERROR).send(error);
   }
 
   if (error instanceof CustomError) {
-    reply.status(error.statusCode).send(error.serialize());
+    return reply.status(error.statusCode).send(error.serialize());
   }
 
   reply.status(500).send({

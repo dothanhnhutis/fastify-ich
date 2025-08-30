@@ -2,14 +2,29 @@ import { StatusCodes } from "http-status-codes";
 import { FastifyReply, FastifyRequest } from "fastify";
 
 import config from "@/shared/config";
-import Password from "@/shared/password";
 import { BadRequestError } from "@/shared/error-handler";
-import { CreateNewUserBodyType } from "./user.schema";
+import {
+  CreateNewUserBodyType,
+  UpdateUserByIdBodyType,
+  UpdateUserByIdParamsType,
+} from "./user.schema";
+import Password from "@/shared/password";
 
 export async function queryUserController(
   req: FastifyRequest,
   reply: FastifyReply
 ) {}
+
+export async function updateUserByIdController(
+  req: FastifyRequest<{
+    Params: UpdateUserByIdParamsType;
+    Body: UpdateUserByIdBodyType;
+  }>,
+  reply: FastifyReply
+) {
+  const { id } = req.params;
+  const {} = req.body;
+}
 
 export async function createUserController(
   req: FastifyRequest<{ Body: CreateNewUserBodyType }>,
@@ -21,23 +36,17 @@ export async function createUserController(
   if (req.body.roleIds) {
     for (let id of req.body.roleIds) {
       const role = await req.roles.findById(id);
-      if (role) throw new BadRequestError(`Quyền id=${id} không tồn tại.`);
+      if (!role) throw new BadRequestError(`Quyền id=${id} không tồn tại.`);
     }
   }
-
-  const password_hash = await Password.genAndHash();
-
-  const newUser = await req.users.create({
-    ...req.body,
-    password_hash,
-  });
+  const password = Password.generate();
+  await req.users.create({ ...req.body, password });
 
   reply.code(StatusCodes.CREATED).send({
     statusCode: StatusCodes.OK,
     statusText: "CREATED",
     data: {
       message: "Tạo người dùng thành công.",
-      newUser,
     },
   });
 }

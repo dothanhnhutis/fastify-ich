@@ -1,12 +1,17 @@
-import { CreateNewUserBodyType } from "@/modules/v1/users/user.schema";
+import {
+  CreateNewUserBodyType,
+  UpdateUserByIdBodyType,
+} from "@/modules/v1/users/user.schema";
+import { BadRequestError } from "@/shared/error-handler";
+import Password from "@/shared/password";
 import { FastifyInstance } from "fastify";
 import { QueryConfig, QueryResult } from "pg";
 
-type CreateUserType = {
+type CreateNewUser = {
   username: string;
   email: string;
-  password_hash: string;
-  roleIds: string[];
+  password: string;
+  roleIds?: string[];
 };
 
 export default class UserRepo {
@@ -64,10 +69,12 @@ export default class UserRepo {
     }
   }
 
-  async create(data: CreateUserType) {
+  async create(data: CreateNewUser) {
+    const password_hash = await Password.hash(data.password);
+
     const queryConfig: QueryConfig = {
-      text: `INSERT INTO user (email, username, password_hash) VALUES ($1, $2, $3) RETURNING *;`,
-      values: [data.email, data.username, data.password_hash],
+      text: `INSERT INTO users (email, username, password_hash) VALUES ($1, $2, $3) RETURNING *;`,
+      values: [data.email, data.username, password_hash],
     };
 
     try {
@@ -93,16 +100,18 @@ export default class UserRepo {
           });
         }
 
+        const channel = this.fastify.getChannel("publish-user-channel");
+        channel.publish(
+          "user-mail-direct",
+          "create-new-user",
+          Buffer.from(
+            JSON.stringify({ email: data.email, password: data.password })
+          ),
+          { persistent: true }
+        );
+
         return userRow[0];
       });
-
-      // const channel = this.fastify.getChannel("publish-user-channel");
-      // channel.publish(
-      //   "user-mail-direct",
-      //   "create-new-user",
-      //   Buffer.from(JSON.stringify(newUser)),
-      //   { persistent: true }
-      // );
 
       return newUser;
     } catch (err: unknown) {
@@ -110,7 +119,14 @@ export default class UserRepo {
         { metadata: { query: queryConfig } },
         `UserRepo.create() method error: ${err}`
       );
-      throw err;
+      throw new BadRequestError("Tạo Người dùng thất bại");
     }
+  }
+
+  async update(userId: string, data: UpdateUserByIdBodyType) {
+    const queryConfig: QueryConfig = {
+      text: `UPDATE user RETURNING *;`,
+      values: [],
+    };
   }
 }

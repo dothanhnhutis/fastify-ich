@@ -11,10 +11,14 @@ CREATE TABLE IF NOT EXISTS users (
     email TEXT NOT NULL,
     password_hash TEXT NOT NULL,
     username TEXT NOT NULL,
+    disable_at TIMESTAMP(3),
     created_at TIMESTAMP(3) NOT NULL DEFAULT now(),
     updated_at TIMESTAMP(3) NOT NULL DEFAULT now(),
     CONSTRAINT users_pkey PRIMARY KEY (id)
 );
+---
+-- ALTER TABLE users
+-- ADD COLUMN disable_at TIMESTAMP(3);
 -- CreateTable
 CREATE TABLE IF NOT EXISTS roles (
     id TEXT NOT NULL DEFAULT gen_random_uuid()::text,

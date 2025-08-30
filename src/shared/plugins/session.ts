@@ -62,15 +62,11 @@ async function session(fastify: FastifyInstance, options: SessionOptions) {
     }
   );
 
-  fastify.addHook("onSend", async (req, reply) => {
+  fastify.addHook("preHandler", async (req, reply) => {
     if (req.sessionId && refreshCookie) {
       const refreshSession = await req.sessions.refresh(req.sessionId);
       if (refreshSession) {
-        reply.setCookie(
-          config.SESSION_KEY_NAME,
-          cryptoCookie.encrypt(req.sessionId),
-          refreshSession.cookie
-        );
+        reply.setSession(req.sessionId, refreshSession.cookie);
       }
     }
   });

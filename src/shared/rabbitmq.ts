@@ -131,19 +131,33 @@ export default class AMQPConnectionPool {
     });
   }
 
-  public getChannel(name: string): amqplib.Channel {
+  // public getChannel(name: string): amqplib.Channel {
+  //   const channel = this.channels.get(name);
+  //   if (!channel || this.isConfirmChannel(channel))
+  //     throw new Error(`Channel ${name} not exists.`);
+  //   return channel;
+  // }
+
+  // public getConfirmChannel(name: string): amqplib.ConfirmChannel {
+  //   const confirmChannel = this.channels.get(name);
+  //   if (!confirmChannel || !this.isConfirmChannel(confirmChannel))
+  //     throw new Error(`ConfirmChannel ${name} not exists.`);
+  //   return confirmChannel;
+  // }
+
+  public getChannel = (name: string): amqplib.Channel => {
     const channel = this.channels.get(name);
     if (!channel || this.isConfirmChannel(channel))
       throw new Error(`Channel ${name} not exists.`);
     return channel;
-  }
+  };
 
-  public getConfirmChannel(name: string): amqplib.ConfirmChannel {
+  public getConfirmChannel = (name: string): amqplib.ConfirmChannel => {
     const confirmChannel = this.channels.get(name);
     if (!confirmChannel || !this.isConfirmChannel(confirmChannel))
       throw new Error(`ConfirmChannel ${name} not exists.`);
     return confirmChannel;
-  }
+  };
 
   private isConfirmChannel(
     ch: amqplib.Channel | amqplib.ConfirmChannel

@@ -14,6 +14,7 @@ import cookiePlugin from "./plugins/cookie";
 import sessionPlugin from "./plugins/session";
 import { errorHandler } from "./error-handler";
 import postgreSQLPlugin from "./plugins/postgres";
+import Password from "./password";
 
 export async function buildServer() {
   const server = fastify({
