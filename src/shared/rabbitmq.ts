@@ -81,7 +81,7 @@ export default class AMQPConnectionPool {
 
         await this.createChannels(conn, channels);
       }
-      this.setupQueuesAndExchanges();
+      await this.setupQueuesAndExchanges();
 
       console.log("RabbitMQ - connect success");
     } catch (error) {

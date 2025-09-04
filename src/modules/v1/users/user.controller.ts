@@ -23,7 +23,19 @@ export async function updateUserByIdController(
   reply: FastifyReply
 ) {
   const { id } = req.params;
-  const {} = req.body;
+
+  const existsUser = await req.users.findById(id);
+  if (existsUser) throw new BadRequestError("Người dùng không tồn tại.");
+
+  await req.users.update(id, req.body);
+
+  reply.code(StatusCodes.OK).send({
+    statusCode: StatusCodes.OK,
+    statusText: "OK",
+    data: {
+      message: "Cập nhật người dùng thành công.",
+    },
+  });
 }
 
 export async function createUserController(

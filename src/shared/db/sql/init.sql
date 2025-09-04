@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP(3) NOT NULL DEFAULT now(),
     CONSTRAINT users_pkey PRIMARY KEY (id)
 );
----
+--- add column users
 -- ALTER TABLE users
 -- ADD COLUMN disable_at TIMESTAMP(3);
 -- CreateTable

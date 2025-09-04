@@ -51,10 +51,13 @@ const sortEnum = [
   "roleIds.desc",
 ];
 
-const updateUserByIdBodySchema = Type.Object({
-  disable: Type.Boolean(),
-  roleIds: Type.Array(Type.String()),
-});
+const updateUserByIdBodySchema = Type.Partial(
+  Type.Object({
+    disable: Type.Boolean(),
+    roleIds: Type.Array(Type.String()),
+    username: Type.String(),
+  })
+);
 
 export const createNewUserSchema: FastifySchema = {
   body: createNewUserBodySchema,

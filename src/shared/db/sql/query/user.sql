@@ -1,3 +1,27 @@
+---- chèn bằng file
+-- cách 1: chèm full trường
+COPY users
+FROM 'user_data.csv' DELIMITER ',' CSV;
+--- cách 2: chèm có chọn field email, password_hash, username
+COPY users (email, password_hash, username)
+FROM '/data/user.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',');
+-- Xoá bảng
+DROP TABLE IF EXISTS "PackagingTransaction";
+---
+UPDATE users
+SET password_hash = '$argon2id$v=19$m=65536,t=3,p=4$oDdsbvL66JBFGcGtpM2bVQ$BSuYE86W6ALjeRJmC9I5sv/pr6xXJj3eFGvgS+aF7Io',
+    username = 'new name'
+WHERE email = 'gaconght@gmail.com'
+RETURNING *;
+---
+INSERT INTO users (email, username, password_hash)
+VALUES (
+        'gaconght@gmail.com',
+        'thanh nhut',
+        '$argon2id$v=19$m=65536,t=3,p=4$oDdsbvL66JBFGcGtpM2bVQ$BSuYE86W6ALjeRJmC9I5sv/pr6xXJj3eFGvgS+aF7Io'
+    )
+RETURNING *;
+---
 SELECT *
 FROM users;
 ---
@@ -7,4 +31,17 @@ WHERE user_id = '9af45a98-df32-48ae-bfec-22b7bd339875';
 DELETE FROM users
 WHERE id = '9af45a98-df32-48ae-bfec-22b7bd339875';
 ---
---- { email: 'dothanhnhutis@gmail.com', password: 'tH9e0@k?7Z%TAXD' }
+INSERT INTO user_roles (user_id, role_id)
+VALUES (
+        '65fbae65-76d1-413d-b804-aa177c072c38',
+        'd12e2e48-5f90-4568-99c0-15e2088829a7'
+    );
+---
+DELETE FROM user_roles
+WHERE user_id = '65fbae65-76d1-413d-b804-aa177c072c38'
+    AND role_id NOT IN ('d12e2e48-5f90-4568-99c0-15e2088829a7');
+---
+SELECT
+from user_roles
+WHERE user_id = '65fbae65-76d1-413d-b804-aa177c072c38'
+    AND role_id NOT IN ('d12e2e48-5f90-4568-99c0-15e2088829a7');

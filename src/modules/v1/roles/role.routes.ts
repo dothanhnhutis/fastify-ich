@@ -24,7 +24,7 @@ export default async function roleRoutes(fastify: FastifyInstance) {
       schema: queryRoleSchema,
       preHandler: [
         requiredAuthMiddleware,
-        // checkPermissionMiddleware(["read:role:*"]),
+        checkPermissionMiddleware(["read:role:*"]),
       ],
     },
     queryRoleController
@@ -36,7 +36,7 @@ export default async function roleRoutes(fastify: FastifyInstance) {
       schema: getRoleByIdSchema,
       preHandler: [
         requiredAuthMiddleware,
-        // checkPermissionMiddleware(["read:role:id"]),
+        checkPermissionMiddleware(["read:role:id"]),
       ],
     },
     getRoleByIdController
@@ -48,7 +48,7 @@ export default async function roleRoutes(fastify: FastifyInstance) {
       schema: createNewRoleSchema,
       preHandler: [
         requiredAuthMiddleware,
-        // checkPermissionMiddleware(["create:role"]),
+        checkPermissionMiddleware(["create:role"]),
       ],
     },
     createRoleController
@@ -60,7 +60,7 @@ export default async function roleRoutes(fastify: FastifyInstance) {
       schema: updateRoleByIdSchema,
       preHandler: [
         requiredAuthMiddleware,
-        // checkPermissionMiddleware(["update:role"]),
+        checkPermissionMiddleware(["update:role"]),
       ],
     },
     updateRoleByIdController
@@ -72,7 +72,7 @@ export default async function roleRoutes(fastify: FastifyInstance) {
       schema: deleteRoleByIdSchema,
       preHandler: [
         requiredAuthMiddleware,
-        // checkPermissionMiddleware(["delete:role"]),
+        checkPermissionMiddleware(["delete:role"]),
       ],
     },
     deleteRoleByIdController

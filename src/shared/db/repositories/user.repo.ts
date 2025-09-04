@@ -123,10 +123,53 @@ export default class UserRepo {
     }
   }
 
+  async updateRole(userId: string, roleIds: string[]) {
+    try {
+      await this.fastify.transaction(async (client) => {
+        // delete user_role
+        let i: number = 1;
+        let value: string[] = [userId];
+
+        client.query({
+          text: `DELETE FROM user_roles WHERE user_id = $1::text AND role_id NOT IN ('d12e2e48-5f90-4568-99c0-15e2088829a7');`,
+          values: value,
+        });
+
+        //create user_role
+      });
+    } catch (error) {}
+  }
+
   async update(userId: string, data: UpdateUserByIdBodyType) {
+    const sets: string[] = [];
+    const values: any[] = [];
+    let idx = 1;
+
+    if (data.username !== undefined) {
+      sets.push(`"username" = $${idx++}::text`);
+      values.push(data.username);
+    }
+
+    if (data.disable !== undefined) {
+      sets.push(`"disable_at" = $${idx++}::boolean`);
+      values.push(data.disable ? new Date() : null);
+    }
+
+    if (data.roleIds !== undefined) {
+      sets.push(`"disable_at" = $${idx++}::boolean`);
+      values.push(data.disable ? new Date() : null);
+    }
+
+    if (sets.length === 0) {
+      return;
+    }
+    values.push(userId);
+
     const queryConfig: QueryConfig = {
-      text: `UPDATE user RETURNING *;`,
-      values: [],
+      text: `UPDATE users SET ${sets.join(
+        ", "
+      )} WHERE id = $${idx} RETURNING *;`,
+      values,
     };
   }
 }
