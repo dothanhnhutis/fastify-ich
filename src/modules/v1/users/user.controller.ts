@@ -5,15 +5,25 @@ import config from "@/shared/config";
 import { BadRequestError } from "@/shared/error-handler";
 import {
   CreateNewUserBodyType,
+  QueryUsersType,
   UpdateUserByIdBodyType,
   UpdateUserByIdParamsType,
 } from "./user.schema";
 import Password from "@/shared/password";
 
+// Admin
 export async function queryUserController(
-  req: FastifyRequest,
+  req: FastifyRequest<{ Querystring: QueryUsersType }>,
   reply: FastifyReply
-) {}
+) {
+  const data = await req.users.query(req.query);
+
+  reply.code(StatusCodes.OK).send({
+    statusCode: StatusCodes.OK,
+    statusText: "OK",
+    data,
+  });
+}
 
 export async function updateUserByIdController(
   req: FastifyRequest<{
@@ -25,7 +35,7 @@ export async function updateUserByIdController(
   const { id } = req.params;
 
   const existsUser = await req.users.findById(id);
-  if (existsUser) throw new BadRequestError("Người dùng không tồn tại.");
+  if (!existsUser) throw new BadRequestError("Người dùng không tồn tại.");
 
   await req.users.update(id, req.body);
 
@@ -63,6 +73,7 @@ export async function createUserController(
   });
 }
 
+// Base
 export async function currentUserController(
   req: FastifyRequest,
   reply: FastifyReply

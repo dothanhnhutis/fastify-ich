@@ -45,6 +45,7 @@ type User = {
   email: string;
   password_hash: string;
   username: string;
+  disable_at: Date;
   created_at: Date;
   updated_at: Date;
 };
@@ -53,6 +54,14 @@ type Role = {
   id: string;
   name: string;
   permissions: string[];
+  created_at: Date;
+  updated_at: Date;
+};
+
+type Warehouse = {
+  id: string;
+  name: string;
+  address: string;
   created_at: Date;
   updated_at: Date;
 };

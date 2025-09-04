@@ -11,29 +11,29 @@ CREATE TABLE IF NOT EXISTS users (
     email TEXT NOT NULL,
     password_hash TEXT NOT NULL,
     username TEXT NOT NULL,
-    disable_at TIMESTAMP(3),
-    created_at TIMESTAMP(3) NOT NULL DEFAULT now(),
-    updated_at TIMESTAMP(3) NOT NULL DEFAULT now(),
+    disabled_at TIMESTAMPTZ(3),
+    created_at TIMESTAMPTZ(3) NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT now(),
     CONSTRAINT users_pkey PRIMARY KEY (id)
 );
---- add column users
+---
 -- ALTER TABLE users
--- ADD COLUMN disable_at TIMESTAMP(3);
+-- ADD COLUMN disabled_at TIMESTAMPTZ(3);
 -- CreateTable
 CREATE TABLE IF NOT EXISTS roles (
     id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
     name TEXT NOT NULL,
     permissions TEXT [] NOT NULL DEFAULT ARRAY []::text [],
     description TEXT NOT NULL DEFAULT '',
-    created_at TIMESTAMP(3) NOT NULL DEFAULT now(),
-    updated_at TIMESTAMP(3) NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ(3) NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT now(),
     CONSTRAINT roles_pkey PRIMARY KEY (id)
 );
 -- CreateTable
 CREATE TABLE IF NOT EXISTS user_roles (
     user_id TEXT NOT NULL,
     role_id TEXT NOT NULL,
-    created_at TIMESTAMP(3) NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ(3) NOT NULL DEFAULT now(),
     CONSTRAINT user_roles_pkey PRIMARY KEY (user_id, role_id)
 );
 -- CreateEnum
@@ -43,16 +43,18 @@ CREATE TABLE IF NOT EXISTS warehouses (
     id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
     name TEXT NOT NULL,
     address TEXT NOT NULL,
-    created_at TIMESTAMP(3) NOT NULL DEFAULT now(),
-    updated_at TIMESTAMP(3) NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ(3),
+    created_at TIMESTAMPTZ(3) NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT now(),
     CONSTRAINT warehouses_pkey PRIMARY KEY (id)
 );
 -- CreateTable
 CREATE TABLE IF NOT EXISTS packagings (
     id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
     name TEXT NOT NULL,
-    created_at TIMESTAMP(3) NOT NULL DEFAULT now(),
-    updated_at TIMESTAMP(3) NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ(3),
+    created_at TIMESTAMPTZ(3) NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT now(),
     CONSTRAINT packagings_pkey PRIMARY KEY (id)
 );
 -- CreateTable
@@ -61,8 +63,8 @@ CREATE TABLE IF NOT EXISTS packaging_stocks (
     warehouse_id TEXT NOT NULL,
     packaging_id TEXT NOT NULL,
     quantity INTEGER NOT NULL DEFAULT 0,
-    created_at TIMESTAMP(3) NOT NULL DEFAULT now(),
-    updated_at TIMESTAMP(3) NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ(3) NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT now(),
     CONSTRAINT packaging_stocks_pkey PRIMARY KEY (id)
 );
 --- CreateTable
@@ -70,8 +72,8 @@ CREATE TABLE IF NOT EXISTS packaging_transactions (
     id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
     type transaction_type NOT NULL,
     note TEXT NOT NULL,
-    created_at TIMESTAMP(3) NOT NULL DEFAULT now(),
-    updated_at TIMESTAMP(3) NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ(3) NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT now(),
     CONSTRAINT packaging_transactions_pkey PRIMARY KEY (id)
 );
 --- CreateTable
@@ -80,8 +82,8 @@ CREATE TABLE IF NOT EXISTS packaging_transaction_items (
     packaging_transaction_id TEXT NOT NULL,
     quantity INTEGER NOT NULL,
     signed_quantity INTEGER NOT NULL,
-    created_at TIMESTAMP(3) NOT NULL DEFAULT now(),
-    updated_at TIMESTAMP(3) NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ(3) NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT now(),
     CONSTRAINT packaging_transaction_items_pkey PRIMARY KEY (packaging_stock_id, packaging_transaction_id)
 );
 -- CreateEnum
@@ -94,7 +96,7 @@ CREATE TABLE IF NOT EXISTS packaging_transaction_audits (
     old_data JSONB,
     new_data JSONB,
     performed_by TEXT NOT NULL,
-    performed_at TIMESTAMP(3) NOT NULL DEFAULT now(),
+    performed_at TIMESTAMPTZ(3) NOT NULL DEFAULT now(),
     CONSTRAINT packaging_transaction_audits_pkey PRIMARY KEY (id)
 );
 -- CreateIndex

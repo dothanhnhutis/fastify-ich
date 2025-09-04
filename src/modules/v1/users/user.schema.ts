@@ -44,18 +44,85 @@ const createNewUserBodySchema = Type.Object({
   //   }),
 });
 
+const updateUserByIdBodySchema = Type.Partial(
+  Type.Object({
+    disable: Type.Boolean({
+      errorMessage: {
+        type: "Trạng thái phải là boolean.",
+      },
+    }),
+    roleIds: Type.Array(
+      Type.String({
+        errorMessage: {
+          type: "Phần tử của mã vai trò phải là chuỗi.",
+        },
+      }),
+      {
+        errorMessage: {
+          type: "Mã vai trò phải là mảng.",
+        },
+      }
+    ),
+    username: Type.String({
+      errorMessage: {
+        type: "Tên người dùng phải là chuỗi.",
+      },
+    }),
+  })
+);
+
 const sortEnum = [
   "username.asc",
   "username.desc",
-  "roleIds.asc",
-  "roleIds.desc",
+  "email.asc",
+  "email.desc",
+  "disable.asc",
+  "disable.desc",
 ];
-
-const updateUserByIdBodySchema = Type.Partial(
+const queryStringUserSchema = Type.Partial(
   Type.Object({
-    disable: Type.Boolean(),
-    roleIds: Type.Array(Type.String()),
-    username: Type.String(),
+    username: Type.String({
+      errorMessage: {
+        type: "Tên người dùng phải là chuỗi.",
+      },
+    }),
+    email: Type.String({
+      format: "email",
+      errorMessage: {
+        type: "Email phải là chuỗi.",
+        format: "Email không đúng định dạng.",
+      },
+    }),
+    disabled: Type.Boolean({
+      errorMessage: {
+        type: "Trạng thái phải là boolean.",
+      },
+    }),
+    sort: Type.Array(
+      Type.String({
+        enum: sortEnum,
+        errorMessage: {
+          type: "sort phải là chuỗi.",
+          enum: `sort phải là một trong: ${sortEnum.join(", ")}`,
+        },
+      })
+    ),
+    limit: Type.Integer({
+      minimum: 1,
+      maximum: 50,
+      errorMessage: {
+        type: "limit phải là số nguyên.",
+        minimum: "limit quá nhỏ (min >= 1).",
+        maximum: "limit quá lớn (max >= 50).",
+      },
+    }),
+    page: Type.Integer({
+      minimum: 1,
+      errorMessage: {
+        type: "limit phải là số nguyên.",
+        minimum: "limit quá nhỏ (min >= 1).",
+      },
+    }),
   })
 );
 
@@ -72,6 +139,13 @@ export const updateUserByIdSchema: FastifySchema = {
   body: updateUserByIdBodySchema,
 };
 
+export const queryUsersSchema: FastifySchema = {
+  querystring: queryStringUserSchema,
+};
+
 export type CreateNewUserBodyType = Static<typeof createNewUserBodySchema>;
+
 export type UpdateUserByIdParamsType = Static<typeof paramsIdSchema>;
 export type UpdateUserByIdBodyType = Static<typeof updateUserByIdBodySchema>;
+
+export type QueryUsersType = Static<typeof queryStringUserSchema>;

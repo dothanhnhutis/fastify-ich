@@ -1,10 +1,12 @@
 import {
   CreateNewUserBodyType,
+  QueryUsersType,
   UpdateUserByIdBodyType,
 } from "@/modules/v1/users/user.schema";
-import { BadRequestError } from "@/shared/error-handler";
+import { BadRequestError, CustomError } from "@/shared/error-handler";
 import Password from "@/shared/password";
 import { FastifyInstance } from "fastify";
+import { StatusCodes } from "http-status-codes";
 import { QueryConfig, QueryResult } from "pg";
 
 type CreateNewUser = {
@@ -69,7 +71,89 @@ export default class UserRepo {
     }
   }
 
-  async create(data: CreateNewUser) {
+  async query(
+    query: QueryUsersType
+  ): Promise<{ users: User[]; metadata: Metadata }> {
+    let queryString = ["SELECT * FROM users"];
+    const values: any[] = [];
+    let where: string[] = [];
+    let idx = 1;
+
+    try {
+      if (query.username != undefined) {
+        where.push(`username ILIKE $${idx++}::text`);
+        values.push(`%${query.username.trim()}%`);
+      }
+
+      if (query.email != undefined) {
+        where.push(`email ILIKE $${idx++}::text`);
+        values.push(`%${query.email.trim()}%`);
+      }
+
+      if (query.disabled != undefined) {
+        where.push(
+          query.disabled ? `disabled_at IS NOT NULL` : `disabled_at IS NULL`
+        );
+      }
+
+      if (where.length > 0) {
+        queryString.push(`WHERE ${where.join(" AND ")}`);
+      }
+
+      const { rows } = await this.fastify.query<{ count: string }>({
+        text: queryString.join(" ").replace("*", "count(*)"),
+        values,
+      });
+      const totalItem = parseInt(rows[0].count);
+
+      if (query.sort != undefined) {
+        queryString.push(
+          `ORDER BY ${query.sort
+            .map((sort) => {
+              const [field, direction] = sort.split(".");
+              return `${field} ${direction.toUpperCase()}`;
+            })
+            .join(", ")}`
+        );
+      }
+
+      let limit = query.limit ?? totalItem;
+      let page = query.page ?? 1;
+      let offset = (page - 1) * limit;
+
+      queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
+      values.push(limit, offset);
+
+      const queryConfig: QueryConfig = {
+        text: queryString.join(" "),
+        values,
+      };
+
+      const { rows: users } = await this.fastify.query<User>(queryConfig);
+
+      const totalPage = Math.ceil(totalItem / limit);
+
+      return {
+        users,
+        metadata: {
+          totalItem,
+          totalPage,
+          hasNextPage: page < totalPage,
+          limit: totalItem > 0 ? limit : 0,
+          itemStart: totalItem > 0 ? (page - 1) * limit + 1 : 0,
+          itemEnd: Math.min(page * limit, totalItem),
+        },
+      };
+    } catch (error: any) {
+      throw new CustomError({
+        message: `UserRepo.query() method error: ${error}`,
+        statusCode: StatusCodes.BAD_REQUEST,
+        statusText: "BAD_REQUEST",
+      });
+    }
+  }
+
+  async create(data: CreateNewUser): Promise<User> {
     const password_hash = await Password.hash(data.password);
 
     const queryConfig: QueryConfig = {
@@ -123,53 +207,56 @@ export default class UserRepo {
     }
   }
 
-  async updateRole(userId: string, roleIds: string[]) {
-    try {
-      await this.fastify.transaction(async (client) => {
-        // delete user_role
-        let i: number = 1;
-        let value: string[] = [userId];
+  async update(userId: string, data: UpdateUserByIdBodyType): Promise<void> {
+    if (Object.keys(data).length == 0) return;
 
-        client.query({
-          text: `DELETE FROM user_roles WHERE user_id = $1::text AND role_id NOT IN ('d12e2e48-5f90-4568-99c0-15e2088829a7');`,
-          values: value,
+    await this.fastify.transaction(async (client) => {
+      const sets: string[] = [];
+      const values: any[] = [];
+      let idx = 1;
+
+      if (data.username !== undefined) {
+        sets.push(`"username" = $${idx++}::text`);
+        values.push(data.username);
+      }
+
+      if (data.disable !== undefined) {
+        sets.push(`"disabled_at" = $${idx++}::timestamptz`);
+        values.push(data.disable ? new Date() : null);
+      }
+
+      if (values.length > 0) {
+        values.push(userId);
+        const queryConfig: QueryConfig = {
+          text: `UPDATE users SET ${sets.join(
+            ", "
+          )} WHERE id = $${idx} RETURNING *;`,
+          values,
+        };
+        await client.query(queryConfig);
+      }
+
+      if (data.roleIds) {
+        // delete role
+        await client.query({
+          text: `DELETE user_roles 
+          WHERE user_id = $1::text 
+            AND role_id NOT IN (${data.roleIds
+              .map((id, i) => {
+                return `$${i + 2}`;
+              })
+              .join(", ")}) 
+          RETURNING *;`,
+          values: [userId, ...data.roleIds],
         });
-
-        //create user_role
-      });
-    } catch (error) {}
-  }
-
-  async update(userId: string, data: UpdateUserByIdBodyType) {
-    const sets: string[] = [];
-    const values: any[] = [];
-    let idx = 1;
-
-    if (data.username !== undefined) {
-      sets.push(`"username" = $${idx++}::text`);
-      values.push(data.username);
-    }
-
-    if (data.disable !== undefined) {
-      sets.push(`"disable_at" = $${idx++}::boolean`);
-      values.push(data.disable ? new Date() : null);
-    }
-
-    if (data.roleIds !== undefined) {
-      sets.push(`"disable_at" = $${idx++}::boolean`);
-      values.push(data.disable ? new Date() : null);
-    }
-
-    if (sets.length === 0) {
-      return;
-    }
-    values.push(userId);
-
-    const queryConfig: QueryConfig = {
-      text: `UPDATE users SET ${sets.join(
-        ", "
-      )} WHERE id = $${idx} RETURNING *;`,
-      values,
-    };
+        // insert role
+        await client.query({
+          text: `INSERT INTO user_roles 
+          VALUES ${data.roleIds.map((_, i) => `($1, $${i + 2})`).join(", ")} 
+          ON CONFLICT DO NOTHING;`,
+          values: [userId, ...data.roleIds],
+        });
+      }
+    });
   }
 }
