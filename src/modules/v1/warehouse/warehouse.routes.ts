@@ -11,14 +11,15 @@ import {
   createWarehouseSchema,
   deleteWarehouseByIdSchema,
   getWarehouseByIdSchema,
+  queryWarehousesSchema,
   updateWarehouseByIdSchema,
 } from "./warehouse.schema";
 
 export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
-    "/:id",
+    "/",
     {
-      schema: getWarehouseByIdSchema,
+      schema: queryWarehousesSchema,
       preHandler: [
         requiredAuthMiddleware,
         // checkPermissionMiddleware(["read:warehouse:*"]),

@@ -145,6 +145,10 @@ export const deleteWarehouseByIdSchema: FastifySchema = {
   params: warehouseParamsSchema,
 };
 
+export const queryWarehousesSchema: FastifySchema = {
+  querystring: queryStringWarehouseSchema,
+};
+
 export type GetWarehouseByIdParamsType = Static<typeof warehouseParamsSchema>;
 export type CreateWarehouseBodyType = Static<typeof createWarehouseBodySchema>;
 

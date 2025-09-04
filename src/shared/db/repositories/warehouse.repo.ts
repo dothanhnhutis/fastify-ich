@@ -5,22 +5,14 @@ import { StatusCodes } from "http-status-codes";
 import { CustomError } from "@/shared/error-handler";
 import {
   CreateWarehouseBodyType,
+  QueryWarehousesType,
   UpdateWarehouseBodyType,
 } from "@/modules/v1/warehouse/warehouse.schema";
 
 export default class WarehouseRepo {
   constructor(private fastify: FastifyInstance) {}
 
-  async query(data: {
-    name?: string;
-    address?: string;
-    sorts?: {
-      field: string;
-      direction: "asc" | "desc";
-    }[];
-    limit?: number;
-    page?: number;
-  }): Promise<{
+  async query(query: QueryWarehousesType): Promise<{
     warehouses: Warehouse[];
     metadata: Metadata;
   }> {
