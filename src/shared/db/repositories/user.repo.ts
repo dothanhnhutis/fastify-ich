@@ -209,54 +209,58 @@ export default class UserRepo {
 
   async update(userId: string, data: UpdateUserByIdBodyType): Promise<void> {
     if (Object.keys(data).length == 0) return;
+    try {
+      await this.fastify.transaction(async (client) => {
+        const sets: string[] = [];
+        const values: any[] = [];
+        let idx = 1;
 
-    await this.fastify.transaction(async (client) => {
-      const sets: string[] = [];
-      const values: any[] = [];
-      let idx = 1;
+        if (data.username !== undefined) {
+          sets.push(`"username" = $${idx++}::text`);
+          values.push(data.username);
+        }
 
-      if (data.username !== undefined) {
-        sets.push(`"username" = $${idx++}::text`);
-        values.push(data.username);
-      }
+        if (data.disable !== undefined) {
+          sets.push(`"disabled_at" = $${idx++}::timestamptz`);
+          values.push(data.disable ? new Date() : null);
+        }
 
-      if (data.disable !== undefined) {
-        sets.push(`"disabled_at" = $${idx++}::timestamptz`);
-        values.push(data.disable ? new Date() : null);
-      }
+        if (values.length > 0) {
+          values.push(userId);
+          const queryConfig: QueryConfig = {
+            text: `UPDATE users SET ${sets.join(
+              ", "
+            )} WHERE id = $${idx} RETURNING *;`,
+            values,
+          };
+          await client.query(queryConfig);
+        }
 
-      if (values.length > 0) {
-        values.push(userId);
-        const queryConfig: QueryConfig = {
-          text: `UPDATE users SET ${sets.join(
-            ", "
-          )} WHERE id = $${idx} RETURNING *;`,
-          values,
-        };
-        await client.query(queryConfig);
-      }
-
-      if (data.roleIds) {
-        // delete role
-        await client.query({
-          text: `DELETE user_roles 
+        if (data.roleIds) {
+          // delete role
+          await client.query({
+            text: `DELETE FROM user_roles 
           WHERE user_id = $1::text 
             AND role_id NOT IN (${data.roleIds
               .map((_, i) => {
-                return `$${i + 2}`;
+                return `$${i + 2}::text`;
               })
               .join(", ")}) 
           RETURNING *;`,
-          values: [userId, ...data.roleIds],
-        });
-        // insert role
-        await client.query({
-          text: `INSERT INTO user_roles 
+            values: [userId, ...data.roleIds],
+          });
+
+          // insert role
+          await client.query({
+            text: `INSERT INTO user_roles 
           VALUES ${data.roleIds.map((_, i) => `($1, $${i + 2})`).join(", ")} 
           ON CONFLICT DO NOTHING;`,
-          values: [userId, ...data.roleIds],
-        });
-      }
-    });
+            values: [userId, ...data.roleIds],
+          });
+        }
+      });
+    } catch (error) {
+      throw new BadRequestError(`UserRepo.update() method error: ${error}`);
+    }
   }
 }

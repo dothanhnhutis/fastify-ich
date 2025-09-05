@@ -42,9 +42,6 @@ CREATE TABLE IF NOT EXISTS user_roles (
     CONSTRAINT user_roles_pkey PRIMARY KEY (user_id, role_id)
 );
 
--- CreateEnum
-CREATE TYPE transaction_type AS enum('IMPORT', 'EXPORT', 'ADJUST');
-
 -- CreateTable
 CREATE TABLE IF NOT EXISTS warehouses (
     id text NOT NULL DEFAULT gen_random_uuid ()::text,
@@ -68,14 +65,19 @@ CREATE TABLE IF NOT EXISTS packagings (
 
 -- CreateTable
 CREATE TABLE IF NOT EXISTS packaging_stocks (
-    id text NOT NULL DEFAULT gen_random_uuid ()::text,
+    -- id text NOT NULL DEFAULT gen_random_uuid ()::text,
     warehouse_id text NOT NULL,
     packaging_id text NOT NULL,
     quantity INTEGER NOT NULL DEFAULT 0,
     created_at timestamptz(3) NOT NULL DEFAULT NOW(),
     updated_at timestamptz(3) NOT NULL DEFAULT NOW(),
-    CONSTRAINT packaging_stocks_pkey PRIMARY KEY (id)
+    CONSTRAINT packaging_stocks_pkey PRIMARY KEY (warehouse_id, packaging_id)
 );
+
+-- ALTER TABLE packaging_stocks DROP COLUMN id;
+-- ALTER TABLE packaging_stocks ADD PRIMARY KEY (warehouse_id, packaging_id);
+-- CreateEnum
+CREATE TYPE transaction_type AS enum('IMPORT', 'EXPORT', 'ADJUST');
 
 --- CreateTable
 CREATE TABLE IF NOT EXISTS packaging_transactions (
@@ -117,8 +119,7 @@ CREATE TABLE IF NOT EXISTS packaging_transaction_audits (
 CREATE UNIQUE INDEX users_email_key ON users (email);
 
 --- CreateIndex
-CREATE UNIQUE INDEX packaging_stocks_warehouse_id_packaging_id_key ON packaging_stocks (warehouse_id, packaging_id);
-
+-- CREATE UNIQUE INDEX packaging_stocks_warehouse_id_packaging_id_key ON packaging_stocks (warehouse_id, packaging_id);
 --- ForeignKey
 --- AddForeignKey user_roles
 ALTER TABLE user_roles
@@ -147,32 +148,39 @@ ADD CONSTRAINT packaging_transaction_audits_packaging_transaction_id_fkey FOREIG
 
 --- Function
 --- Function auto update updated_at field
-CREATE OR REPLACE FUNCTION set_updated_at () RETURNS TRIGGER AS $$
-BEGIN NEW .updated_at := NOW();
-RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION set_updated_at () RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  NEW.updated_at := NOW();
+  RETURN NEW;
+END; 
+$$;
 
 -- Create function
-CREATE OR REPLACE FUNCTION create_packaging_stocks_for_new_warehouse () RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION create_packaging_stocks_for_new_warehouse () RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
-INSERT INTO packaging_stocks (warehouse_id, packaging_id, quantity)
-SELECT NEW .id,
+INSERT INTO
+    packaging_stocks (warehouse_id, packaging_id, quantity)
+SELECT
+    NEW.id,
     p.id,
     0
-FROM packagings p;
+FROM
+    packagings p;
 RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 --- Function return trigger check quantity befoce DELTE packaging_stocks
 CREATE OR REPLACE FUNCTION check_quantity_before_delete () RETURNS TRIGGER AS $$
-BEGIN IF OLD .quantity <> 0 THEN RAISE
-EXCEPTION 'Không thể xoá vì quantity = % (phải bằng 0)',
-    OLD .quantity;
+BEGIN IF OLD.quantity > 0 THEN RAISE EXCEPTION 'Không thể xoá vì quantity = % (phải bằng 0)',
+OLD.quantity;
+
 END IF;
+
 RETURN OLD;
+
 END;
+
 $$ LANGUAGE plpgsql;
 
 --- 
@@ -187,13 +195,19 @@ EXECUTE FUNCTION create_packaging_stocks_for_new_warehouse ();
 -- Create function
 CREATE OR REPLACE FUNCTION create_packaging_stocks_for_new_packaging () RETURNS TRIGGER AS $$
 BEGIN
-INSERT INTO packaging_stocks (warehouse_id, packaging_id, quantity)
-SELECT w.id,
-    NEW .id,
+INSERT INTO
+    packaging_stocks (warehouse_id, packaging_id, quantity)
+SELECT
+    w.id,
+    NEW.id,
     0
-FROM warehouses w;
+FROM
+    warehouses w;
+
 RETURN NEW;
+
 END;
+
 $$ LANGUAGE plpgsql;
 
 -- Create trigger
@@ -204,20 +218,34 @@ EXECUTE FUNCTION create_packaging_stocks_for_new_packaging ();
 ---
 CREATE OR REPLACE FUNCTION update_packaging_stock () RETURNS TRIGGER AS $$
 DECLARE p_stock_id TEXT;
-BEGIN IF TG_OP = 'DELETE' THEN p_stock_id := OLD .packaging_stock_id;
-ELSE p_stock_id := NEW .packaging_stock_id;
+
+BEGIN IF TG_OP = 'DELETE' THEN p_stock_id := OLD.packaging_stock_id;
+
+ELSE p_stock_id := NEW.packaging_stock_id;
+
 END IF;
+
 UPDATE packaging_stocks
-SET quantity = (
-        SELECT COALESCE(SUM(signed_quantity), 0)
-        FROM packaging_transaction_items
-        WHERE packaging_stock_id = p_stock_id
+SET
+    quantity = (
+        SELECT
+            COALESCE(SUM(signed_quantity), 0)
+        FROM
+            packaging_transaction_items
+        WHERE
+            packaging_stock_id = p_stock_id
     )
-WHERE id = p_stock_id;
+WHERE
+    id = p_stock_id;
+
 IF TG_OP = 'DELETE' THEN RETURN OLD;
+
 ELSE RETURN NEW;
+
 END IF;
+
 END;
+
 $$ LANGUAGE plpgsql;
 
 --
@@ -294,3 +322,24 @@ CREATE DATABASE pgdb;
 DROP SCHEMA PUBLIC CASCADE;
 
 CREATE SCHEMA PUBLIC;
+
+DO $$
+DECLARE
+    r record;
+BEGIN
+    FOR r IN
+        SELECT table_schema, table_name
+        FROM information_schema.columns
+        WHERE column_name = 'updated_at'
+          AND table_schema = 'public'
+    LOOP
+        EXECUTE format(
+            'CREATE TRIGGER set_updated_at_%I
+             BEFORE UPDATE ON %I.%I
+             FOR EACH ROW
+             EXECUTE FUNCTION set_updated_at();',
+            r.table_name, r.table_schema, r.table_name
+        );
+    END LOOP;
+END;
+$$;
