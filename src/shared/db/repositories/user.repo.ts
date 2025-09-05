@@ -242,7 +242,7 @@ export default class UserRepo {
           text: `DELETE user_roles 
           WHERE user_id = $1::text 
             AND role_id NOT IN (${data.roleIds
-              .map((id, i) => {
+              .map((_, i) => {
                 return `$${i + 2}`;
               })
               .join(", ")}) 

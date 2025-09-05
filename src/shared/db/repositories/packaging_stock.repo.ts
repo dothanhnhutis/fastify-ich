@@ -1,5 +1,5 @@
 import { CustomError } from "@/shared/error-handler";
-import { FastifyRequest } from "fastify";
+import { FastifyInstance, FastifyRequest } from "fastify";
 import { StatusCodes } from "http-status-codes";
 import { QueryConfig, QueryResult } from "pg";
 
@@ -13,7 +13,7 @@ type PackagingStock = {
 };
 
 export default class PackagingStockRepo {
-  constructor(private req: FastifyRequest) {}
+  constructor(private fastify: FastifyInstance) {}
 
   async findById(id: string): Promise<PackagingStock | null> {
     const queryConfig: QueryConfig = {
@@ -22,7 +22,7 @@ export default class PackagingStockRepo {
     };
     try {
       const { rows }: QueryResult<PackagingStock> =
-        await this.req.pg.query<PackagingStock>(queryConfig);
+        await this.fastify.query<PackagingStock>(queryConfig);
       return rows[0] ?? null;
     } catch (error: unknown) {
       throw new CustomError({

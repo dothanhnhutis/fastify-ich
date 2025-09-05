@@ -6,73 +6,75 @@ import { CustomError } from "@/shared/error-handler";
 import {
   CreateWarehouseBodyType,
   QueryWarehousesType,
-  UpdateWarehouseBodyType,
-} from "@/modules/v1/warehouse/warehouse.schema";
+  UpdateWarehouseByIdBodyType,
+} from "@/modules/v1/warehouses/warehouse.schema";
 
 export default class WarehouseRepo {
   constructor(private fastify: FastifyInstance) {}
 
-  async query(query: QueryWarehousesType): Promise<{
-    warehouses: Warehouse[];
-    metadata: Metadata;
-  }> {
-    let queryString = ["SELECT * FROM warehouse"];
+  async query(
+    query: QueryWarehousesType
+  ): Promise<{ warehouses: Warehouse[]; metadata: Metadata }> {
+    let queryString = ["SELECT * FROM warehouses"];
     const values: any[] = [];
-
     let where: string[] = [];
     let idx = 1;
 
-    if (data.name != undefined) {
-      where.push(`name ILIKE $${idx++}::text`);
-      values.push(`%${data.name.trim()}%`);
-    }
-
-    if (data.address != undefined) {
-      where.push(`address ILIKE $${idx++}::text`);
-      values.push(`%${data.address.trim()}%`);
-    }
-
-    if (where.length > 0) {
-      queryString.push(`WHERE ${where.join(" AND ")}`);
-    }
-
     try {
-      const { rows } = await this.req.pg.query<{ count: string }>({
+      if (query.name != undefined) {
+        where.push(`name ILIKE $${idx++}::text`);
+        values.push(`%${query.name.trim()}%`);
+      }
+
+      if (query.address != undefined) {
+        where.push(`address ILIKE $${idx++}::text`);
+        values.push(`%${query.address.trim()}%`);
+      }
+
+      if (query.deleted != undefined) {
+        where.push(
+          query.deleted ? `disabled_at IS NOT NULL` : `disabled_at IS NULL`
+        );
+      }
+
+      if (where.length > 0) {
+        queryString.push(`WHERE ${where.join(" AND ")}`);
+      }
+
+      const { rows } = await this.fastify.query<{ count: string }>({
         text: queryString.join(" ").replace("*", "count(*)"),
         values,
       });
-
       const totalItem = parseInt(rows[0].count);
 
-      const fieldAllow = ["name", "address"];
-      if (data.sorts != undefined) {
+      if (query.sort != undefined) {
         queryString.push(
-          `ORDER BY ${data.sorts
-            .filter((sort) => fieldAllow.includes(sort.field))
-            .map((sort) => `${sort.field} ${sort.direction.toUpperCase()}`)
+          `ORDER BY ${query.sort
+            .map((sort) => {
+              const [field, direction] = sort.split(".");
+              return `${field} ${direction.toUpperCase()}`;
+            })
             .join(", ")}`
         );
       }
 
-      if (data.page != undefined) {
-        const limit = data.limit ?? totalItem;
-        const offset = (data.page - 1) * limit;
-        queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
-        values.push(limit, offset);
-      }
+      let limit = query.limit ?? totalItem;
+      let page = query.page ?? 1;
+      let offset = (page - 1) * limit;
+
+      queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
+      values.push(limit, offset);
 
       const queryConfig: QueryConfig = {
         text: queryString.join(" "),
         values,
       };
 
-      const { rows: warehouses } = await this.req.pg.query<Warehouse>(
+      const { rows: warehouses } = await this.fastify.query<Warehouse>(
         queryConfig
       );
 
-      const limit = data.limit ?? totalItem;
       const totalPage = Math.ceil(totalItem / limit);
-      const page = data.page ?? 1;
 
       return {
         warehouses,
@@ -80,14 +82,14 @@ export default class WarehouseRepo {
           totalItem,
           totalPage,
           hasNextPage: page < totalPage,
-          limit,
-          itemStart: (page - 1) * limit + 1,
+          limit: totalItem > 0 ? limit : 0,
+          itemStart: totalItem > 0 ? (page - 1) * limit + 1 : 0,
           itemEnd: Math.min(page * limit, totalItem),
         },
       };
     } catch (error: any) {
       throw new CustomError({
-        message: `WarehouseRepo.query() method error: ${error}`,
+        message: `UserRepo.query() method error: ${error}`,
         statusCode: StatusCodes.BAD_REQUEST,
         statusText: "BAD_REQUEST",
       });
@@ -151,7 +153,7 @@ export default class WarehouseRepo {
     }
   }
 
-  async update(id: string, data: UpdateWarehouseBodyType): Promise<void> {
+  async update(id: string, data: UpdateWarehouseByIdBodyType): Promise<void> {
     if (Object.keys(data).length == 0) return;
 
     await this.fastify.transaction(async (client) => {

@@ -1,11 +1,15 @@
-import { FastifyRequest } from "fastify";
+import { FastifyInstance, FastifyRequest } from "fastify";
 import { QueryConfig, QueryResult } from "pg";
 import { StatusCodes } from "http-status-codes";
 
 import { CustomError } from "@/shared/error-handler";
+import {
+  CreatePackagingBodyType,
+  UpdatePackagingByIdBodyType,
+} from "@/modules/v1/packagings/packaging.schema";
 
 export default class PackagingRepo {
-  constructor(private req: FastifyRequest) {}
+  constructor(private fastify: FastifyInstance) {}
 
   async query(data: {
     name?: string;
@@ -117,53 +121,6 @@ export default class PackagingRepo {
     }
   }
 
-  async findAll(): Promise<Packaging[]> {
-    const queryConfig: QueryConfig = {
-      text: `
-      SELECT p.*,
-            sum(ps.quantity)::int,
-            COALESCE(
-                json_agg(
-                    json_build_object(
-                        'id',
-                        ps.id,
-                        'warehouse_id',
-                        ps.warehouse_id,
-                        'packaging_id',
-                        ps.packaging_id,
-                        'quantity',
-                        ps.quantity,
-                        'warehouse',
-                        row_to_json(w),
-                        'created_at',
-                        ps.created_at,
-                        'updated_at',
-                        ps.updated_at
-                    )
-                ) FILTER (
-                    WHERE ps.warehouse_id IS NOT NULL
-                ),
-                '[]'
-            ) AS items
-      FROM packagings p
-          LEFT JOIN packaging_stocks ps ON p.id = ps.packaging_id
-          LEFT JOIN warehouses w ON ps.warehouse_id = w.id
-      GROUP BY p.id;
-      `,
-    };
-    try {
-      const { rows }: QueryResult<Packaging> =
-        await this.req.pg.query<Packaging>(queryConfig);
-      return rows;
-    } catch (error: any) {
-      throw new CustomError({
-        message: `PackagingRepo.findAll() method error: ${error}`,
-        statusCode: StatusCodes.BAD_REQUEST,
-        statusText: "BAD_REQUEST",
-      });
-    }
-  }
-
   async findById(id: string): Promise<Packaging | null> {
     const queryConfig: QueryConfig = {
       text: `
@@ -203,7 +160,7 @@ export default class PackagingRepo {
     };
     try {
       const { rows }: QueryResult<Packaging> =
-        await this.req.pg.query<Packaging>(queryConfig);
+        await this.fastify.query<Packaging>(queryConfig);
       return rows[0] ?? null;
     } catch (error: any) {
       throw new CustomError({
@@ -214,20 +171,28 @@ export default class PackagingRepo {
     }
   }
 
-  async create(data: { name: string }): Promise<Packaging> {
+  async create(data: CreatePackagingBodyType) {
     const queryConfig: QueryConfig = {
       text: `INSERT INTO packagings (name) VALUES ($1::text) RETURNING *;`,
       values: [data.name],
     };
     try {
-      await this.req.pg.query("BEGIN");
-      const { rows }: QueryResult<Packaging> =
-        await this.req.pg.query<Packaging>(queryConfig);
+      return await this.fastify.transaction(async (client) => {
+        const { rows: packagings } = await client.query<Packaging>(queryConfig);
 
-      await this.req.pg.query("COMMIT");
-      return rows[0] ?? null;
+        if (data.warehouseIds && data.warehouseIds.length > 0) {
+          await client.query({
+            text: `INSERT INTO packaging_stocks (packaging_id, warehouse_id ) VALUES ${data.warehouseIds
+              .map((_, i) => {
+                return `($1, $${i + 2})`;
+              })
+              .join(", ")}`,
+            values: [packagings[0].id, ...data.warehouseIds],
+          });
+        }
+        return packagings[0];
+      });
     } catch (error: unknown) {
-      await this.req.pg.query("ROLLBACK");
       throw new CustomError({
         message: `PackagingRepo.create() method error: ${error}`,
         statusCode: StatusCodes.BAD_REQUEST,
@@ -236,30 +201,43 @@ export default class PackagingRepo {
     }
   }
 
-  async update(id: string, data: Partial<{ name: string }>): Promise<void> {
-    const sets: string[] = [];
-    const values: any[] = [];
-    let idx = 1;
-
-    if (data.name !== undefined) {
-      sets.push(`"name" = $${idx++}`);
-      values.push(data.name);
-    }
-
-    if (sets.length === 0) {
-      return;
-    }
-
-    values.push(id);
-
-    const queryConfig: QueryConfig = {
-      text: `UPDATE packagings SET ${sets.join(
-        ", "
-      )} WHERE id = $${idx} RETURNING *;`,
-      values,
-    };
+  async update(id: string, data: UpdatePackagingByIdBodyType): Promise<void> {
+ 
+    if (Object.keys(data).length == 0) return;
+    
     try {
-      await this.req.pg.query(queryConfig);
+      await this.fastify.transaction(async (client) => {
+        if (data.name) {
+          await client.query({
+            text: `UPDATE packagings SET name = $1::text WHERE id = $2::text RETURNING *;`,
+            values: [data.name, id],
+          });
+        }
+
+        if (data.warehouseIds) {
+          // delete warehouse
+          await client.query({
+            text: `DELETE packaging_stocks
+          WHERE packaging_id = $1::text 
+            AND warehouse_id NOT IN (${data.warehouseIds
+              .map((_, i) => {
+                return `$${i + 2}`;
+              })
+              .join(", ")}) 
+          RETURNING *;`,
+            values: [id, ...data.warehouseIds],
+          });
+          // insert warehouse
+          await client.query({
+            text: `INSERT INTO packaging_stocks (packaging_id, warehouse_id)
+          VALUES ${data.warehouseIds
+            .map((_, i) => `($1, $${i + 2})`)
+            .join(", ")} 
+          ON CONFLICT DO NOTHING;`,
+            values: [id, ...data.warehouseIds],
+          });
+        }
+      });
     } catch (error: unknown) {
       throw new CustomError({
         message: `PackagingRepo.update() method error: ${error}`,
@@ -276,7 +254,7 @@ export default class PackagingRepo {
     };
     try {
       const { rows }: QueryResult<Packaging> =
-        await this.req.pg.query<Packaging>(queryConfig);
+        await this.fastify.query<Packaging>(queryConfig);
       return rows[0] ?? null;
     } catch (error: unknown) {
       throw new CustomError({

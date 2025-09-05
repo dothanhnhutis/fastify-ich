@@ -12,21 +12,19 @@ const sortEnum = [
 
 const queryStringWarehouseSchema = Type.Partial(
   Type.Object({
-    username: Type.String({
+    name: Type.String({
       errorMessage: {
-        type: "Tên người dùng phải là chuỗi.",
+        type: "Tên kho hàng phải là chuỗi.",
       },
     }),
-    email: Type.String({
-      format: "email",
+    address: Type.String({
       errorMessage: {
-        type: "Email phải là chuỗi.",
-        format: "Email không đúng định dạng.",
+        type: "Địa chỉ kho phải là chuỗi.",
       },
     }),
-    disabled: Type.Boolean({
+    deleted: Type.Boolean({
       errorMessage: {
-        type: "Trạng thái phải là boolean.",
+        type: "Trạng thái kho phải là boolean.",
       },
     }),
     sort: Type.Array(
@@ -152,8 +150,10 @@ export const queryWarehousesSchema: FastifySchema = {
 export type GetWarehouseByIdParamsType = Static<typeof warehouseParamsSchema>;
 export type CreateWarehouseBodyType = Static<typeof createWarehouseBodySchema>;
 
-export type UpdateWarehouseParamsType = Static<typeof warehouseParamsSchema>;
-export type UpdateWarehouseBodyType = Static<
+export type UpdateWarehouseByIdParamsType = Static<
+  typeof warehouseParamsSchema
+>;
+export type UpdateWarehouseByIdBodyType = Static<
   typeof updateWarehouseByIdBodySchema
 >;
 

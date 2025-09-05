@@ -14,6 +14,7 @@ import { StatusCodes } from "http-status-codes";
 import UserRepo from "../db/repositories/user.repo";
 import RoleRepo from "../db/repositories/role.repo";
 import WarehouseRepo from "../db/repositories/warehouse.repo";
+import PackagingRepo from "../db/repositories/packaging.repo";
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -31,6 +32,7 @@ declare module "fastify" {
     users: UserRepo;
     roles: RoleRepo;
     warehouses: WarehouseRepo;
+    packagings: PackagingRepo;
   }
 }
 
@@ -79,6 +81,7 @@ async function postgresDB(fastify: FastifyInstance, options: PoolConfig) {
     req.users = new UserRepo(fastify);
     req.roles = new RoleRepo(fastify);
     req.warehouses = new WarehouseRepo(fastify);
+    req.packagings = new PackagingRepo(fastify);
   });
 
   fastify.addHook("onClose", async (instance) => {

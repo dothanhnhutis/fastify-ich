@@ -4,8 +4,8 @@ import {
   DeleteWarehouseByIdParamsType,
   GetWarehouseByIdParamsType,
   QueryWarehousesType,
-  UpdateWarehouseBodyType,
-  UpdateWarehouseParamsType,
+  UpdateWarehouseByIdBodyType,
+  UpdateWarehouseByIdParamsType,
 } from "./warehouse.schema";
 import { StatusCodes } from "http-status-codes";
 import { BadRequestError } from "@/shared/error-handler";
@@ -13,7 +13,15 @@ import { BadRequestError } from "@/shared/error-handler";
 export async function queryWarehousesController(
   req: FastifyRequest<{ Querystring: QueryWarehousesType }>,
   reply: FastifyReply
-) {}
+) {
+  const data = await req.warehouses.query(req.query);
+
+  reply.code(StatusCodes.OK).send({
+    statusCode: StatusCodes.OK,
+    statusText: "OK",
+    data,
+  });
+}
 
 export async function getWarehouseByIdController(
   req: FastifyRequest<{ Params: GetWarehouseByIdParamsType }>,
@@ -47,8 +55,8 @@ export async function createWarehouseController(
 
 export async function updateWarehouseByIdController(
   req: FastifyRequest<{
-    Params: UpdateWarehouseParamsType;
-    Body: UpdateWarehouseBodyType;
+    Params: UpdateWarehouseByIdParamsType;
+    Body: UpdateWarehouseByIdBodyType;
   }>,
   reply: FastifyReply
 ) {

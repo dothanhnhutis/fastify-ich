@@ -65,3 +65,10 @@ type Warehouse = {
   created_at: Date;
   updated_at: Date;
 };
+
+type Packaging = {
+  id: string;
+  name: string;
+  created_at: Date;
+  updated_at: Date;
+};
