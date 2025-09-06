@@ -94,7 +94,43 @@ export default class WarehouseRepo {
 
   async findById(id: string): Promise<Warehouse | null> {
     const queryConfig: QueryConfig = {
-      text: `SELECT * FROM warehouses WHERE id = $1 LIMIT 1`,
+      text: `SELECT
+              w.*,
+              count(ps.packaging_id) FILTER (
+                  WHERE
+                      p.deleted_at IS NULL
+              )::int AS packaging_count,
+              COALESCE(
+                  json_agg(
+                      json_build_object(
+                          'id',
+                          p.id,
+                          'name',
+                          p.name,
+                          'deleted_at',
+                          p.deleted_at,
+                          'created_at',
+                          to_char(p.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+                          'updated_at',
+                          to_char(p.updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+                          'quantity',
+                          ps.quantity
+                      )
+                  ) FILTER (
+                      WHERE
+                          p.deleted_at IS NULL
+                  ),
+                  '[]'
+              ) AS packagings
+          FROM
+              packaging_stocks ps
+              LEFT JOIN packagings p ON (ps.packaging_id = p.id)
+              LEFT JOIN warehouses w ON (ps.warehouse_id = w.id)
+          WHERE
+              warehouse_id = $1
+          GROUP BY
+              w.id 
+          LIMIT 1;`,
       values: [id],
     };
     try {
@@ -154,8 +190,38 @@ export default class WarehouseRepo {
 
     await this.fastify.transaction(async (client) => {
       if (data.packagingIds) {
+        if (data.packagingIds.length > 0) {
+          // delete warehouse
+          await client.query({
+            text: `DELETE FROM packaging_stocks
+            WHERE warehouse_id = $1::text 
+              AND packaging_id NOT IN (${data.packagingIds
+                .map((_, i) => {
+                  return `$${i + 2}::text`;
+                })
+                .join(", ")})
+            RETURNING *;`,
+            values: [id, ...data.packagingIds],
+          });
+          // insert warehouse
+          await client.query({
+            text: `INSERT INTO packaging_stocks (packaging_id, warehouse_id)
+          VALUES ${data.packagingIds
+            .map((_, i) => `($1, $${i + 2})`)
+            .join(", ")} 
+          ON CONFLICT DO NOTHING;`,
+            values: [id, ...data.packagingIds],
+          });
+        } else {
+          await client.query({
+            text: `DELETE FROM packaging_stocks
+            WHERE warehouse_id = $1::text RETURNING *;`,
+            values: [id],
+          });
+        }
       }
 
+      let idx = 1;
       const sets: string[] = [];
       const values: any[] = [];
       if (data.name !== undefined) {
@@ -172,54 +238,18 @@ export default class WarehouseRepo {
         sets.push(`"deleted_at" = $${idx++}`);
         values.push(data.isDelete ? new Date() : null);
       }
+      values.push(id);
 
-      if (values.length > 0) {
+      if (sets.length > 0) {
         const queryConfig: QueryConfig = {
           text: `UPDATE warehouses SET ${sets.join(
             ", "
           )} WHERE id = $${idx} RETURNING *;`,
           values,
         };
-
         const { rows: warehouses } = await client.query<Warehouse>(queryConfig);
       }
     });
-
-    const sets: string[] = [];
-    const values: any[] = [];
-    let idx = 1;
-
-    if (data.name !== undefined) {
-      sets.push(`"name" = $${idx++}`);
-      values.push(data.name);
-    }
-
-    if (data.address !== undefined) {
-      sets.push(`"address" = $${idx++}`);
-      values.push(data.address);
-    }
-
-    if (sets.length === 0) {
-      return;
-    }
-
-    values.push(id);
-
-    const queryConfig: QueryConfig = {
-      text: `UPDATE warehouses SET ${sets.join(
-        ", "
-      )} WHERE id = $${idx} RETURNING *;`,
-      values,
-    };
-    try {
-      await this.fastify.query(queryConfig);
-    } catch (error: unknown) {
-      throw new CustomError({
-        message: `WarehouseRepo.update() method error: ${error}`,
-        statusCode: StatusCodes.BAD_REQUEST,
-        statusText: "BAD_REQUEST",
-      });
-    }
   }
 
   async delete(id: string): Promise<Warehouse> {

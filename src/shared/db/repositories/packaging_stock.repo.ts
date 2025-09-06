@@ -15,18 +15,36 @@ type PackagingStock = {
 export default class PackagingStockRepo {
   constructor(private fastify: FastifyInstance) {}
 
-  async findById(id: string): Promise<PackagingStock | null> {
+  async findByWarehouseId(warehouse_id: string): Promise<PackagingStock[]> {
     const queryConfig: QueryConfig = {
-      text: `SELECT * FROM packaging_stocks WHERE id = $1 LIMIT 1;`,
-      values: [id],
+      text: `SELECT * FROM packaging_stocks WHERE warehouse_id = $1;`,
+      values: [warehouse_id],
     };
     try {
       const { rows }: QueryResult<PackagingStock> =
         await this.fastify.query<PackagingStock>(queryConfig);
-      return rows[0] ?? null;
+      return rows;
     } catch (error: unknown) {
       throw new CustomError({
-        message: `PackagingStockRepo.findById() method error: ${error}`,
+        message: `PackagingStockRepo.findByWarehouseId() method error: ${error}`,
+        statusCode: StatusCodes.BAD_REQUEST,
+        statusText: "BAD_REQUEST",
+      });
+    }
+  }
+
+  async findByPackagingId(packaging_id: string): Promise<PackagingStock[]> {
+    const queryConfig: QueryConfig = {
+      text: `SELECT * FROM packaging_stocks WHERE packaging_id = $1;`,
+      values: [packaging_id],
+    };
+    try {
+      const { rows }: QueryResult<PackagingStock> =
+        await this.fastify.query<PackagingStock>(queryConfig);
+      return rows;
+    } catch (error: unknown) {
+      throw new CustomError({
+        message: `PackagingStockRepo.findByPackagingId() method error: ${error}`,
         statusCode: StatusCodes.BAD_REQUEST,
         statusText: "BAD_REQUEST",
       });

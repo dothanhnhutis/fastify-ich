@@ -12,7 +12,9 @@ import {
 export default class PackagingRepo {
   constructor(private fastify: FastifyInstance) {}
 
-  async query(query: QueryPackagingsType): Promise<{ packagings: Packaging[]; metadata: Metadata }>  {
+  async query(
+    query: QueryPackagingsType
+  ): Promise<{ packagings: Packaging[]; metadata: Metadata }> {
     let queryString = ["SELECT * FROM packagings"];
     const values: any[] = [];
     let where: string[] = [];
@@ -23,7 +25,6 @@ export default class PackagingRepo {
         where.push(`name ILIKE $${idx++}::text`);
         values.push(`%${query.name.trim()}%`);
       }
-
 
       if (query.deleted != undefined) {
         where.push(
@@ -85,7 +86,7 @@ export default class PackagingRepo {
       throw new BadRequestError(`PackagingRepo.query() method error: ${error}`);
     }
   }
-  
+
   async findById(id: string): Promise<Packaging | null> {
     const queryConfig: QueryConfig = {
       text: `
@@ -167,9 +168,8 @@ export default class PackagingRepo {
   }
 
   async update(id: string, data: UpdatePackagingByIdBodyType): Promise<void> {
- 
     if (Object.keys(data).length == 0) return;
-    
+
     try {
       await this.fastify.transaction(async (client) => {
         if (data.name) {
@@ -180,27 +180,35 @@ export default class PackagingRepo {
         }
 
         if (data.warehouseIds) {
-          // delete warehouse
-          await client.query({
-            text: `DELETE packaging_stocks
-          WHERE packaging_id = $1::text 
-            AND warehouse_id NOT IN (${data.warehouseIds
-              .map((_, i) => {
-                return `$${i + 2}`;
-              })
-              .join(", ")}) 
-          RETURNING *;`,
-            values: [id, ...data.warehouseIds],
-          });
-          // insert warehouse
-          await client.query({
-            text: `INSERT INTO packaging_stocks (packaging_id, warehouse_id)
+          if (data.warehouseIds.length > 0) {
+            // delete warehouse
+            await client.query({
+              text: `DELETE FROM packaging_stocks
+            WHERE packaging_id = $1::text 
+              AND warehouse_id NOT IN (${data.warehouseIds
+                .map((_, i) => {
+                  return `$${i + 2}::text`;
+                })
+                .join(", ")})
+            RETURNING *;`,
+              values: [id, ...data.warehouseIds],
+            });
+            // insert warehouse
+            await client.query({
+              text: `INSERT INTO packaging_stocks (packaging_id, warehouse_id)
           VALUES ${data.warehouseIds
             .map((_, i) => `($1, $${i + 2})`)
             .join(", ")} 
           ON CONFLICT DO NOTHING;`,
-            values: [id, ...data.warehouseIds],
-          });
+              values: [id, ...data.warehouseIds],
+            });
+          } else {
+            await client.query({
+              text: `DELETE FROM packaging_stocks
+            WHERE packaging_id = $1::text RETURNING *;`,
+              values: [id],
+            });
+          }
         }
       });
     } catch (error: unknown) {
