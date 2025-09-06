@@ -2,7 +2,7 @@ import { FastifyInstance } from "fastify";
 import { QueryConfig, QueryResult } from "pg";
 import { StatusCodes } from "http-status-codes";
 
-import { CustomError } from "@/shared/error-handler";
+import { BadRequestError, CustomError } from "@/shared/error-handler";
 import {
   CreateWarehouseBodyType,
   QueryWarehousesType,
@@ -88,11 +88,7 @@ export default class WarehouseRepo {
         },
       };
     } catch (error: any) {
-      throw new CustomError({
-        message: `UserRepo.query() method error: ${error}`,
-        statusCode: StatusCodes.BAD_REQUEST,
-        statusText: "BAD_REQUEST",
-      });
+      throw new BadRequestError(`WarehouseRepo.query() method error: ${error}`);
     }
   }
 

@@ -2,104 +2,73 @@ import { FastifyInstance, FastifyRequest } from "fastify";
 import { QueryConfig, QueryResult } from "pg";
 import { StatusCodes } from "http-status-codes";
 
-import { CustomError } from "@/shared/error-handler";
+import { BadRequestError, CustomError } from "@/shared/error-handler";
 import {
   CreatePackagingBodyType,
+  QueryPackagingsType,
   UpdatePackagingByIdBodyType,
 } from "@/modules/v1/packagings/packaging.schema";
 
 export default class PackagingRepo {
   constructor(private fastify: FastifyInstance) {}
 
-  async query(data: {
-    name?: string;
-    sorts?: {
-      field: string;
-      direction: "asc" | "desc";
-    }[];
-    limit?: number;
-    page?: number;
-  }) {
-    let queryString = [
-      `
-      SELECT p.*,
-            sum(ps.quantity)::int,
-            COALESCE(
-                json_agg(
-                    json_build_object(
-                        'id',
-                        ps.id,
-                        'warehouse_id',
-                        ps.warehouse_id,
-                        'packaging_id',
-                        ps.packaging_id,
-                        'quantity',
-                        ps.quantity,
-                        'warehouse',
-                        row_to_json(w),
-                        'created_at',
-                        ps.created_at,
-                        'updated_at',
-                        ps.updated_at
-                    )
-                ) FILTER (
-                    WHERE ps.warehouse_id IS NOT NULL
-                ),
-                '[]'
-            ) AS items
-      FROM packagings p
-          LEFT JOIN packaging_stocks ps ON p.id = ps.packaging_id
-          LEFT JOIN warehouses w ON ps.warehouse_id = w.id
-      GROUP BY p.id;
-      `,
-    ];
+  async query(query: QueryPackagingsType): Promise<{ packagings: Packaging[]; metadata: Metadata }>  {
+    let queryString = ["SELECT * FROM packagings"];
     const values: any[] = [];
-
     let where: string[] = [];
     let idx = 1;
 
-    if (data.name != undefined) {
-      where.push(`WHERE name ILIKE $${idx++}::text`);
-      values.push(`%${data.name.trim()}%`);
-    }
-
     try {
-      const { rows } = await this.req.pg.query<{ count: string }>({
+      if (query.name != undefined) {
+        where.push(`name ILIKE $${idx++}::text`);
+        values.push(`%${query.name.trim()}%`);
+      }
+
+
+      if (query.deleted != undefined) {
+        where.push(
+          query.deleted ? `disabled_at IS NOT NULL` : `disabled_at IS NULL`
+        );
+      }
+
+      if (where.length > 0) {
+        queryString.push(`WHERE ${where.join(" AND ")}`);
+      }
+
+      const { rows } = await this.fastify.query<{ count: string }>({
         text: queryString.join(" ").replace("*", "count(*)"),
         values,
       });
-
       const totalItem = parseInt(rows[0].count);
 
-      const fieldAllow = ["name"];
-      if (data.sorts != undefined) {
+      if (query.sort != undefined) {
         queryString.push(
-          `ORDER BY ${data.sorts
-            .filter((sort) => fieldAllow.includes(sort.field))
-            .map((sort) => `${sort.field} ${sort.direction.toUpperCase()}`)
+          `ORDER BY ${query.sort
+            .map((sort) => {
+              const [field, direction] = sort.split(".");
+              return `${field} ${direction.toUpperCase()}`;
+            })
             .join(", ")}`
         );
       }
 
-      if (data.page != undefined) {
-        const limit = data.limit ?? totalItem;
-        const offset = (data.page - 1) * limit;
-        queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
-        values.push(limit, offset);
-      }
+      let limit = query.limit ?? totalItem;
+      let page = query.page ?? 1;
+      let offset = (page - 1) * limit;
+
+      queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
+      values.push(limit, offset);
 
       const queryConfig: QueryConfig = {
         text: queryString.join(" "),
         values,
       };
 
-      const { rows: packagings } = await this.req.pg.query<Warehouse>(
+      const { rows: packagings } = await this.fastify.query<Warehouse>(
         queryConfig
       );
 
-      const limit = data.limit ?? totalItem;
       const totalPage = Math.ceil(totalItem / limit);
-      const page = data.page ?? 1;
 
       return {
         packagings,
@@ -107,20 +76,16 @@ export default class PackagingRepo {
           totalItem,
           totalPage,
           hasNextPage: page < totalPage,
-          limit,
-          itemStart: (page - 1) * limit + 1,
+          limit: totalItem > 0 ? limit : 0,
+          itemStart: totalItem > 0 ? (page - 1) * limit + 1 : 0,
           itemEnd: Math.min(page * limit, totalItem),
         },
       };
     } catch (error: any) {
-      throw new CustomError({
-        message: `PackagingRepo.query() method error: ${error}`,
-        statusCode: StatusCodes.BAD_REQUEST,
-        statusText: "BAD_REQUEST",
-      });
+      throw new BadRequestError(`PackagingRepo.query() method error: ${error}`);
     }
   }
-
+  
   async findById(id: string): Promise<Packaging | null> {
     const queryConfig: QueryConfig = {
       text: `

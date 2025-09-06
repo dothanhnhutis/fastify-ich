@@ -117,9 +117,9 @@ export const updatePackagingByIdSchema: FastifySchema = {
 
 export const deletePackagingByIdSchema: FastifySchema = getPackagingByIdSchema;
 
+export type QueryPackagingsType = Static<typeof queryStringWarehouseSchema>;
 export type GetPackagingByIdType = Static<typeof packagingParamsSchema>;
 
-export type QueryPackagingsType = Static<typeof queryStringWarehouseSchema>;
 export type CreatePackagingBodyType = Static<typeof createPackagingBodySchema>;
 
 export type UpdatePackagingByIdParamsType = Static<

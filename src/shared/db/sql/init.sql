@@ -172,15 +172,12 @@ $$;
 
 --- Function return trigger check quantity befoce DELTE packaging_stocks
 CREATE OR REPLACE FUNCTION check_quantity_before_delete () RETURNS TRIGGER AS $$
-BEGIN IF OLD.quantity > 0 THEN RAISE EXCEPTION 'Không thể xoá vì quantity = % (phải bằng 0)',
-OLD.quantity;
-
-END IF;
-
-RETURN OLD;
-
+BEGIN 
+    IF OLD.quantity > 0 THEN 
+        RAISE EXCEPTION 'Không thể xoá vì quantity = % (phải bằng 0)', OLD.quantity;
+    END IF;
+    RETURN OLD;
 END;
-
 $$ LANGUAGE plpgsql;
 
 --- 
