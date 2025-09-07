@@ -9,11 +9,13 @@ import {
 } from "./warehouse.schema";
 import { StatusCodes } from "http-status-codes";
 import { BadRequestError } from "@/shared/error-handler";
+import { QueryPackagingsType } from "../packagings/packaging.schema";
 
 export async function queryWarehousesController(
   req: FastifyRequest<{ Querystring: QueryWarehousesType }>,
   reply: FastifyReply
 ) {
+  console.log(req.query);
   const data = await req.warehouses.query(req.query);
 
   reply.code(StatusCodes.OK).send({
@@ -35,6 +37,40 @@ export async function getWarehouseByIdController(
     data: {
       warehouse,
     },
+  });
+}
+
+export async function getWarehousePackagingsByIdController(
+  req: FastifyRequest<{
+    Params: GetWarehouseByIdParamsType;
+    Querystring: QueryPackagingsType;
+  }>,
+  reply: FastifyReply
+) {
+  const warehouse = await req.warehouses.findById(req.params.id);
+  if (!warehouse) throw new BadRequestError("Nhà kho không tồn tại.");
+  const detail = await req.packaging_stocks.findByWarehouseId(
+    req.params.id,
+    req.query
+  );
+  reply.code(StatusCodes.OK).send({
+    statusCode: StatusCodes.OK,
+    statusText: "OK",
+    packagings: detail,
+  });
+}
+
+export async function getWarehouseDetailByIdController(
+  req: FastifyRequest<{ Params: GetWarehouseByIdParamsType }>,
+  reply: FastifyReply
+) {
+  const warehouse = await req.warehouses.findById(req.params.id);
+  if (!warehouse) throw new BadRequestError("Nhà kho không tồn tại.");
+  const detail = await req.warehouses.findWarehouseDetailById(req.params.id);
+  reply.code(StatusCodes.OK).send({
+    statusCode: StatusCodes.OK,
+    statusText: "OK",
+    packagings: detail,
   });
 }
 

@@ -3,14 +3,17 @@ import { FastifyInstance } from "fastify";
 import {
   createWarehouseController,
   deleteWarehouseByIdController,
+  getWarehousePackagingsByIdController,
   getWarehouseByIdController,
   queryWarehousesController,
   updateWarehouseByIdController,
+  getWarehouseDetailByIdController,
 } from "./warehouse.controller";
 import {
   createWarehouseSchema,
   deleteWarehouseByIdSchema,
   getWarehouseByIdSchema,
+  getWarehousePackagingsByIdSchema,
   queryWarehousesSchema,
   updateWarehouseByIdSchema,
 } from "./warehouse.schema";
@@ -26,6 +29,30 @@ export default async function userRoutes(fastify: FastifyInstance) {
       ],
     },
     queryWarehousesController
+  );
+
+  fastify.get(
+    "/:id/detail",
+    {
+      schema: getWarehouseByIdSchema,
+      preHandler: [
+        requiredAuthMiddleware,
+        // checkPermissionMiddleware(["read:warehouse:id"]),
+      ],
+    },
+    getWarehouseDetailByIdController
+  );
+
+  fastify.get(
+    "/:id/packagings",
+    {
+      schema: getWarehousePackagingsByIdSchema,
+      preHandler: [
+        requiredAuthMiddleware,
+        // checkPermissionMiddleware(["read:warehouse:id"]),
+      ],
+    },
+    getWarehousePackagingsByIdController
   );
 
   fastify.get(

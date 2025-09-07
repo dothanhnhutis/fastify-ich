@@ -15,7 +15,20 @@ export default class WarehouseRepo {
   async query(
     query: QueryWarehousesType
   ): Promise<{ warehouses: Warehouse[]; metadata: Metadata }> {
-    let queryString = ["SELECT * FROM warehouses"];
+    let queryString = [
+      `
+      SELECT
+        w.*,
+          count(ps.packaging_id) FILTER (
+              WHERE
+                  p.deleted_at IS NULL
+          )::int AS packaging_count
+      FROM
+        packaging_stocks ps
+        LEFT JOIN packagings p ON (ps.packaging_id = p.id)
+        LEFT JOIN warehouses w ON (ps.warehouse_id = w.id)
+      `,
+    ];
     const values: any[] = [];
     let where: string[] = [];
     let idx = 1;
@@ -36,16 +49,32 @@ export default class WarehouseRepo {
           query.deleted ? `disabled_at IS NOT NULL` : `disabled_at IS NULL`
         );
       }
+      console.log(query.created_from);
+
+      if (query.created_from) {
+        where.push(`w.created_at >= $${idx++}::timestamptz`);
+        values.push(`${query.created_from.trim()}%`);
+      }
+
+      if (query.created_to) {
+        where.push(`w.created_at <= $${idx++}::timestamptz`);
+        values.push(`${query.created_to.trim()}`);
+      }
 
       if (where.length > 0) {
         queryString.push(`WHERE ${where.join(" AND ")}`);
       }
 
-      const { rows } = await this.fastify.query<{ count: string }>({
-        text: queryString.join(" ").replace("*", "count(*)"),
+      queryString.push("GROUP BY w.id");
+
+      const { rows } = await this.fastify.query<{ total_groups: string }>({
+        text: `WITH grouped AS (${queryString.join(
+          " "
+        )}) SELECT  COUNT(*)::int AS total_groups FROM grouped;`,
         values,
       });
-      const totalItem = parseInt(rows[0].count);
+
+      const totalItem = parseInt(rows[0].total_groups);
 
       if (query.sort != undefined) {
         queryString.push(
@@ -95,47 +124,81 @@ export default class WarehouseRepo {
   async findById(id: string): Promise<Warehouse | null> {
     const queryConfig: QueryConfig = {
       text: `SELECT
-              w.*,
-              count(ps.packaging_id) FILTER (
-                  WHERE
-                      p.deleted_at IS NULL
-              )::int AS packaging_count,
-              COALESCE(
-                  json_agg(
-                      json_build_object(
-                          'id',
-                          p.id,
-                          'name',
-                          p.name,
-                          'deleted_at',
-                          p.deleted_at,
-                          'created_at',
-                          to_char(p.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
-                          'updated_at',
-                          to_char(p.updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
-                          'quantity',
-                          ps.quantity
-                      )
-                  ) FILTER (
-                      WHERE
-                          p.deleted_at IS NULL
-                  ),
-                  '[]'
-              ) AS packagings
-          FROM
-              packaging_stocks ps
-              LEFT JOIN packagings p ON (ps.packaging_id = p.id)
-              LEFT JOIN warehouses w ON (ps.warehouse_id = w.id)
-          WHERE
-              warehouse_id = $1
-          GROUP BY
-              w.id 
-          LIMIT 1;`,
+                w.*,
+                count(ps.packaging_id) FILTER (
+                    WHERE
+                        p.deleted_at IS NULL
+                )::int AS packaging_count
+            FROM
+                packaging_stocks ps
+                LEFT JOIN packagings p ON (ps.packaging_id = p.id)
+                LEFT JOIN warehouses w ON (ps.warehouse_id = w.id)
+            WHERE warehouse_id = $1
+            GROUP BY
+                w.id`,
       values: [id],
     };
     try {
       const { rows }: QueryResult<Warehouse> =
         await this.fastify.query<Warehouse>(queryConfig);
+      return rows[0] ?? null;
+    } catch (error: any) {
+      throw new CustomError({
+        message: `WarehouseRepo.findById() method error: ${error}`,
+        statusCode: StatusCodes.BAD_REQUEST,
+        statusText: "BAD_REQUEST",
+      });
+    }
+  }
+
+  async findWarehouseDetailById(id: string): Promise<WarehouseDetail | null> {
+    const queryConfig: QueryConfig = {
+      text: `SELECT
+                w.*,
+                count(ps.packaging_id) FILTER (
+                    WHERE
+                        p.deleted_at IS NULL
+                )::int AS packaging_count,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'id',
+                            p.id,
+                            'name',
+                            p.name,
+                            'deleted_at',
+                            to_char(
+                                p.created_at AT TIME ZONE 'UTC',
+                                'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                            ),
+                            'updated_at',
+                            to_char(
+                                p.updated_at AT TIME ZONE 'UTC',
+                                'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                            ),
+                            'quantity',
+                            ps.quantity
+                        )
+                    ) FILTER (
+                        WHERE
+                            p.deleted_at IS NULL
+                    ),
+                    '[]'
+                ) AS packagings
+            FROM
+                packaging_stocks ps
+                LEFT JOIN packagings p ON (ps.packaging_id = p.id)
+                LEFT JOIN warehouses w ON (ps.warehouse_id = w.id)
+            WHERE
+                warehouse_id = $1
+            GROUP BY
+                w.id
+            LIMIT 1;`,
+      values: [id],
+    };
+    try {
+      const { rows }: QueryResult<WarehouseDetail> =
+        await this.fastify.query<WarehouseDetail>(queryConfig);
       return rows[0] ?? null;
     } catch (error: any) {
       throw new CustomError({

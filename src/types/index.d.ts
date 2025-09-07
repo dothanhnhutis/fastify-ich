@@ -62,6 +62,19 @@ type Warehouse = {
   id: string;
   name: string;
   address: string;
+  deleted_at: Date;
+  packaging_count: number;
+  created_at: Date;
+  updated_at: Date;
+};
+
+type WarehouseDetail = {
+  id: string;
+  name: string;
+  address: string;
+  deleted_at: Date;
+  packaging_count: number;
+  packagings: Packaging & { quantity: number }[];
   created_at: Date;
   updated_at: Date;
 };
@@ -69,6 +82,7 @@ type Warehouse = {
 type Packaging = {
   id: string;
   name: string;
+  deleted_at: Date;
   created_at: Date;
   updated_at: Date;
 };

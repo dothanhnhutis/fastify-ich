@@ -1,9 +1,20 @@
 import { Static, Type } from "@sinclair/typebox";
 import { FastifySchema } from "fastify";
 
-const sortEnum = ["name.asc", "name.desc", "deleted.asc", "deleted.desc"];
+const sortEnum = [
+  "name.asc",
+  "name.desc",
+  "deleted.asc",
+  "deleted.desc",
+  "created_at.asc",
+  "created_at.desc",
+  "updated_at.asc",
+  "updated_at.desc",
+  "quantity.asc",
+  "quantity.desc",
+];
 
-const queryStringWarehouseSchema = Type.Partial(
+const queryStringPackagingSchema = Type.Partial(
   Type.Object({
     name: Type.String({
       errorMessage: {
@@ -100,7 +111,7 @@ const packagingParamsSchema = Type.Object({
 });
 
 export const queryPackagingsSchema: FastifySchema = {
-  querystring: queryStringWarehouseSchema,
+  querystring: queryStringPackagingSchema,
 };
 export const getPackagingByIdSchema: FastifySchema = {
   params: packagingParamsSchema,
@@ -117,7 +128,7 @@ export const updatePackagingByIdSchema: FastifySchema = {
 
 export const deletePackagingByIdSchema: FastifySchema = getPackagingByIdSchema;
 
-export type QueryPackagingsType = Static<typeof queryStringWarehouseSchema>;
+export type QueryPackagingsType = Static<typeof queryStringPackagingSchema>;
 export type GetPackagingByIdType = Static<typeof packagingParamsSchema>;
 
 export type CreatePackagingBodyType = Static<typeof createPackagingBodySchema>;

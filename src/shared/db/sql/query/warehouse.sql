@@ -1,3 +1,59 @@
+--- count row afater GROUP BY
+WITH
+    grouped AS (
+        SELECT
+            w.*,
+            count(ps.packaging_id) FILTER (
+                WHERE
+                    p.deleted_at IS NULL
+            ) AS packaging_count
+        FROM
+            packaging_stocks ps
+            LEFT JOIN packagings p ON (ps.packaging_id = p.id)
+            LEFT JOIN warehouses w ON (ps.warehouse_id = w.id)
+        GROUP BY
+            w.id
+    )
+SELECT
+    COUNT(*)::int AS total_groups
+FROM
+    grouped;
+
+---
+SELECT
+    w.*,
+    count(ps.packaging_id) FILTER (
+        WHERE
+            p.deleted_at IS NULL
+    ) AS packaging_count
+FROM
+    packaging_stocks ps
+    LEFT JOIN packagings p ON (ps.packaging_id = p.id)
+    LEFT JOIN warehouses w ON (ps.warehouse_id = w.id)
+    -- WHERE
+    --     warehouse_id = '8a6a5a04-33fe-4f41-a0a0-b5da135d68c0'
+WHERE
+    created_at >= '2025-09-07T00:00:00Z'::timestamptz
+GROUP BY
+    w.id;
+
+---
+SELECT
+    w.*,
+    COUNT(ps.packaging_id) FILTER (
+        WHERE
+            p.deleted_at IS NULL
+    ) AS packaging_count
+FROM
+    packaging_stocks ps
+    LEFT JOIN packagings p ON ps.packaging_id = p.id
+    LEFT JOIN warehouses w ON ps.warehouse_id = w.id
+WHERE
+    w.created_at >= '2025-09-06T00:00:0Z'::timestamptz
+GROUP BY
+    w.id;
+
+--- get full
 SELECT
     w.*,
     count(ps.packaging_id) FILTER (
@@ -35,25 +91,8 @@ FROM
     LEFT JOIN packagings p ON (ps.packaging_id = p.id)
     LEFT JOIN warehouses w ON (ps.warehouse_id = w.id)
 WHERE
-    warehouse_id = 'dc9f16f5-abec-4102-9da2-46b2e725a803'
+    warehouse_id = 'ed2e320e-d0db-4be7-8a0b-fa387f2ef045'
 GROUP BY
     w.id
 LIMIT
     1;
-
-SELECT
-    *
-from
-    packaging_stocks;
-
---- query
-SELECT
-    w.*,
-    COUNT(w.id) as count
-FROM
-    warehouses w
-    LEFT JOIN packaging_stocks ps ON (w.id = ps.warehouse_id)
-WHERE
-    name ILIKE '%Nhà %'
-GROUP BY
-    w.id;

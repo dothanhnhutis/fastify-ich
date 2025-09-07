@@ -15,6 +15,7 @@ import UserRepo from "../db/repositories/user.repo";
 import RoleRepo from "../db/repositories/role.repo";
 import WarehouseRepo from "../db/repositories/warehouse.repo";
 import PackagingRepo from "../db/repositories/packaging.repo";
+import PackagingStockRepo from "../db/repositories/packaging_stock.repo";
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -33,6 +34,7 @@ declare module "fastify" {
     roles: RoleRepo;
     warehouses: WarehouseRepo;
     packagings: PackagingRepo;
+    packaging_stocks: PackagingStockRepo;
   }
 }
 
@@ -82,6 +84,7 @@ async function postgresDB(fastify: FastifyInstance, options: PoolConfig) {
     req.roles = new RoleRepo(fastify);
     req.warehouses = new WarehouseRepo(fastify);
     req.packagings = new PackagingRepo(fastify);
+    req.packaging_stocks = new PackagingStockRepo(fastify);
   });
 
   fastify.addHook("onClose", async (instance) => {
