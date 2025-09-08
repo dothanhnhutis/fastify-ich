@@ -79,6 +79,13 @@ export async function createWarehouseController(
   req: FastifyRequest<{ Body: CreateWarehouseBodyType }>,
   reply: FastifyReply
 ) {
+  if (req.body.packagingIds) {
+    for (const packagingId of req.body.packagingIds) {
+      const existsPackaging = await req.packagings.findById(packagingId);
+      if (!existsPackaging)
+        throw new BadRequestError(`Mã bao bì id=${packagingId} không tồn tại`);
+    }
+  }
   const role = await req.warehouses.create(req.body);
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,

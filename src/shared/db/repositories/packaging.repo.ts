@@ -92,7 +92,7 @@ export default class PackagingRepo {
       text: `
         SELECT
             p.*,
-            SUM(ps.quantity) AS quantity
+            SUM(ps.quantity)::int AS quantity
         FROM
             packagings p
             LEFT JOIN packaging_stocks ps ON (p.id = ps.packaging_id)
@@ -109,11 +109,9 @@ export default class PackagingRepo {
         await this.fastify.query<Packaging>(queryConfig);
       return rows[0] ?? null;
     } catch (error: any) {
-      throw new CustomError({
-        message: `PackagingRepo.findById() method error: ${error}`,
-        statusCode: StatusCodes.BAD_REQUEST,
-        statusText: "BAD_REQUEST",
-      });
+      throw new BadRequestError(
+        `PackagingRepo.findById() method error: ${error}`
+      );
     }
   }
 
@@ -139,11 +137,9 @@ export default class PackagingRepo {
         return packagings[0];
       });
     } catch (error: unknown) {
-      throw new CustomError({
-        message: `PackagingRepo.create() method error: ${error}`,
-        statusCode: StatusCodes.BAD_REQUEST,
-        statusText: "BAD_REQUEST",
-      });
+      throw new BadRequestError(
+        `PackagingRepo.create() method error: ${error}`
+      );
     }
   }
 

@@ -74,7 +74,7 @@ type WarehouseDetail = {
   address: string;
   deleted_at: Date;
   packaging_count: number;
-  packagings: Packaging & { quantity: number }[];
+  packagings: (Packaging & { quantity: number })[];
   created_at: Date;
   updated_at: Date;
 };
