@@ -12,8 +12,8 @@ import {
 import {
   createWarehouseSchema,
   deleteWarehouseByIdSchema,
+  getPackagingsByWarehouseIdSchema,
   getWarehouseByIdSchema,
-  getWarehousePackagingsByIdSchema,
   queryWarehousesSchema,
   updateWarehouseByIdSchema,
 } from "./warehouse.schema";
@@ -46,7 +46,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/:id/packagings",
     {
-      schema: getWarehousePackagingsByIdSchema,
+      schema: getPackagingsByWarehouseIdSchema,
       preHandler: [
         requiredAuthMiddleware,
         // checkPermissionMiddleware(["read:warehouse:id"]),

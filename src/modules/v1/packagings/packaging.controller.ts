@@ -61,14 +61,10 @@ export async function updatePackagingByIdController(
   }>,
   reply: FastifyReply
 ) {
-
-
-  // const packaging = await req.packagings.findById(req.params.id);
-  // if (!packaging) throw new BadRequestError("Bao bì không tồn tại.");
+  const packaging = await req.packagings.findById(req.params.id);
+  if (!packaging) throw new BadRequestError("Bao bì không tồn tại.");
 
   // kiem tra warehouse
-
-
 
   await req.packagings.update(req.params.id, req.body);
   reply.code(StatusCodes.OK).send({

@@ -13,7 +13,7 @@ const sortPackagingEnum = [
   "quantity.asc",
   "quantity.desc",
 ];
-export const queryStringPackagingSchema = Type.Partial(
+export const queryStringPackagingByWarehouseIdSchema = Type.Partial(
   Type.Object({
     name: Type.String({
       errorMessage: {
@@ -23,6 +23,24 @@ export const queryStringPackagingSchema = Type.Partial(
     deleted: Type.Boolean({
       errorMessage: {
         type: "Trạng thái bao bì phải là boolean.",
+      },
+    }),
+    created_from: Type.String({
+      pattern:
+        "^(?:\\d{4}-\\d{2}-\\d{2}|(?:\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})))$",
+      errorMessage: {
+        type: "created_from phải là chuỗi.",
+        pattern:
+          "created_from phải có định dạng YYYY-MM-DD hoặc date-time RFC3339.",
+      },
+    }),
+    created_to: Type.String({
+      pattern:
+        "^(?:\\d{4}-\\d{2}-\\d{2}|(?:\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})))$",
+      errorMessage: {
+        type: "created_to phải là chuỗi.",
+        pattern:
+          "created_to phải có định dạng YYYY-MM-DD hoặc date-time RFC3339.",
       },
     }),
     sort: Type.Array(
@@ -84,7 +102,8 @@ const queryStringWarehouseSchema = Type.Partial(
       },
     }),
     created_from: Type.String({
-      pattern: `^(?:\\d{4}-\\d{2}-\\d{2}|(?:\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})))$`,
+      pattern:
+        "^(?:\\d{4}-\\d{2}-\\d{2}|(?:\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})))$",
       errorMessage: {
         type: "created_from phải là chuỗi.",
         pattern:
@@ -92,7 +111,8 @@ const queryStringWarehouseSchema = Type.Partial(
       },
     }),
     created_to: Type.String({
-      pattern: `/^(?:\\d{4}-\\d{2}-\\d{2}|(?:\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})))$/`,
+      pattern:
+        "^(?:\\d{4}-\\d{2}-\\d{2}|(?:\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})))$",
       errorMessage: {
         type: "created_to phải là chuỗi.",
         pattern:
@@ -176,8 +196,10 @@ const updateWarehouseByIdBodySchema = Type.Partial(
     }),
     packagingIds: Type.Array(
       Type.String({
+        minLength: 1,
         errorMessage: {
           type: "Mã bao bì phải là chuỗi.",
+          minLength: "Mã bao bì không được trống.",
         },
       }),
       {
@@ -202,9 +224,9 @@ export const getWarehouseByIdSchema: FastifySchema = {
   params: warehouseParamsSchema,
 };
 
-export const getWarehousePackagingsByIdSchema: FastifySchema = {
+export const getPackagingsByWarehouseIdSchema: FastifySchema = {
   params: warehouseParamsSchema,
-  querystring: queryStringPackagingSchema,
+  querystring: queryStringPackagingByWarehouseIdSchema,
 };
 
 export const createWarehouseSchema: FastifySchema = {
@@ -223,6 +245,13 @@ export const deleteWarehouseByIdSchema: FastifySchema = {
 export const queryWarehousesSchema: FastifySchema = {
   querystring: queryStringWarehouseSchema,
 };
+
+export type GetPackagingsByWarehouseIdParamsType = Static<
+  typeof warehouseParamsSchema
+>;
+export type GetPackagingsByWarehouseIdQueryType = Static<
+  typeof queryStringPackagingByWarehouseIdSchema
+>;
 
 export type GetWarehouseByIdParamsType = Static<typeof warehouseParamsSchema>;
 export type CreateWarehouseBodyType = Static<typeof createWarehouseBodySchema>;

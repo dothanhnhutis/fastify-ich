@@ -89,8 +89,10 @@ const updatePackagingBodySchema = Type.Partial(
     }),
     warehouseIds: Type.Array(
       Type.String({
+        minLength: 1,
         errorMessage: {
           type: "Mã kho hàng phải là chuỗi.",
+          minLength: "Mã kho hàng không được trống.",
         },
       }),
       {

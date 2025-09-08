@@ -7,11 +7,13 @@ WITH
             packaging_stocks ps
             LEFT JOIN packagings p ON (ps.packaging_id = p.id)
         WHERE
-            ps.warehouse_id = '8a6a5a04-33fe-4f41-a0a0-b5da135d68c0'
+            ps.warehouse_id = '2d4d3ce0-96fc-4083-a2ce-14fb0cb14e46'
     )
 SELECT
-    COUNT(*)
+    *
 FROM
-    packaging_stocks;
+    packaging_stocks
+ORDER BY
+    name ASC;
 
 ---

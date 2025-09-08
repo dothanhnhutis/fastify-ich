@@ -8,6 +8,7 @@ import {
   QueryWarehousesType,
   UpdateWarehouseByIdBodyType,
 } from "@/modules/v1/warehouses/warehouse.schema";
+import { isDataString } from "@/shared/utils";
 
 export default class WarehouseRepo {
   constructor(private fastify: FastifyInstance) {}
@@ -49,16 +50,27 @@ export default class WarehouseRepo {
           query.deleted ? `disabled_at IS NOT NULL` : `disabled_at IS NULL`
         );
       }
-      console.log(query.created_from);
 
       if (query.created_from) {
         where.push(`w.created_at >= $${idx++}::timestamptz`);
-        values.push(`${query.created_from.trim()}%`);
+        values.push(
+          `${
+            isDataString(query.created_from.trim())
+              ? `${query.created_from.trim()}T00:00:00.000Z`
+              : query.created_from.trim()
+          }`
+        );
       }
 
       if (query.created_to) {
         where.push(`w.created_at <= $${idx++}::timestamptz`);
-        values.push(`${query.created_to.trim()}`);
+        values.push(
+          `${
+            isDataString(query.created_to.trim())
+              ? `${query.created_to.trim()}T23:59:59.999Z`
+              : query.created_to.trim()
+          }`
+        );
       }
 
       if (where.length > 0) {
@@ -77,14 +89,20 @@ export default class WarehouseRepo {
       const totalItem = parseInt(rows[0].total_groups);
 
       if (query.sort != undefined) {
-        queryString.push(
-          `ORDER BY ${query.sort
-            .map((sort) => {
-              const [field, direction] = sort.split(".");
-              return `${field} ${direction.toUpperCase()}`;
-            })
-            .join(", ")}`
+        const unqueField = query.sort.reduce<Record<string, string>>(
+          (prev, curr) => {
+            const [field, direction] = curr.split(".");
+            prev[field] = direction.toUpperCase();
+            return prev;
+          },
+          {}
         );
+
+        const orderBy = Object.entries(unqueField)
+          .map(([field, direction]) => `${field} ${direction}`)
+          .join(", ");
+
+        queryString.push(`ORDER BY ${orderBy}`);
       }
 
       let limit = query.limit ?? totalItem;

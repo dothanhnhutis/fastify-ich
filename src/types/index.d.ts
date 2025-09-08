@@ -82,6 +82,7 @@ type WarehouseDetail = {
 type Packaging = {
   id: string;
   name: string;
+  quantity: number;
   deleted_at: Date;
   created_at: Date;
   updated_at: Date;

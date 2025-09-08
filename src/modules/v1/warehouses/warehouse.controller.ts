@@ -2,6 +2,8 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import {
   CreateWarehouseBodyType,
   DeleteWarehouseByIdParamsType,
+  GetPackagingsByWarehouseIdParamsType,
+  GetPackagingsByWarehouseIdQueryType,
   GetWarehouseByIdParamsType,
   QueryWarehousesType,
   UpdateWarehouseByIdBodyType,
@@ -15,7 +17,6 @@ export async function queryWarehousesController(
   req: FastifyRequest<{ Querystring: QueryWarehousesType }>,
   reply: FastifyReply
 ) {
-  console.log(req.query);
   const data = await req.warehouses.query(req.query);
 
   reply.code(StatusCodes.OK).send({
@@ -42,8 +43,8 @@ export async function getWarehouseByIdController(
 
 export async function getWarehousePackagingsByIdController(
   req: FastifyRequest<{
-    Params: GetWarehouseByIdParamsType;
-    Querystring: QueryPackagingsType;
+    Params: GetPackagingsByWarehouseIdParamsType;
+    Querystring: GetPackagingsByWarehouseIdQueryType;
   }>,
   reply: FastifyReply
 ) {
@@ -98,6 +99,14 @@ export async function updateWarehouseByIdController(
 ) {
   const warehouse = await req.warehouses.findById(req.params.id);
   if (!warehouse) throw new BadRequestError("Nhà kho không tồn tại.");
+
+  if (req.body.packagingIds) {
+    for (const packagingId of req.body.packagingIds) {
+      const existsPackaging = await req.packagings.findById(packagingId);
+      if (!existsPackaging)
+        throw new BadRequestError(`Mã bao bì id=${packagingId} không tồn tại`);
+    }
+  }
 
   await req.warehouses.update(warehouse.id, req.body);
 

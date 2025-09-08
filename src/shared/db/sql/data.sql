@@ -25,44 +25,52 @@ INSERT INTO
     packaging_stocks (warehouse_id, packaging_id)
 VALUES
     (
-        '8a6a5a04-33fe-4f41-a0a0-b5da135d68c0',
-        'a433df4f-67db-4399-a2be-32c0897fc9fe'
+        '2d4d3ce0-96fc-4083-a2ce-14fb0cb14e46',
+        '46bb7b71-dca6-4669-8558-7c7f9e5c3ea1'
     ),
     (
-        '8a6a5a04-33fe-4f41-a0a0-b5da135d68c0',
-        '712070f8-ade6-4427-ac28-8e34d1a4a1a3'
+        '2d4d3ce0-96fc-4083-a2ce-14fb0cb14e46',
+        '59e00e12-361e-4bf0-86f2-716b2dca92f8'
     ),
     (
-        '8a6a5a04-33fe-4f41-a0a0-b5da135d68c0',
-        '5468772a-ef5c-4846-a3eb-49cb834e975c'
+        '2d4d3ce0-96fc-4083-a2ce-14fb0cb14e46',
+        '96d29ca5-615c-420a-bfc8-e42ee1be86a3'
     ),
     (
-        '8a6a5a04-33fe-4f41-a0a0-b5da135d68c0',
-        'ba235b91-f959-4006-ad4d-084b67f1e146'
+        '2d4d3ce0-96fc-4083-a2ce-14fb0cb14e46',
+        '12c5dc7f-b6aa-4004-88ac-8126c462b2f5'
     ),
     (
-        '8a6a5a04-33fe-4f41-a0a0-b5da135d68c0',
-        'cb34875f-96fe-449b-b797-a994703cf0ec'
+        '2d4d3ce0-96fc-4083-a2ce-14fb0cb14e46',
+        '81eec03a-8195-4e29-ba24-7a42cc117045'
     ),
     (
-        'ed2e320e-d0db-4be7-8a0b-fa387f2ef045',
-        'a433df4f-67db-4399-a2be-32c0897fc9fe'
+        '2d4d3ce0-96fc-4083-a2ce-14fb0cb14e46',
+        'b4bdb315-18c5-44a7-b110-16779e4934b5'
     ),
     (
-        'ed2e320e-d0db-4be7-8a0b-fa387f2ef045',
-        '712070f8-ade6-4427-ac28-8e34d1a4a1a3'
+        '9b1b199a-fa23-44b5-9214-20046aad3a14',
+        '46bb7b71-dca6-4669-8558-7c7f9e5c3ea1'
     ),
     (
-        'ed2e320e-d0db-4be7-8a0b-fa387f2ef045',
-        '5468772a-ef5c-4846-a3eb-49cb834e975c'
+        '9b1b199a-fa23-44b5-9214-20046aad3a14',
+        '59e00e12-361e-4bf0-86f2-716b2dca92f8'
     ),
     (
-        'ed2e320e-d0db-4be7-8a0b-fa387f2ef045',
-        'ba235b91-f959-4006-ad4d-084b67f1e146'
+        '9b1b199a-fa23-44b5-9214-20046aad3a14',
+        '96d29ca5-615c-420a-bfc8-e42ee1be86a3'
     ),
     (
-        'ed2e320e-d0db-4be7-8a0b-fa387f2ef045',
-        'cb34875f-96fe-449b-b797-a994703cf0ec'
+        '9b1b199a-fa23-44b5-9214-20046aad3a14',
+        '12c5dc7f-b6aa-4004-88ac-8126c462b2f5'
+    ),
+    (
+        '9b1b199a-fa23-44b5-9214-20046aad3a14',
+        '81eec03a-8195-4e29-ba24-7a42cc117045'
+    ),
+    (
+        '9b1b199a-fa23-44b5-9214-20046aad3a14',
+        'b4bdb315-18c5-44a7-b110-16779e4934b5'
     )
 RETURNING
     *;

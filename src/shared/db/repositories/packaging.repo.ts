@@ -90,40 +90,20 @@ export default class PackagingRepo {
   async findById(id: string): Promise<Packaging | null> {
     const queryConfig: QueryConfig = {
       text: `
-      SELECT p.*,
-            sum(ps.quantity)::int,
-            COALESCE(
-                json_agg(
-                    json_build_object(
-                        'id',
-                        ps.id,
-                        'warehouse_id',
-                        ps.warehouse_id,
-                        'packaging_id',
-                        ps.packaging_id,
-                        'quantity',
-                        ps.quantity,
-                        'warehouse',
-                        row_to_json(w),
-                        'created_at',
-                        ps.created_at,
-                        'updated_at',
-                        ps.updated_at
-                    )
-                ) FILTER (
-                    WHERE ps.warehouse_id IS NOT NULL
-                ),
-                '[]'
-            ) AS items
-      FROM packagings p
-          LEFT JOIN packaging_stocks ps ON p.id = ps.packaging_id
-          LEFT JOIN warehouses w ON ps.warehouse_id = w.id
-      WHERE p.id = $1
-      GROUP BY p.id
-      LIMIT 1;
+        SELECT
+            p.*,
+            SUM(ps.quantity) AS quantity
+        FROM
+            packagings p
+            LEFT JOIN packaging_stocks ps ON (p.id = ps.packaging_id)
+        WHERE
+            id = $1
+        GROUP BY
+            p.id;
       `,
       values: [id],
     };
+
     try {
       const { rows }: QueryResult<Packaging> =
         await this.fastify.query<Packaging>(queryConfig);

@@ -1,5 +1,7 @@
 import { QueryPackagingsType } from "@/modules/v1/packagings/packaging.schema";
+import { GetPackagingsByWarehouseIdQueryType } from "@/modules/v1/warehouses/warehouse.schema";
 import { CustomError } from "@/shared/error-handler";
+import { isDataString } from "@/shared/utils";
 import { FastifyInstance, FastifyRequest } from "fastify";
 import { StatusCodes } from "http-status-codes";
 import { QueryConfig, QueryResult } from "pg";
@@ -20,7 +22,7 @@ export default class PackagingStockRepo {
 
   async findByWarehouseId(
     warehouse_id: string,
-    query?: QueryPackagingsType
+    query?: GetPackagingsByWarehouseIdQueryType
   ): Promise<{ packagings: PackagingStock[]; metadata: Metadata }> {
     const newTable = `WITH packaging_stocks AS (SELECT
                 p.*,
@@ -48,6 +50,28 @@ export default class PackagingStockRepo {
           query.deleted ? `deleted_at IS NOT NULL` : `disabled_at IS NULL`
         );
       }
+
+      if (query.created_from) {
+        where.push(`packaging_stocks.created_at >= $${idx++}::timestamptz`);
+        values.push(
+          `${
+            isDataString(query.created_from.trim())
+              ? `${query.created_from.trim()}T00:00:00.000Z`
+              : query.created_from.trim()
+          }`
+        );
+      }
+
+      if (query.created_to) {
+        where.push(`packaging_stocks.created_at <= $${idx++}::timestamptz`);
+        values.push(
+          `${
+            isDataString(query.created_to.trim())
+              ? `${query.created_to.trim()}T23:59:59.999Z`
+              : query.created_to.trim()
+          }`
+        );
+      }
     }
 
     if (where.length > 0) {
@@ -65,14 +89,20 @@ export default class PackagingStockRepo {
       const totalItem = parseInt(rows[0].count);
 
       if (query && query.sort != undefined) {
-        queryString.push(
-          `ORDER BY ${query.sort
-            .map((sort) => {
-              const [field, direction] = sort.split(".");
-              return `${field} ${direction.toUpperCase()}`;
-            })
-            .join(", ")}`
+        const unqueField = query.sort.reduce<Record<string, string>>(
+          (prev, curr) => {
+            const [field, direction] = curr.split(".");
+            prev[field] = direction.toUpperCase();
+            return prev;
+          },
+          {}
         );
+
+        const orderBy = Object.entries(unqueField)
+          .map(([field, direction]) => `${field} ${direction}`)
+          .join(", ");
+
+        queryString.push(`ORDER BY ${orderBy}`);
       }
 
       let limit = query?.limit ?? totalItem;
@@ -81,8 +111,6 @@ export default class PackagingStockRepo {
 
       queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
       values.push(limit, offset);
-
-      console.log([newTable, queryString.join(" ")].join(" "));
 
       const queryConfig: QueryConfig = {
         text: [newTable, queryString.join(" ")].join(" "),
@@ -115,6 +143,7 @@ export default class PackagingStockRepo {
   }
 
   async findByPackagingId(packaging_id: string): Promise<PackagingStock[]> {
+    // lam lai
     const queryConfig: QueryConfig = {
       text: `SELECT * FROM packaging_stocks WHERE packaging_id = $1;`,
       values: [packaging_id],
