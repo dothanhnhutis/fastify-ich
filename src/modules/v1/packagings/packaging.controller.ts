@@ -4,6 +4,9 @@ import {
   CreatePackagingBodyType,
   DeletePackagingParamsType,
   GetPackagingByIdType,
+  GetWarehousesByPackagingIdParamsType,
+  GetWarehousesByPackagingIdQueryType,
+  QueryPackagingsType,
   UpdatePackagingByIdBodyType,
   UpdatePackagingByIdParamsType,
 } from "./packaging.schema";
@@ -11,7 +14,7 @@ import { BadRequestError } from "@/shared/error-handler";
 import { StatusCodes } from "http-status-codes";
 
 export async function queryPackagingsController(
-  req: FastifyRequest<{ Querystring: QueryWarehousesType }>,
+  req: FastifyRequest<{ Querystring: QueryPackagingsType }>,
   reply: FastifyReply
 ) {
   const data = await req.packagings.query(req.query);
@@ -35,6 +38,41 @@ export async function getPackagingByIdController(
     data: {
       packaging,
     },
+  });
+}
+
+export async function getPackagingDetailByIdController(
+  req: FastifyRequest<{ Params: GetPackagingByIdType }>,
+  reply: FastifyReply
+) {
+  const packaging = await req.packagings.findPackagingDetailById(req.params.id);
+  if (!packaging) throw new BadRequestError("Bao bì không tồn tại.");
+  reply.code(StatusCodes.OK).send({
+    statusCode: StatusCodes.OK,
+    statusText: "OK",
+    data: {
+      packaging,
+    },
+  });
+}
+
+export async function getWarehousesByPackagingIdController(
+  req: FastifyRequest<{
+    Params: GetWarehousesByPackagingIdParamsType;
+    Querystring: GetWarehousesByPackagingIdQueryType;
+  }>,
+  reply: FastifyReply
+) {
+  const packaging = await req.packagings.findById(req.params.id);
+  if (!packaging) throw new BadRequestError("Bao bì không tồn tại.");
+  const data = await req.packaging_stocks.findByPackagingId(
+    req.params.id,
+    req.query
+  );
+  reply.code(StatusCodes.OK).send({
+    statusCode: StatusCodes.OK,
+    statusText: "OK",
+    data,
   });
 }
 
@@ -74,8 +112,15 @@ export async function updatePackagingByIdController(
   const packaging = await req.packagings.findById(req.params.id);
   if (!packaging) throw new BadRequestError("Bao bì không tồn tại.");
 
-  // kiem tra warehouse
-
+  if (req.body.warehouseIds) {
+    for (const warehouseId of req.body.warehouseIds) {
+      const existsWarehouse = await req.warehouses.findById(warehouseId);
+      if (!existsWarehouse)
+        throw new BadRequestError(
+          `Mã kho hàng id=${warehouseId} không tồn tại`
+        );
+    }
+  }
   await req.packagings.update(req.params.id, req.body);
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,

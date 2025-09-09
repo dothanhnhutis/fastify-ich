@@ -1,19 +1,19 @@
 --- 
 SELECT
     p.*,
-    SUM(ps.quantity) AS quantity
+    SUM(ps.quantity)::int AS quantity
 FROM
     packagings p
     LEFT JOIN packaging_stocks ps ON (p.id = ps.packaging_id)
-    -- WHERE
-    --     id = 'ee59b063-acac-47a0-9a96-cc14bf7816b5';
+WHERE
+    p.created_at >= '2025-09-06T00:00:00.000Z'::timestamptz
 GROUP BY
     p.id;
 
----
+--- 
 SELECT
     p.*,
-    SUM(ps.quantity) AS total,
+    SUM(ps.quantity)::int AS total_quantity,
     COALESCE(
         json_agg(
             json_build_object(

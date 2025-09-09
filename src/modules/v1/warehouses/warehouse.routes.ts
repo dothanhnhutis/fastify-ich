@@ -3,7 +3,7 @@ import { FastifyInstance } from "fastify";
 import {
   createWarehouseController,
   deleteWarehouseByIdController,
-  getWarehousePackagingsByIdController,
+  getWarehousesByPackagingIdController,
   getWarehouseByIdController,
   queryWarehousesController,
   updateWarehouseByIdController,
@@ -37,7 +37,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
       schema: getWarehouseByIdSchema,
       preHandler: [
         requiredAuthMiddleware,
-        // checkPermissionMiddleware(["read:warehouse:id"]),
+        // checkPermissionMiddleware(["read:warehouse:*"]),
       ],
     },
     getWarehouseDetailByIdController
@@ -49,10 +49,10 @@ export default async function userRoutes(fastify: FastifyInstance) {
       schema: getPackagingsByWarehouseIdSchema,
       preHandler: [
         requiredAuthMiddleware,
-        // checkPermissionMiddleware(["read:warehouse:id"]),
+        // checkPermissionMiddleware(["read:warehouse:*"]),
       ],
     },
-    getWarehousePackagingsByIdController
+    getWarehousesByPackagingIdController
   );
 
   fastify.get(

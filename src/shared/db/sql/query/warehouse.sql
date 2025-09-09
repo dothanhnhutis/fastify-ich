@@ -72,6 +72,11 @@ SELECT
                     p.created_at AT TIME ZONE 'UTC',
                     'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
                 ),
+                'created_at',
+                to_char(
+                    p.created_at AT TIME ZONE 'UTC',
+                    'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                ),
                 'updated_at',
                 to_char(
                     p.updated_at AT TIME ZONE 'UTC',

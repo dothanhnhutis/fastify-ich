@@ -1,6 +1,5 @@
 import { FastifyInstance } from "fastify";
 import { QueryConfig, QueryResult } from "pg";
-import { StatusCodes } from "http-status-codes";
 
 import { BadRequestError, CustomError } from "@/shared/error-handler";
 import {
@@ -184,6 +183,11 @@ export default class WarehouseRepo {
                             'name',
                             p.name,
                             'deleted_at',
+                            to_char(
+                                p.created_at AT TIME ZONE 'UTC',
+                                'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                            ),
+                            'created_at',
                             to_char(
                                 p.created_at AT TIME ZONE 'UTC',
                                 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'

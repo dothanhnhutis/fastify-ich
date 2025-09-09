@@ -17,12 +17,12 @@ export const queryStringPackagingByWarehouseIdSchema = Type.Partial(
   Type.Object({
     name: Type.String({
       errorMessage: {
-        type: "Tên bao bì phải là chuỗi.",
+        type: "Tên kho hàng phải là chuỗi.",
       },
     }),
     deleted: Type.Boolean({
       errorMessage: {
-        type: "Trạng thái bao bì phải là boolean.",
+        type: "Trạng thái kho hàng phải là boolean.",
       },
     }),
     created_from: Type.String({

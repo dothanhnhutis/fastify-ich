@@ -41,7 +41,7 @@ export async function getWarehouseByIdController(
   });
 }
 
-export async function getWarehousePackagingsByIdController(
+export async function getWarehousesByPackagingIdController(
   req: FastifyRequest<{
     Params: GetPackagingsByWarehouseIdParamsType;
     Querystring: GetPackagingsByWarehouseIdQueryType;
@@ -65,9 +65,8 @@ export async function getWarehouseDetailByIdController(
   req: FastifyRequest<{ Params: GetWarehouseByIdParamsType }>,
   reply: FastifyReply
 ) {
-  const warehouse = await req.warehouses.findById(req.params.id);
-  if (!warehouse) throw new BadRequestError("Nhà kho không tồn tại.");
   const detail = await req.warehouses.findWarehouseDetailById(req.params.id);
+  if (!detail) throw new BadRequestError("Nhà kho không tồn tại.");
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
     statusText: "OK",

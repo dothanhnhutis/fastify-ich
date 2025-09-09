@@ -17,3 +17,18 @@ ORDER BY
     name ASC;
 
 ---
+WITH
+    packaging_stocks AS (
+        SELECT
+            w.*,
+            (ps.quantity) AS quantity
+        FROM
+            packaging_stocks ps
+            LEFT JOIN warehouses w ON (ps.warehouse_id = w.id)
+        WHERE
+            ps.packaging_id = '96d29ca5-615c-420a-bfc8-e42ee1be86a3'
+    )
+SELECT
+    *
+FROM
+    packaging_stocks;
