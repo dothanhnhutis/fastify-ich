@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS user_roles (
     CONSTRAINT user_roles_pkey PRIMARY KEY (user_id, role_id)
 );
 
--- create warehouses table
+--- create warehouses table
 CREATE TABLE IF NOT EXISTS warehouses (
     id TEXT NOT NULL DEFAULT gen_random_uuid ()::text,
     name VARCHAR(255) NOT NULL,
@@ -75,6 +75,45 @@ CREATE TABLE IF NOT EXISTS warehouses (
     CONSTRAINT warehouses_pkey PRIMARY KEY (id)
 );
 
+--- create packagings table
+CREATE TABLE IF NOT EXISTS packagings (
+    id TEXT NOT NULL DEFAULT gen_random_uuid ()::text,
+    name VARCHAR(255) NOT NULL,
+    min_stock_level INTEGER,
+    unit VARCHAR(20) NOT NULL,
+    pcs_ctn INTEGER,
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    deactived_at TIMESTAMPTZ(3),
+    created_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
+    CONSTRAINT packagings_pkey PRIMARY KEY (id)
+);
+
+--- create packaging_inventory
+CREATE TABLE IF NOT EXISTS packaging_inventory (
+    packaging_id TEXT NOT NULL,
+    warehouse_id TEXT NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 0,
+    reserved_quantity INTEGER NOT NULL DEFAULT 0,
+    available_quantity INTEGER GENERATED ALWAYS AS (quantity - reserved_quantity) STORED,
+    created_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
+    CONSTRAINT packaging_inventory_pkey PRIMARY KEY (warehouse_id, packaging_id)
+);
+
+--- create packaging_transactions
+CREATE TABLE IF NOT EXISTS packaging_transactions (
+    id TEXT NOT NULL DEFAULT gen_random_uuid ()::text,
+    code VARCHAR(20) UNIQUE NOT NULL,
+    type VARCHAR(20) NOT NULL,
+    from_warehouse_id TEXT NOT NULL,
+    to_warehouse_id TEXT,
+    note VARCHAR(255) NOT NULL DEFAULT '',
+    created_by INTEGER REFERENCES users (id),
+    created_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
+);
+
 --- create index users table
 CREATE UNIQUE INDEX users_email_key ON users (email);
 
@@ -84,3 +123,10 @@ ADD CONSTRAINT user_roles_user_id_fkey FOREIGN KEY (user_id) REFERENCES users (i
 
 ALTER TABLE user_roles
 ADD CONSTRAINT user_roles_role_id_fkey FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--- AddForgeignKey 
+ALTER TABLE packaging_inventory
+ADD CONSTRAINT packaging_inventory_warehouse_id_fkey FOREIGN KEY (warehouse_id) REFERENCES warehouses (id) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+ALTER TABLE packaging_inventory
+ADD CONSTRAINT packaging_inventory_packaging_id_fkey FOREIGN KEY (packaging_id) REFERENCES packagings (id) ON DELETE RESTRICT ON UPDATE CASCADE;

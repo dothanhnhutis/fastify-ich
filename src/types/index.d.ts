@@ -45,7 +45,8 @@ type User = {
   email: string;
   password_hash: string;
   username: string;
-  disable_at: Date;
+  status: string;
+  deactived_at: Date;
   created_at: Date;
   updated_at: Date;
 };

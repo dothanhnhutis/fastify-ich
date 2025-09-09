@@ -46,9 +46,11 @@ const createNewUserBodySchema = Type.Object({
 
 const updateUserByIdBodySchema = Type.Partial(
   Type.Object({
-    disable: Type.Boolean({
+    status: Type.String({
+      enum: ["ACTIVE", "INACTIVE"],
       errorMessage: {
-        type: "Trạng thái phải là boolean.",
+        type: "Trạng thái phải là chuỗi.",
+        enum: `Trạng thái phải là một trong 'ACTIVE', 'INACTIVE'.}`,
       },
     }),
     roleIds: Type.Array(
@@ -93,9 +95,11 @@ const queryStringUserSchema = Type.Partial(
         format: "Email không đúng định dạng.",
       },
     }),
-    disabled: Type.Boolean({
+    status: Type.String({
+      enum: ["ACTIVE", "INACTIVE"],
       errorMessage: {
-        type: "Trạng thái phải là boolean.",
+        type: "Trạng thái phải là chuỗi.",
+        enum: `Trạng thái phải là một trong 'ACTIVE', 'INACTIVE'.}`,
       },
     }),
     sort: Type.Array(
@@ -113,7 +117,7 @@ const queryStringUserSchema = Type.Partial(
       errorMessage: {
         type: "limit phải là số nguyên.",
         minimum: "limit quá nhỏ (min >= 1).",
-        maximum: "limit quá lớn (max >= 50).",
+        maximum: "limit quá lớn (max <= 50).",
       },
     }),
     page: Type.Integer({

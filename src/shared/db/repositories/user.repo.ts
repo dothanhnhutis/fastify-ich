@@ -90,10 +90,9 @@ export default class UserRepo {
         values.push(`%${query.email.trim()}%`);
       }
 
-      if (query.disabled != undefined) {
-        where.push(
-          query.disabled ? `disabled_at IS NOT NULL` : `disabled_at IS NULL`
-        );
+      if (query.status != undefined) {
+        where.push(`status = $${idx++}::text`);
+        values.push(`${query.status}`);
       }
 
       if (where.length > 0) {
@@ -216,13 +215,16 @@ export default class UserRepo {
         let idx = 1;
 
         if (data.username !== undefined) {
-          sets.push(`"username" = $${idx++}::text`);
+          sets.push(`username = $${idx++}::text`);
           values.push(data.username);
         }
 
-        if (data.disable !== undefined) {
-          sets.push(`"disabled_at" = $${idx++}::timestamptz`);
-          values.push(data.disable ? new Date() : null);
+        if (data.status !== undefined) {
+          sets.push(
+            `status = $${idx++}::text`,
+            `deactived_at = $${idx++}::timestamptz`
+          );
+          values.push(data.status, data.status == "ACTIVE" ? null : new Date());
         }
 
         if (values.length > 0) {
