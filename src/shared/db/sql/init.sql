@@ -4,7 +4,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 ALTER DATABASE pgdb
 SET
     datestyle = 'ISO, MDY';
-
+-- SET TIMEZONE = 'UTC';
 --- tạo biến local cho connection hiện tại
 -- SET "audit.user" = 'Người_A';
 -- SELECT current_setting('audit.user', true);
