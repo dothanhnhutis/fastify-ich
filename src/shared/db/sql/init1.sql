@@ -130,3 +130,26 @@ ADD CONSTRAINT packaging_inventory_warehouse_id_fkey FOREIGN KEY (warehouse_id) 
 
 ALTER TABLE packaging_inventory
 ADD CONSTRAINT packaging_inventory_packaging_id_fkey FOREIGN KEY (packaging_id) REFERENCES packagings (id) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+--- create users_without_password view
+CREATE MATERIALIZED VIEW users_without_password AS
+SELECT
+    id,
+    email,
+    (password_hash IS NOT NULL)::boolean AS has_password,
+    username,
+    status,
+    deactived_at,
+    created_at,
+    updated_at
+FROM
+    users
+WITH
+    NO DATA;
+
+create unique index on users_without_password (id);
+
+ALTER MATERIALIZED VIEW users_without_password
+ADD PRIMARY KEY (id);
+
+drop MATERIALIZED view users_without_password;

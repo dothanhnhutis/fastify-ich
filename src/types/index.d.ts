@@ -40,7 +40,7 @@ type ReqInfo = {
   cookie?: CookieOptions;
 };
 
-type User = {
+type UserWithoutPassword = {
   id: string;
   email: string;
   has_password: boolean;
@@ -51,7 +51,7 @@ type User = {
   updated_at: Date;
 };
 
-type UserPassword = {
+type User = {
   id: string;
   email: string;
   password_hash: string;
@@ -61,6 +61,8 @@ type UserPassword = {
   created_at: Date;
   updated_at: Date;
 };
+
+type UserDetail = UserWithoutPassword & {};
 
 type Role = {
   id: string;

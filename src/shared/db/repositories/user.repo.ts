@@ -12,7 +12,7 @@ import { QueryConfig, QueryResult } from "pg";
 export default class UserRepo {
   constructor(private fastify: FastifyInstance) {}
 
-  async findByEmail(email: string): Promise<User | null> {
+  async findByEmail(email: string): Promise<UserWithoutPassword | null> {
     const queryConfig: QueryConfig = {
       text: `
       SELECT
@@ -40,13 +40,13 @@ export default class UserRepo {
     } catch (err: unknown) {
       this.fastify.logger.error(
         { metadata: { query: queryConfig } },
-        `UserRepo.findUserByEmail() method error: ${err}`
+        `UserRepo.findByEmail() method error: ${err}`
       );
       return null;
     }
   }
 
-  async findById(id: string): Promise<User | null> {
+  async findById(id: string): Promise<UserWithoutPassword | null> {
     const queryConfig: QueryConfig = {
       text: `
       SELECT
@@ -79,19 +79,117 @@ export default class UserRepo {
     }
   }
 
-  async findDetailById(id: string): Promise<User | null> {
-    try {
-      const user = await this.findById(id);
-      const roles = await this.findUserRoles(id);
+  async findUserPasswordById(userId: string): Promise<User | null> {
+    const queryConfig: QueryConfig = {
+      text: `
+      SELECT
+          *
+      FROM
+          users
+      WHERE
+          id = $1
+      LIMIT
+          1;
+      `,
+      values: [userId],
+    };
 
-      return {
-        ...user,
-        roles,
-      };
+    try {
+      const { rows } = await this.fastify.query<User>(queryConfig);
+      return rows[0] ?? null;
+    } catch (err: unknown) {
+      this.fastify.logger.error(
+        { metadata: { query: queryConfig } },
+        `UserRepo.findUserPasswordById() method error: ${err}`
+      );
+      return null;
+    }
+  }
+
+  async findUserPasswordByEmail(email: string): Promise<User | null> {
+    const queryConfig: QueryConfig = {
+      text: `
+      SELECT
+          *
+      FROM
+          users
+      WHERE
+          email = $1
+      LIMIT
+          1;
+      `,
+      values: [email],
+    };
+
+    try {
+      const { rows } = await this.fastify.query<User>(queryConfig);
+      return rows[0] ?? null;
+    } catch (err: unknown) {
+      this.fastify.logger.error(
+        { metadata: { query: queryConfig } },
+        `UserRepo.findUserPasswordByEmail() method error: ${err}`
+      );
+      return null;
+    }
+  }
+
+  async findUserDetailById(userId: string): Promise<UserDetail | null> {
+    const queryConfig: QueryConfig = {
+      text: `
+        SELECT
+            u.*,
+            count(ur.role_id) FILTER (
+                WHERE
+                    r.id IS NOT NULL
+                    AND r.status = 'ACTIVE'
+            ) AS role_count,
+            COALESCE(
+                json_agg(
+                    json_build_object(
+                        'id',
+                        r.id,
+                        'name',
+                        r.name,
+                        'permissions',
+                        r.permissions,
+                        'description',
+                        r.description,
+                        'status',
+                        r.status,
+                        'deactived_at',
+                        r.deactived_at,
+                        'created_at',
+                        r.created_at,
+                        'updated_at',
+                        r.updated_at
+                    )
+                ) FILTER (
+                    WHERE
+                        r.id IS NOT NULL
+                        AND r.status = 'ACTIVE'
+                ),
+                '[]'
+            ) AS roles
+        FROM
+            users_without_password u
+            LEFT JOIN user_roles ur ON (ur.user_id = u.id)
+            LEFT JOIN roles r ON (ur.role_id = r.id)
+        WHERE
+            u.id = $1
+        GROUP BY
+            u.id;
+      `,
+      values: [userId],
+    };
+    try {
+      const { rows: userDetails } = await this.fastify.query<UserPassword>(
+        queryConfig
+      );
+      return userDetails[0] ?? null;
     } catch (err: unknown) {
       // this.fastify.logger.error(
       //   { metadata: { query: queryConfig } },
-      //   `UserRepo.findDetailById() method error: ${err}`
+      //   `UserRepo.findUserDetailById() method error: ${err}`
       // );
       return null;
     }

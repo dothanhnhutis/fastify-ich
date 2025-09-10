@@ -101,17 +101,64 @@ WHERE
 
 --- findById
 SELECT
-    id,
-    email,
-    (password_hash IS NOT NULL)::boolean AS has_password,
-    username,
-    status,
-    deactived_at,
-    created_at,
-    updated_at
+    *
 FROM
-    users
+    users_without_password
 WHERE
     id = 'a68b251c-0118-45f0-a722-c6ed1562539a'
 LIMIT
     1;
+
+--- findDetailById
+SELECT
+    u.,
+    count(ur.role_id) FILTER (
+        WHERE
+            r.id IS NOT NULL
+            AND r.status = 'ACTIVE'
+    ) AS role_count,
+    COALESCE(
+        json_agg(
+            json_build_object(
+                'id',
+                r.id,
+                'name',
+                r.name,
+                'permissions',
+                r.permissions,
+                'description',
+                r.description,
+                'status',
+                r.status,
+                'deactived_at',
+                r.deactived_at,
+                'created_at',
+                r.created_at,
+                'updated_at',
+                r.updated_at
+            )
+        ) FILTER (
+            WHERE
+                r.id IS NOT NULL
+                AND r.status = 'ACTIVE'
+        ),
+        '[]'
+    ) AS roles
+FROM
+    users_without_password u
+    LEFT JOIN user_roles ur ON (ur.user_id = u.id)
+    LEFT JOIN roles r ON (ur.role_id = r.id)
+GROUP BY
+    u.id;
+
+--- omit column
+--- cach 1: su dung to_jsonb
+-- SELECT
+--     to_jsonb(u) - 'password_hash' AS user
+-- FROM
+--     users u;
+--- cach 2: su dung view
+SELECT
+    *
+from
+    users_without_password;
