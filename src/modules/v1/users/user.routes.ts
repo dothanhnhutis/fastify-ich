@@ -2,6 +2,9 @@ import { FastifyInstance } from "fastify";
 import {
   createUserController,
   currentUserController,
+  getUserByIdController,
+  getUserDetailByIdController,
+  getUserRolesByUserIdController,
   logoutUserController,
   queryUserController,
   updateUserByIdController,
@@ -10,6 +13,9 @@ import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
 import checkPermissionMiddleware from "@/shared/middleware/checkPermission";
 import {
   createNewUserSchema,
+  getUserByIdSchema,
+  getUserDetailByIdSchema,
+  getUserRolesByUserIdSchema,
   queryUsersSchema,
   updateUserByIdSchema,
 } from "./user.schema";
@@ -26,6 +32,42 @@ export default async function userRoutes(fastify: FastifyInstance) {
       ],
     },
     queryUserController
+  );
+
+  fastify.get(
+    "/:id/detail",
+    {
+      schema: getUserDetailByIdSchema,
+      preHandler: [
+        requiredAuthMiddleware,
+        checkPermissionMiddleware(["read:user:*"]),
+      ],
+    },
+    getUserDetailByIdController
+  );
+
+  fastify.get(
+    "/:id/roles",
+    {
+      schema: getUserRolesByUserIdSchema,
+      preHandler: [
+        requiredAuthMiddleware,
+        checkPermissionMiddleware(["read:user:*"]),
+      ],
+    },
+    getUserRolesByUserIdController
+  );
+
+  fastify.get(
+    "/:id",
+    {
+      schema: getUserByIdSchema,
+      preHandler: [
+        requiredAuthMiddleware,
+        checkPermissionMiddleware(["read:user:id"]),
+      ],
+    },
+    getUserByIdController
   );
 
   fastify.post(

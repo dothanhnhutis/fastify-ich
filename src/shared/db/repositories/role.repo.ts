@@ -9,6 +9,7 @@ import {
   QueryRolesType,
   UpdateRoleByIdBodyType,
 } from "@/modules/v1/roles/role.schema";
+import { isDataString } from "@/shared/utils";
 
 export default class RoleRepo {
   constructor(private fastify: FastifyInstance) {}
@@ -36,6 +37,28 @@ export default class RoleRepo {
       if (query.description != undefined) {
         where.push(`description ILIKE $${idx++}::text`);
         values.push(`%${query.description.trim()}%`);
+      }
+
+      if (query.created_from) {
+        where.push(`created_at >= $${idx++}::timestamptz`);
+        values.push(
+          `${
+            isDataString(query.created_from.trim())
+              ? `${query.created_from.trim()}T00:00:00.000Z`
+              : query.created_from.trim()
+          }`
+        );
+      }
+
+      if (query.created_to) {
+        where.push(`created_at <= $${idx++}::timestamptz`);
+        values.push(
+          `${
+            isDataString(query.created_to.trim())
+              ? `${query.created_to.trim()}T23:59:59.999Z`
+              : query.created_to.trim()
+          }`
+        );
       }
 
       if (where.length > 0) {

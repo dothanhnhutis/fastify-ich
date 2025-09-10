@@ -36,46 +36,6 @@ VALUES
 RETURNING
     *;
 
----
----
-SELECT
-    *
-FROM
-    users;
-
----
-DELETE FROM user_roles
-WHERE
-    user_id = '9af45a98-df32-48ae-bfec-22b7bd339875';
-
----
-DELETE FROM users
-WHERE
-    id = '9af45a98-df32-48ae-bfec-22b7bd339875';
-
----
-INSERT INTO
-    user_roles (user_id, role_id)
-VALUES
-    (
-        '65fbae65-76d1-413d-b804-aa177c072c38',
-        'd12e2e48-5f90-4568-99c0-15e2088829a7'
-    );
-
----
-DELETE FROM user_roles
-WHERE
-    user_id = '65fbae65-76d1-413d-b804-aa177c072c38'
-    AND role_id NOT IN ('d12e2e48-5f90-4568-99c0-15e2088829a7');
-
----
-SELECT
-from
-    user_roles
-WHERE
-    user_id = '65fbae65-76d1-413d-b804-aa177c072c38'
-    AND role_id NOT IN ('d12e2e48-5f90-4568-99c0-15e2088829a7');
-
 --- create admin account
 BEGIN;
 
@@ -125,3 +85,33 @@ FROM
     inserted_role r;
 
 COMMIT;
+
+END;
+
+--- findUserRoles
+SELECT
+    r.*
+FROM
+    user_roles ur
+    LEFT JOIN roles r ON (r.id = ur.role_id)
+WHERE
+    user_id = 'a68b251c-0118-45f0-a722-c6ed1562539a'
+    AND r.status = 'ACTIVE'
+    AND r.deactived_at IS NULL;
+
+--- findById
+SELECT
+    id,
+    email,
+    (password_hash IS NOT NULL)::boolean AS has_password,
+    username,
+    status,
+    deactived_at,
+    created_at,
+    updated_at
+FROM
+    users
+WHERE
+    id = 'a68b251c-0118-45f0-a722-c6ed1562539a'
+LIMIT
+    1;

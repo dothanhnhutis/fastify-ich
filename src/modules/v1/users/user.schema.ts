@@ -1,5 +1,6 @@
 import { FastifySchema } from "fastify";
 import { Type, Static } from "@sinclair/typebox";
+import { queryStringRolesSchema } from "../roles/role.schema";
 
 const createNewUserBodySchema = Type.Object({
   username: Type.String({
@@ -16,32 +17,36 @@ const createNewUserBodySchema = Type.Object({
       format: "Email không đúng định dạng.",
     },
   }),
-  roleIds: Type.Array(
-    Type.String({
-      errorMessage: {
-        type: "Vai trò phải là chuỗi.",
-      },
-    }),
-    {
-      default: [],
-      errorMessage: {
-        type: "Danh sách vai trò phải là mảng.",
-      },
-    }
+  roleIds: Type.Optional(
+    Type.Array(
+      Type.String({
+        errorMessage: {
+          type: "Vai trò phải là chuỗi.",
+        },
+      }),
+      {
+        default: [],
+        errorMessage: {
+          type: "Danh sách vai trò phải là mảng.",
+        },
+      }
+    )
   ),
-  //   password: Type.String({
-  //     minLength: 8,
-  //     maxLength: 125,
-  //     pattern:
-  //       "^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[@$!%*?&])[A-Za-z0-9@$!%*?&]+$",
-  //     errorMessage: {
-  //       type: "Mật khẩu phải là chuỗi.",
-  //       minLength: "Mật khẩu quá ngắn.",
-  //       maxLength: "Mật khẩu quá dài.",
-  //       pattern:
-  //         "Mật khẩu phải có chữ hoa, chữ thường, chữ số và ký tự đặc biệt'@$!%*?&'. Ex: Abc@123123",
-  //     },
-  //   }),
+  password: Type.Optional(
+    Type.String({
+      minLength: 8,
+      maxLength: 125,
+      pattern:
+        "^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[@$!%*?&])[A-Za-z0-9@$!%*?&]+$",
+      errorMessage: {
+        type: "Mật khẩu phải là chuỗi.",
+        minLength: "Mật khẩu quá ngắn.",
+        maxLength: "Mật khẩu quá dài.",
+        pattern:
+          "Mật khẩu phải có chữ hoa, chữ thường, chữ số và ký tự đặc biệt'@$!%*?&'. Ex: Abc@123123",
+      },
+    })
+  ),
 });
 
 const updateUserByIdBodySchema = Type.Partial(
@@ -50,7 +55,7 @@ const updateUserByIdBodySchema = Type.Partial(
       enum: ["ACTIVE", "INACTIVE"],
       errorMessage: {
         type: "Trạng thái phải là chuỗi.",
-        enum: `Trạng thái phải là một trong 'ACTIVE', 'INACTIVE'.}`,
+        enum: `Trạng thái phải là một trong 'ACTIVE', 'INACTIVE'.`,
       },
     }),
     roleIds: Type.Array(
@@ -81,7 +86,7 @@ const sortEnum = [
   "disable.asc",
   "disable.desc",
 ];
-const queryStringUserSchema = Type.Partial(
+const queryStringUsersSchema = Type.Partial(
   Type.Object({
     username: Type.String({
       errorMessage: {
@@ -100,6 +105,24 @@ const queryStringUserSchema = Type.Partial(
       errorMessage: {
         type: "Trạng thái phải là chuỗi.",
         enum: `Trạng thái phải là một trong 'ACTIVE', 'INACTIVE'.}`,
+      },
+    }),
+    created_from: Type.String({
+      pattern:
+        "^(?:\\d{4}-\\d{2}-\\d{2}|(?:\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})))$",
+      errorMessage: {
+        type: "created_from phải là chuỗi.",
+        pattern:
+          "created_from phải có định dạng YYYY-MM-DD hoặc date-time RFC3339.",
+      },
+    }),
+    created_to: Type.String({
+      pattern:
+        "^(?:\\d{4}-\\d{2}-\\d{2}|(?:\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})))$",
+      errorMessage: {
+        type: "created_to phải là chuỗi.",
+        pattern:
+          "created_to phải có định dạng YYYY-MM-DD hoặc date-time RFC3339.",
       },
     }),
     sort: Type.Array(
@@ -130,13 +153,26 @@ const queryStringUserSchema = Type.Partial(
   })
 );
 
-export const createNewUserSchema: FastifySchema = {
-  body: createNewUserBodySchema,
-};
-
 const paramsIdSchema = Type.Object({
   id: Type.String(),
 });
+
+export const getUserByIdSchema: FastifySchema = {
+  params: paramsIdSchema,
+};
+
+export const getUserRolesByUserIdSchema: FastifySchema = {
+  params: paramsIdSchema,
+  querystring: queryStringRolesSchema,
+};
+
+export const getUserDetailByIdSchema: FastifySchema = {
+  params: paramsIdSchema,
+};
+
+export const createNewUserSchema: FastifySchema = {
+  body: createNewUserBodySchema,
+};
 
 export const updateUserByIdSchema: FastifySchema = {
   params: paramsIdSchema,
@@ -144,12 +180,16 @@ export const updateUserByIdSchema: FastifySchema = {
 };
 
 export const queryUsersSchema: FastifySchema = {
-  querystring: queryStringUserSchema,
+  querystring: queryStringUsersSchema,
 };
+
+export type GetUserRolesByUserIdParamsType = Static<typeof paramsIdSchema>;
+export type GetUserByIdParamsType = GetUserRolesByUserIdParamsType;
+export type GetUserDetailByIdParamsType = GetUserRolesByUserIdParamsType;
 
 export type CreateNewUserBodyType = Static<typeof createNewUserBodySchema>;
 
-export type UpdateUserByIdParamsType = Static<typeof paramsIdSchema>;
+export type UpdateUserByIdParamsType = GetUserRolesByUserIdParamsType;
 export type UpdateUserByIdBodyType = Static<typeof updateUserByIdBodySchema>;
 
-export type QueryUsersType = Static<typeof queryStringUserSchema>;
+export type QueryUsersType = Static<typeof queryStringUsersSchema>;

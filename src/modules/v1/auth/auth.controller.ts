@@ -12,7 +12,7 @@ export async function signInController(
   reply: FastifyReply
 ) {
   const { email, password } = req.body;
-  const user = await req.users.findByEmail(email);
+  const user = await req.users.findUserByEmail(email);
 
   if (
     !user ||

@@ -43,6 +43,17 @@ type ReqInfo = {
 type User = {
   id: string;
   email: string;
+  has_password: boolean;
+  username: string;
+  status: string;
+  deactived_at: Date;
+  created_at: Date;
+  updated_at: Date;
+};
+
+type UserPassword = {
+  id: string;
+  email: string;
   password_hash: string;
   username: string;
   status: string;
@@ -55,6 +66,8 @@ type Role = {
   id: string;
   name: string;
   permissions: string[];
+  status: string;
+  deactived_at: Date;
   created_at: Date;
   updated_at: Date;
 };

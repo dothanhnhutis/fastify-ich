@@ -1,17 +1,73 @@
 import { StatusCodes } from "http-status-codes";
 import { FastifyReply, FastifyRequest } from "fastify";
 
-import config from "@/shared/config";
-import { BadRequestError } from "@/shared/error-handler";
 import {
   CreateNewUserBodyType,
+  GetUserByIdParamsType,
+  GetUserDetailByIdParamsType,
+  GetUserRolesByUserIdParamsType,
   QueryUsersType,
   UpdateUserByIdBodyType,
   UpdateUserByIdParamsType,
 } from "./user.schema";
-import Password from "@/shared/password";
+import config from "@/shared/config";
+import { BadRequestError } from "@/shared/error-handler";
+import { QueryRolesType } from "../roles/role.schema";
 
 // Admin
+
+export async function getUserByIdController(
+  req: FastifyRequest<{ Params: GetUserByIdParamsType }>,
+  reply: FastifyReply
+) {
+  const existsUser = await req.users.findById(req.params.id);
+  if (!existsUser) throw new BadRequestError("Người dùng không tồn tại.");
+  reply.code(StatusCodes.OK).send({
+    statusCode: StatusCodes.OK,
+    statusText: "OK",
+    data: {
+      user: existsUser,
+    },
+  });
+}
+
+export async function getUserRolesByUserIdController(
+  req: FastifyRequest<{
+    Params: GetUserRolesByUserIdParamsType;
+    Querystring: QueryRolesType;
+  }>,
+  reply: FastifyReply
+) {
+  const existsUser = await req.users.findById(req.params.id);
+  if (!existsUser) throw new BadRequestError("Người dùng không tồn tại.");
+  const roles = await req.user_roles.findRolesByUserId(
+    req.params.id,
+    req.query
+  );
+  reply.code(StatusCodes.OK).send({
+    statusCode: StatusCodes.OK,
+    statusText: "OK",
+    data: {
+      roles,
+    },
+  });
+}
+
+export async function getUserDetailByIdController(
+  req: FastifyRequest<{ Params: GetUserDetailByIdParamsType }>,
+  reply: FastifyReply
+) {
+  const userDetail = await req.users.findById(req.params.id);
+  if (!userDetail) throw new BadRequestError("Người dùng không tồn tại.");
+  reply.code(StatusCodes.OK).send({
+    statusCode: StatusCodes.OK,
+    statusText: "OK",
+    data: {
+      user: userDetail,
+    },
+  });
+}
+
 export async function queryUserController(
   req: FastifyRequest<{ Querystring: QueryUsersType }>,
   reply: FastifyReply
@@ -58,11 +114,10 @@ export async function createUserController(
   if (req.body.roleIds) {
     for (let id of req.body.roleIds) {
       const role = await req.roles.findById(id);
-      if (!role) throw new BadRequestError(`Quyền id=${id} không tồn tại.`);
+      if (!role) throw new BadRequestError(`Quyền id='${id}' không tồn tại.`);
     }
   }
-  const password = Password.generate();
-  await req.users.create({ ...req.body, password });
+  await req.users.create(req.body);
 
   reply.code(StatusCodes.CREATED).send({
     statusCode: StatusCodes.OK,
@@ -78,12 +133,11 @@ export async function currentUserController(
   req: FastifyRequest,
   reply: FastifyReply
 ) {
-  const { password_hash, ...currentUser } = req.currUser!;
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
     statusText: "OK",
     data: {
-      currentUser: currentUser,
+      currentUser: req.currUser,
     },
   });
 }

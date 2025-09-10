@@ -56,7 +56,7 @@ async function session(fastify: FastifyInstance, options: SessionOptions) {
         res.clearCookie(cookieName);
       } else {
         req.sessionId = sessionId;
-        const roles = await req.users.findRoles(user.id);
+        const roles = await req.users.findUserRoles(user.id);
         req.currUser = { ...user, roles };
       }
     }

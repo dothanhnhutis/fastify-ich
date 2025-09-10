@@ -13,7 +13,7 @@ import {
   createNewRoleSchema,
   deleteRoleByIdSchema,
   getRoleByIdSchema,
-  queryRoleSchema,
+  queryStringRolesSchema,
   updateRoleByIdSchema,
 } from "./role.schema";
 
@@ -21,7 +21,7 @@ export default async function roleRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/",
     {
-      schema: queryRoleSchema,
+      schema: queryStringRolesSchema,
       preHandler: [
         requiredAuthMiddleware,
         checkPermissionMiddleware(["read:role:*"]),
