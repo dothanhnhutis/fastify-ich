@@ -120,7 +120,7 @@ export default class WarehouseRepo {
           queryConfig
         );
 
-        const totalPage = Math.ceil(totalItem / limit);
+        const totalPage = Math.ceil(totalItem / limit) || 0;
 
         return {
           warehouses,

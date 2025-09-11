@@ -1,5 +1,19 @@
 import { FastifySchema } from "fastify";
 import { Type, Static } from "@sinclair/typebox";
+import { queryStringUsersSchema } from "../users/user.schema";
+
+const paramsIdSchema = Type.Object({
+  id: Type.String(),
+});
+
+export const getUsersByRoleIdSchema: FastifySchema = {
+  params: paramsIdSchema,
+  querystring: queryStringUsersSchema,
+};
+
+export const getRoleDetailByIdSchema: FastifySchema = {
+  params: paramsIdSchema,
+};
 
 const createNewRoleBodySchema = Type.Object({
   name: Type.String({
@@ -56,12 +70,16 @@ const updateRoleByIdBodySchema = Type.Partial(
         }
       )
     ),
+    status: Type.String({
+      enum: ["ACTIVE", "INACTIVE"],
+      errorMessage: {
+        type: "Trạng thái phải là chuỗi.",
+        enum: `Trạng thái phải là một trong 'ACTIVE', 'INACTIVE'.}`,
+      },
+    }),
   })
 );
 
-const paramsIdSchema = Type.Object({
-  id: Type.String(),
-});
 const sortEnum = [
   "name.asc",
   "name.desc",
@@ -173,6 +191,8 @@ export const queryRolesSchema: FastifySchema = {
   querystring: queryStringRolesSchema,
 };
 
+export type GetUsersByRoleIdParamsType = Static<typeof paramsIdSchema>;
+export type GetRoleDetailByIdParamsType = Static<typeof paramsIdSchema>;
 export type CreateNewRoleBodyType = Static<typeof createNewRoleBodySchema>;
 export type GetRoleByIdParamsType = Static<typeof paramsIdSchema>;
 export type DeleteRoleByIdParamsType = Static<typeof paramsIdSchema>;

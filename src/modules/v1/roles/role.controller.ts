@@ -4,22 +4,44 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import {
   CreateNewRoleBodyType,
   GetRoleByIdParamsType,
+  GetRoleDetailByIdParamsType,
+  GetUsersByRoleIdParamsType,
   QueryRolesType,
   UpdateRoleByIdBodyType,
   UpdateRoleByIdParamsType,
 } from "./role.schema";
 import { BadRequestError } from "@/shared/error-handler";
+import { QueryUsersType } from "../users/user.schema";
 
-export async function createRoleController(
-  req: FastifyRequest<{ Body: CreateNewRoleBodyType }>,
+export async function getUsersByRoleIdController(
+  req: FastifyRequest<{
+    Params: GetUsersByRoleIdParamsType;
+    Querystring: QueryUsersType;
+  }>,
   reply: FastifyReply
 ) {
-  const role = await req.roles.create(req.body);
+  const role = await req.roles.findUsersByRoleId(req.params.id, req.query);
+
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
     statusText: "OK",
     data: {
-      message: "Tạo vai trò thành công.",
+      role,
+    },
+  });
+}
+
+export async function getRoleDetailByIdController(
+  req: FastifyRequest<{ Params: GetRoleDetailByIdParamsType }>,
+  reply: FastifyReply
+) {
+  const role = await req.roles.findDetailById(req.params.id);
+  if (!role) throw new BadRequestError("Vai trò không tồn tại.");
+
+  reply.code(StatusCodes.OK).send({
+    statusCode: StatusCodes.OK,
+    statusText: "OK",
+    data: {
       role,
     },
   });
@@ -53,6 +75,21 @@ export async function queryRoleController(
     statusCode: StatusCodes.OK,
     statusText: "OK",
     data,
+  });
+}
+
+export async function createRoleController(
+  req: FastifyRequest<{ Body: CreateNewRoleBodyType }>,
+  reply: FastifyReply
+) {
+  const role = await req.roles.create(req.body);
+  reply.code(StatusCodes.OK).send({
+    statusCode: StatusCodes.OK,
+    statusText: "OK",
+    data: {
+      message: "Tạo vai trò thành công.",
+      role,
+    },
   });
 }
 

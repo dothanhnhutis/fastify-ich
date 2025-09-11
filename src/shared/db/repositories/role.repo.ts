@@ -8,13 +8,30 @@ import {
   UpdateRoleByIdBodyType,
 } from "@/modules/v1/roles/role.schema";
 import { isDataString } from "@/shared/utils";
-import { CustomError } from "@/shared/error-handler";
+import { BadRequestError, CustomError } from "@/shared/error-handler";
+import { QueryUsersType } from "@/modules/v1/users/user.schema";
 
 export default class RoleRepo {
   constructor(private fastify: FastifyInstance) {}
 
   async query(query: QueryRolesType): Promise<QueryRoles> {
-    let queryString = ["SELECT * FROM roles"];
+    let queryString = [
+      `
+      SELECT
+          r.*,
+          COUNT(ur.user_id) FILTER (
+              WHERE
+                  ur.user_id IS NOT NULL
+                  AND u.status = 'ACTIVE'
+                  AND u.deactived_at IS NULL
+          )::int AS user_count
+      FROM
+          roles r
+          LEFT JOIN user_roles ur ON (ur.role_id = r.id)
+          LEFT JOIN users u ON (ur.user_id = u.id)
+    `,
+    ];
+
     const values: any[] = [];
     let where: string[] = [];
     let idx = 1;
@@ -61,8 +78,12 @@ export default class RoleRepo {
         queryString.push(`WHERE ${where.join(" AND ")}`);
       }
 
+      queryString.push(`GROUP BY r.id`);
+
       const { rows } = await this.fastify.query<{ count: string }>({
-        text: queryString.join(" ").replace("*", "count(*)"),
+        text: `WITH roles AS (${queryString.join(
+          " "
+        )}) SELECT COUNT(*) FROM roles`,
         values,
       });
       const totalItem = parseInt(rows[0].count);
@@ -92,7 +113,7 @@ export default class RoleRepo {
 
       const { rows: roles } = await this.fastify.query<Role>(queryConfig);
 
-      const totalPage = Math.ceil(totalItem / limit);
+      const totalPage = Math.ceil(totalItem / limit) || 0;
 
       return {
         roles,
@@ -106,11 +127,7 @@ export default class RoleRepo {
         },
       };
     } catch (error: any) {
-      throw new CustomError({
-        message: `RoleRepo.query() method error: ${error}`,
-        statusCode: StatusCodes.BAD_REQUEST,
-        statusText: "BAD_REQUEST",
-      });
+      throw new BadRequestError(`RoleRepo.query() method error: ${error}`);
     }
   }
 
@@ -119,13 +136,20 @@ export default class RoleRepo {
       text: `
         SELECT
             r.*,
-            COUNT(ur.user_id)::int as user_count
+            COUNT(ur.user_id) FILTER (
+                WHERE
+                    ur.user_id IS NOT NULL
+                    AND u.status = 'ACTIVE'
+                    AND u.deactived_at IS NULL
+            )::int AS user_count
         FROM
             roles r
             LEFT JOIN user_roles ur ON (ur.role_id = r.id)
+            LEFT JOIN users u ON (ur.user_id = u.id)
         WHERE
-            id = $1
-        GROUP BY r.id
+            r.id = $1
+        GROUP BY
+            r.id
         LIMIT
             1;
       `,
@@ -143,48 +167,194 @@ export default class RoleRepo {
     }
   }
 
-  async findUsersByRoleId(roleId: string): Promise<QueryUserRole> {
+  async findUsersByRoleId(
+    roleId: string,
+    query?: QueryUsersType
+  ): Promise<QueryUserRole> {
+    const newTable = `
+      WITH
+        users AS (
+          SELECT
+              u.id,
+              u.email,
+              (u.password_hash IS NOT NULL)::boolean AS has_password,
+              u.username,
+              u.status,
+              u.deactived_at,
+              u.created_at,
+              u.updated_at
+          FROM
+              user_roles ur
+              LEFT JOIN users u ON (u.id = ur.user_id)
+          WHERE
+              ur.role_id = $1::text
+              AND u.status = 'ACTIVE'
+              AND u.deactived_at IS NULL
+        )
+      `;
+
+    let queryString = [`SELECT * FROM users`];
+
+    const values: any[] = [roleId];
+    let where: string[] = [];
+    let idx = 2;
+
+    if (query) {
+      if (query.email != undefined) {
+        where.push(`email ILIKE $${idx++}::text`);
+        values.push(`%${query.email.trim()}%`);
+      }
+
+      if (query.username != undefined) {
+        where.push(`username ILIKE $${idx++}::text`);
+        values.push(`%${query.username.trim()}%`);
+      }
+
+      if (query.status != undefined) {
+        where.push(`status = $${idx++}::text`);
+        values.push(query.status);
+      }
+
+      if (query.created_from) {
+        where.push(`created_at >= $${idx++}::timestamptz`);
+        values.push(
+          `${
+            isDataString(query.created_from.trim())
+              ? `${query.created_from.trim()}T00:00:00.000Z`
+              : query.created_from.trim()
+          }`
+        );
+      }
+
+      if (query.created_to) {
+        where.push(`created_at <= $${idx++}::timestamptz`);
+        values.push(
+          `${
+            isDataString(query.created_to.trim())
+              ? `${query.created_to.trim()}T23:59:59.999Z`
+              : query.created_to.trim()
+          }`
+        );
+      }
+    }
+
+    if (where.length > 0) {
+      queryString.push(`WHERE ${where.join(" AND ")}`);
+    }
+
+    try {
+      return await this.fastify.transaction(async (client) => {
+        const { rows } = await client.query<{ count: string }>({
+          text: [newTable, queryString.join(" ").replace("*", "count(*)")].join(
+            " "
+          ),
+          values,
+        });
+
+        const totalItem = parseInt(rows[0].count);
+
+        if (query?.sort != undefined) {
+          queryString.push(
+            `ORDER BY ${query.sort
+              .map((sort) => {
+                const [field, direction] = sort.split(".");
+                return `${field} ${direction.toUpperCase()}`;
+              })
+              .join(", ")}`
+          );
+        }
+
+        let limit = query?.limit ?? totalItem;
+        let page = query?.page ?? 1;
+        let offset = (page - 1) * limit;
+
+        queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
+        values.push(limit, offset);
+
+        const queryConfig: QueryConfig = {
+          text: [newTable, queryString.join(" ")].join(" "),
+          values,
+        };
+
+        const { rows: users } = await client.query<UserRole>(queryConfig);
+
+        const totalPage = Math.ceil(totalItem / limit) || 0;
+
+        return {
+          users,
+          metadata: {
+            totalItem,
+            totalPage,
+            hasNextPage: page < totalPage,
+            limit: totalItem > 0 ? limit : 0,
+            itemStart: totalItem > 0 ? (page - 1) * limit + 1 : 0,
+            itemEnd: Math.min(page * limit, totalItem),
+          },
+        };
+      });
+    } catch (error: any) {
+      throw new BadRequestError(
+        `RoleRepo.findUsersByRoleId() method error: ${error}`
+      );
+    }
+  }
+
+  async findDetailById(roleId: string): Promise<RoleDetail | null> {
     const queryConfig: QueryConfig = {
       text: `
         SELECT
             r.*,
-            COUNT(ur.user_id)::int as user_count
+            COUNT(ur.user_id) FILTER (
+                WHERE
+                    ur.user_id IS NOT NULL
+                    AND u.status = 'ACTIVE'
+                    AND u.deactived_at IS NULL
+            )::int AS user_count,
+            COALESCE(
+                json_agg(
+                    json_build_object(
+                        'id',
+                        u.id,
+                        'email',
+                        u.email,
+                        'has_password',
+                        (u.password_hash IS NOT NULL)::boolean,
+                        'username',
+                        u.username,
+                        'status',
+                        u.status,
+                        'deactived_at',
+                        u.deactived_at,
+                        'created_at',
+                        u.created_at,
+                        'updated_at',
+                        u.updated_at
+                    )
+                ) FILTER (
+                    WHERE
+                        u.id IS NOT NULL
+                        AND u.status = 'ACTIVE'
+                        AND u.deactived_at IS NULL    
+                ),
+                '[]'
+            ) AS users
         FROM
             roles r
             LEFT JOIN user_roles ur ON (ur.role_id = r.id)
+            LEFT JOIN users u ON (ur.user_id = u.id)
         WHERE
-            id = $1
-        GROUP BY r.id
-        LIMIT
-            1;
+            r.id = $1
+        GROUP BY
+            r.id;
       `,
       values: [roleId],
     };
     try {
-      const { rows }: QueryResult<Role> = await this.fastify.query(queryConfig);
+      const { rows } = await this.fastify.query<RoleDetail>(queryConfig);
       return rows[0] ?? null;
     } catch (error: any) {
       throw new CustomError({
-        message: `RoleRepo.findUserByRoleId() method error: ${error}`,
-        statusCode: StatusCodes.BAD_REQUEST,
-        statusText: "BAD_REQUEST",
-      });
-    }
-  }
-
-  async findDetailById(roleId: string): Promise<any> {
-    const queryConfig: QueryConfig = {
-      text: `
-        
-      `,
-      values: [roleId],
-    };
-    try {
-      const { rows }: QueryResult<Role> = await this.fastify.query(queryConfig);
-      return rows[0] ?? null;
-    } catch (error: any) {
-      throw new CustomError({
-        message: `RoleRepo.findUserByRoleId() method error: ${error}`,
+        message: `RoleRepo.findDetailById() method error: ${error}`,
         statusCode: StatusCodes.BAD_REQUEST,
         statusText: "BAD_REQUEST",
       });
@@ -230,16 +400,19 @@ export default class RoleRepo {
     let idx = 1;
 
     if (data.name !== undefined) {
-      sets.push(`"name" = $${idx++}::text`);
+      sets.push(`name = $${idx++}::text`);
       values.push(data.name);
     }
     if (data.permissions !== undefined) {
-      sets.push(`"permissions" = $${idx++}::text[]`);
+      sets.push(`permissions = $${idx++}::text[]`);
       values.push(data.permissions);
     }
-    if (data.description !== undefined) {
-      sets.push(`"description" = $${idx++}::text`);
-      values.push(data.description);
+    if (data.status !== undefined) {
+      sets.push(
+        `status = $${idx++}::text`,
+        `deactived_at = $${idx++}::timestamptz`
+      );
+      values.push(data.status, new Date());
     }
 
     if (sets.length === 0) {

@@ -4,6 +4,8 @@ import {
   createRoleController,
   deleteRoleByIdController,
   getRoleByIdController,
+  getRoleDetailByIdController,
+  getUsersByRoleIdController,
   queryRoleController,
   updateRoleByIdController,
 } from "./role.controller";
@@ -13,6 +15,8 @@ import {
   createNewRoleSchema,
   deleteRoleByIdSchema,
   getRoleByIdSchema,
+  getRoleDetailByIdSchema,
+  getUsersByRoleIdSchema,
   queryStringRolesSchema,
   updateRoleByIdSchema,
 } from "./role.schema";
@@ -40,6 +44,30 @@ export default async function roleRoutes(fastify: FastifyInstance) {
       ],
     },
     getRoleByIdController
+  );
+
+  fastify.get(
+    "/:id/users",
+    {
+      schema: getUsersByRoleIdSchema,
+      preHandler: [
+        requiredAuthMiddleware,
+        checkPermissionMiddleware(["read:role:*"]),
+      ],
+    },
+    getUsersByRoleIdController
+  );
+
+  fastify.get(
+    "/:id/detail",
+    {
+      schema: getRoleDetailByIdSchema,
+      preHandler: [
+        requiredAuthMiddleware,
+        checkPermissionMiddleware(["read:role:*"]),
+      ],
+    },
+    getRoleDetailByIdController
   );
 
   fastify.post(

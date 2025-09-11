@@ -83,10 +83,17 @@ const sortEnum = [
   "username.desc",
   "email.asc",
   "email.desc",
-  "disable.asc",
-  "disable.desc",
+  "status.asc",
+  "status.desc",
+  "deactived_at.asc",
+  "deactived_at.desc",
+  "created_at.asc",
+  "created_at.desc",
+  "updated_at.asc",
+  "updated_at.desc",
 ];
-const queryStringUsersSchema = Type.Partial(
+
+export const queryStringUsersSchema = Type.Partial(
   Type.Object({
     username: Type.String({
       errorMessage: {

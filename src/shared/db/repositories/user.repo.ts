@@ -85,7 +85,7 @@ export default class UserRepo {
     }
   }
 
-  async findUserRoleById(id: string): Promise<UserRole | null> {
+  async findUserRoleById(id: string): Promise<User | null> {
     const queryConfig: QueryConfig = {
       text: `
       SELECT
@@ -111,7 +111,7 @@ export default class UserRepo {
       values: [id],
     };
     try {
-      const { rows } = await this.fastify.query<UserRole>(queryConfig);
+      const { rows } = await this.fastify.query<User>(queryConfig);
       return rows[0] ?? null;
     } catch (err: unknown) {
       this.fastify.logger.error(
@@ -122,33 +122,33 @@ export default class UserRepo {
     }
   }
 
-  async findUserRoleByEmail(email: string): Promise<UserRole | null> {
+  async findUserRoleByEmail(email: string): Promise<User | null> {
     const queryConfig: QueryConfig = {
       text: `
-      SELECT
-          u.id,
-          email,
-          (u.password_hash IS NOT NULL)::boolean AS has_password,
-          username,
-          status,
-          u.deactived_at,
-          u.created_at,
-          u.updated_at,
-          COUNT(ur.role_id) AS role_count
-      FROM
-          users u
-          LEfT JOIN user_roles ur ON (ur.user_id = u.id)
-      WHERE
-          email = $1
-      GROUP BY
-          u.id
-      LIMIT
-          1;
+        SELECT
+            u.id,
+            email,
+            (u.password_hash IS NOT NULL)::boolean AS has_password,
+            username,
+            status,
+            u.deactived_at,
+            u.created_at,
+            u.updated_at,
+            COUNT(ur.role_id) AS role_count
+        FROM
+            users u
+            LEfT JOIN user_roles ur ON (ur.user_id = u.id)
+        WHERE
+            email = $1
+        GROUP BY
+            u.id
+        LIMIT
+            1;
       `,
       values: [email],
     };
     try {
-      const { rows } = await this.fastify.query<UserRole>(queryConfig);
+      const { rows } = await this.fastify.query<User>(queryConfig);
       return rows[0] ?? null;
     } catch (err: unknown) {
       this.fastify.logger.error(
@@ -159,7 +159,7 @@ export default class UserRepo {
     }
   }
 
-  async findUserPasswordById(userId: string): Promise<User | null> {
+  async findUserPasswordById(userId: string): Promise<UserPassword | null> {
     const queryConfig: QueryConfig = {
       text: `
       SELECT
@@ -175,7 +175,7 @@ export default class UserRepo {
     };
 
     try {
-      const { rows } = await this.fastify.query<User>(queryConfig);
+      const { rows } = await this.fastify.query<UserPassword>(queryConfig);
       return rows[0] ?? null;
     } catch (err: unknown) {
       this.fastify.logger.error(
@@ -186,7 +186,7 @@ export default class UserRepo {
     }
   }
 
-  async findUserPasswordByEmail(email: string): Promise<User | null> {
+  async findUserPasswordByEmail(email: string): Promise<UserPassword | null> {
     const queryConfig: QueryConfig = {
       text: `
       SELECT
@@ -202,7 +202,7 @@ export default class UserRepo {
     };
 
     try {
-      const { rows } = await this.fastify.query<User>(queryConfig);
+      const { rows } = await this.fastify.query<UserPassword>(queryConfig);
       return rows[0] ?? null;
     } catch (err: unknown) {
       this.fastify.logger.error(
@@ -213,7 +213,7 @@ export default class UserRepo {
     }
   }
 
-  async findUserRoleDetailById(userId: string): Promise<UserRoleDetail | null> {
+  async findUserRoleDetailById(userId: string): Promise<UserDetail | null> {
     const queryConfig: QueryConfig = {
       text: `
         SELECT
@@ -271,7 +271,7 @@ export default class UserRepo {
       values: [userId],
     };
     try {
-      const { rows: userDetails } = await this.fastify.query<UserRoleDetail>(
+      const { rows: userDetails } = await this.fastify.query<UserDetail>(
         queryConfig
       );
       return userDetails[0] ?? null;
@@ -498,9 +498,12 @@ export default class UserRepo {
     try {
       return await this.fastify.transaction(async (client) => {
         const { rows } = await client.query<{ count: string }>({
-          text: queryString
-            .join(" ")
-            .replace(/(?<=SELECT)([\s\S]*?)(?=FROM)/, " count(*) "),
+          // text: queryString
+          //   .join(" ")
+          //   .replace(/(?<=SELECT)([\s\S]*?)(?=FROM)/, " count(*) "),
+          text: `WITH users AS (${queryString.join(
+            " "
+          )}) SELECT count(*) FROM users;`,
           values,
         });
 
@@ -529,7 +532,7 @@ export default class UserRepo {
           values,
         };
 
-        const { rows: users } = await client.query<UserRole>(queryConfig);
+        const { rows: users } = await client.query<User>(queryConfig);
 
         const totalPage = Math.ceil(totalItem / limit) || 0;
 
@@ -550,7 +553,7 @@ export default class UserRepo {
     }
   }
 
-  async create(data: CreateNewUserBodyType): Promise<User> {
+  async create(data: CreateNewUserBodyType): Promise<UserPassword> {
     const password = data.password ?? Password.generate();
     const password_hash = await Password.hash(password);
 
@@ -561,9 +564,9 @@ export default class UserRepo {
 
     try {
       const newUser = await this.fastify.transaction(async (client) => {
-        const { rows: userRow } = await client.query<User>(queryConfig);
+        const { rows: userRow } = await client.query<UserPassword>(queryConfig);
 
-        if (data.roleIds) {
+        if (data.roleIds && data.roleIds.length > 0) {
           const values: any[] = [];
 
           const placeholder = data.roleIds

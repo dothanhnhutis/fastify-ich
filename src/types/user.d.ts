@@ -9,7 +9,7 @@ type UserWithoutPassword = {
   updated_at: Date;
 };
 
-type User = {
+type UserPassword = {
   id: string;
   email: string;
   password_hash: string;
@@ -22,11 +22,11 @@ type User = {
 
 type QueryUserRole = { users: UserRole[]; metadata: Metadata };
 
-type UserRole = UserWithoutPassword & {
+type User = UserWithoutPassword & {
   role_count: number;
 };
 
-type UserRoleDetail = UserWithoutPassword & {
+type UserDetail = UserWithoutPassword & {
   role_count: number;
   roles: Role[];
 };
