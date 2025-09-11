@@ -4,7 +4,7 @@ import { PermissionError } from "../error-handler";
 export default function checkPermissionMiddleware(permissions: string[]) {
   return async <T extends RouteGenericInterface>(
     req: FastifyRequest<T>,
-    reply: FastifyReply
+    _: FastifyReply
   ) => {
     if (!req.currUser) throw new PermissionError();
 

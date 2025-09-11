@@ -1,5 +1,5 @@
 ---- chèn bằng file
--- cách 1: chèm full trường
+-- cách 1: chèm full field
 COPY users
 FROM
     'user_data.csv' DELIMITER ',' CSV;
@@ -11,10 +11,7 @@ FROM
 WITH
     (FORMAT csv, HEADER true, DELIMITER ',');
 
--- Xoá bảng
-DROP TABLE IF EXISTS "PackagingTransaction";
-
----
+--- Cập nhật userByEmail
 UPDATE users
 SET
     password_hash = '$argon2id$v=19$m=65536,t=3,p=4$oDdsbvL66JBFGcGtpM2bVQ$BSuYE86W6ALjeRJmC9I5sv/pr6xXJj3eFGvgS+aF7Io',
@@ -24,7 +21,7 @@ WHERE
 RETURNING
     *;
 
----
+--- Chèn thủ công
 INSERT INTO
     users (email, username, password_hash)
 VALUES
@@ -36,7 +33,7 @@ VALUES
 RETURNING
     *;
 
---- create admin account
+--- Tạo tài khoản user và role với transaction
 BEGIN;
 
 WITH
@@ -88,18 +85,115 @@ COMMIT;
 
 END;
 
---- findUserRoles
+--- findByEmail without password
 SELECT
-    r.*
+    id,
+    email,
+    (password_hash IS NOT NULL)::boolean AS has_password,
+    username,
+    status,
+    deactived_at,
+    created_at,
+    updated_at
 FROM
-    user_roles ur
-    LEFT JOIN roles r ON (r.id = ur.role_id)
+    users
 WHERE
-    user_id = 'a68b251c-0118-45f0-a722-c6ed1562539a'
-    AND r.status = 'ACTIVE'
-    AND r.deactived_at IS NULL;
+    email = 'example@gmail.com'
+LIMIT
+    1;
 
---- findById
+--- findById  without password
+SELECT
+    id,
+    email,
+    (password_hash IS NOT NULL)::boolean AS has_password,
+    username,
+    status,
+    deactived_at,
+    created_at,
+    updated_at
+FROM
+    users_without_password
+WHERE
+    id = 'a68b251c-0118-45f0-a722-c6ed1562539a'
+LIMIT
+    1;
+
+--- findUserRoleById
+SELECT
+    u.id,
+    email,
+    (u.password_hash IS NOT NULL)::boolean AS has_password,
+    username,
+    status,
+    u.deactived_at,
+    u.created_at,
+    u.updated_at,
+    COUNT(ur.role_id) AS role_count
+FROM
+    users u
+    LEfT JOIN user_roles ur ON (ur.user_id = u.id)
+WHERE
+    id = 'd7d2b394-7604-4f93-9011-a5c45727dee1'
+GROUP BY
+    u.id
+LIMIT
+    1;
+
+--- findUserRoleDetailById
+SELECT
+    u.id,
+    email,
+    (u.password_hash IS NOT NULL)::boolean AS has_password,
+    username,
+    u.status,
+    u.deactived_at,
+    u.created_at,
+    u.updated_at,
+    COUNT(ur.role_id) FILTER (
+        WHERE
+            r.id IS NOT NULL
+            AND r.status = 'ACTIVE'
+    )::int AS role_count,
+    COALESCE(
+        json_agg(
+            json_build_object(
+                'id',
+                r.id,
+                'name',
+                r.name,
+                'permissions',
+                r.permissions,
+                'description',
+                r.description,
+                'status',
+                r.status,
+                'deactived_at',
+                r.deactived_at,
+                'created_at',
+                r.created_at,
+                'updated_at',
+                r.updated_at
+            )
+        ) FILTER (
+            WHERE
+                r.id IS NOT NULL
+                AND r.status = 'ACTIVE'
+        ),
+        '[]'
+    ) AS roles
+FROM
+    users u
+    LEFT JOIN user_roles ur ON (ur.user_id = u.id)
+    LEFT JOIN roles r ON (ur.role_id = r.id)
+WHERE
+    u.id = 'd7d2b394-7604-4f93-9011-a5c45727dee1'
+GROUP BY
+    u.id
+LIMIT
+    1;
+
+--- findUserPasswordById
 SELECT
     *
 FROM
@@ -109,10 +203,17 @@ WHERE
 LIMIT
     1;
 
---- findDetailById
+--- findUserDetailById
 SELECT
-    u.,
-    count(ur.role_id) FILTER (
+    u.id,
+    u.email,
+    (u.password_hash IS NOT NULL)::boolean AS has_password,
+    u.username,
+    u.status,
+    u.deactived_at,
+    u.created_at,
+    u.updated_at,
+    COUNT(ur.role_id) FILTER (
         WHERE
             r.id IS NOT NULL
             AND r.status = 'ACTIVE'
@@ -145,20 +246,50 @@ SELECT
         '[]'
     ) AS roles
 FROM
-    users_without_password u
+    users u
     LEFT JOIN user_roles ur ON (ur.user_id = u.id)
     LEFT JOIN roles r ON (ur.role_id = r.id)
 GROUP BY
     u.id;
 
---- omit column
---- cach 1: su dung to_jsonb
--- SELECT
---     to_jsonb(u) - 'password_hash' AS user
--- FROM
---     users u;
---- cach 2: su dung view
+--- query
+SELECT
+    u.id,
+    u.email,
+    (u.password_hash IS NOT NULL)::boolean AS has_password,
+    u.username,
+    u.status,
+    u.deactived_at,
+    u.created_at,
+    u.updated_at,
+    COUNT(ur.role_id) FILTER (
+        WHERE
+            r.id IS NOT NULL
+            AND r.status = 'ACTIVE'
+    ) AS role_count
+FROM
+    users u
+    LEFT JOIN user_roles ur ON (ur.user_id = u.id)
+    LEFT JOIN roles r ON (ur.role_id = r.id)
+GROUP BY
+    u.id;
+
+--- findRolesByUserId
+WITH
+    roles AS (
+        SELECT
+            r.*
+        FROM
+            user_roles ur
+            LEFT JOIN roles r ON (r.id = ur.role_id)
+        WHERE
+            user_id = 'd7d2b394-7604-4f93-9011-a5c45727dee1'
+            AND r.status = 'ACTIVE'
+            AND r.deactived_at IS NULL
+    )
 SELECT
     *
-from
-    users_without_password;
+FROM
+    roles
+WHERE
+    permissions @> ARRAY['read:user:*'];

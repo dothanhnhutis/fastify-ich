@@ -172,6 +172,8 @@ DELETE FROM tablename;
 
 ### 3.2. Views
 
+có thể tạo view để tăng tốc quá trình query nhưng không thể `group by` được vì nó tạo ra table mới và không có `primary key`. Nhưng chúng ta có thể tạo `MATERIALIZED VIEW` để tạo `index` hay `primary key` và `group by join` được. Nhưng `MATERIALIZED VIEW` có nhược điểm là phải `REFRESH` để cập nhật dữ liệu. `MATERIALIZED VIEW` chỉ thích hợp khi query phức tạp/nặng, nhưng không cần real-time → trade-off tốc độ với tính cập nhật.
+
 ```sql
 CREATE VIEW myview AS
     SELECT name, temp_lo, temp_hi, prcp, date, location
@@ -179,6 +181,25 @@ CREATE VIEW myview AS
         WHERE city = name;
 
 SELECT * FROM myview;
+```
+
+```sql
+CREATE MATERIALIZED VIEW users_without_password_mv AS
+SELECT
+    id,
+    email,
+    (password_hash IS NOT NULL)::boolean AS has_password,
+    username,
+    status,
+    deactived_at,
+    created_at,
+    updated_at
+FROM users
+WITH NO DATA;
+
+CREATE UNIQUE INDEX ON users_without_password_mv(id);
+
+REFRESH MATERIALIZED VIEW users_without_password_mv;
 ```
 
 ### 3.3. Foreign Keys

@@ -1,13 +1,15 @@
+import { QueryConfig } from "pg";
+import { FastifyInstance } from "fastify";
+
 import {
   CreateNewUserBodyType,
   QueryUsersType,
   UpdateUserByIdBodyType,
 } from "@/modules/v1/users/user.schema";
-import { BadRequestError } from "@/shared/error-handler";
 import Password from "@/shared/password";
 import { isDataString } from "@/shared/utils";
-import { FastifyInstance } from "fastify";
-import { QueryConfig, QueryResult } from "pg";
+import { BadRequestError } from "@/shared/error-handler";
+import { QueryRolesType } from "@/modules/v1/roles/role.schema";
 
 export default class UserRepo {
   constructor(private fastify: FastifyInstance) {}
@@ -35,7 +37,9 @@ export default class UserRepo {
     };
 
     try {
-      const { rows } = await this.fastify.query<User>(queryConfig);
+      const { rows } = await this.fastify.query<UserWithoutPassword>(
+        queryConfig
+      );
       return rows[0] ?? null;
     } catch (err: unknown) {
       this.fastify.logger.error(
@@ -68,12 +72,88 @@ export default class UserRepo {
       values: [id],
     };
     try {
-      const { rows }: QueryResult<User> = await this.fastify.query(queryConfig);
+      const { rows } = await this.fastify.query<UserWithoutPassword>(
+        queryConfig
+      );
       return rows[0] ?? null;
     } catch (err: unknown) {
       this.fastify.logger.error(
         { metadata: { query: queryConfig } },
         `UserRepo.findById() method error: ${err}`
+      );
+      return null;
+    }
+  }
+
+  async findUserRoleById(id: string): Promise<UserRole | null> {
+    const queryConfig: QueryConfig = {
+      text: `
+      SELECT
+          u.id,
+          email,
+          (u.password_hash IS NOT NULL)::boolean AS has_password,
+          username,
+          status,
+          u.deactived_at,
+          u.created_at,
+          u.updated_at,
+          COUNT(ur.role_id)::int AS role_count
+      FROM
+          users u
+          LEfT JOIN user_roles ur ON (ur.user_id = u.id)
+      WHERE
+          id = $1
+      GROUP BY
+          u.id
+      LIMIT
+          1;
+      `,
+      values: [id],
+    };
+    try {
+      const { rows } = await this.fastify.query<UserRole>(queryConfig);
+      return rows[0] ?? null;
+    } catch (err: unknown) {
+      this.fastify.logger.error(
+        { metadata: { query: queryConfig } },
+        `UserRepo.findUserRoleById() method error: ${err}`
+      );
+      return null;
+    }
+  }
+
+  async findUserRoleByEmail(email: string): Promise<UserRole | null> {
+    const queryConfig: QueryConfig = {
+      text: `
+      SELECT
+          u.id,
+          email,
+          (u.password_hash IS NOT NULL)::boolean AS has_password,
+          username,
+          status,
+          u.deactived_at,
+          u.created_at,
+          u.updated_at,
+          COUNT(ur.role_id) AS role_count
+      FROM
+          users u
+          LEfT JOIN user_roles ur ON (ur.user_id = u.id)
+      WHERE
+          email = $1
+      GROUP BY
+          u.id
+      LIMIT
+          1;
+      `,
+      values: [email],
+    };
+    try {
+      const { rows } = await this.fastify.query<UserRole>(queryConfig);
+      return rows[0] ?? null;
+    } catch (err: unknown) {
+      this.fastify.logger.error(
+        { metadata: { query: queryConfig } },
+        `UserRepo.findUserRoleByEmail() method error: ${err}`
       );
       return null;
     }
@@ -133,16 +213,23 @@ export default class UserRepo {
     }
   }
 
-  async findUserDetailById(userId: string): Promise<UserDetail | null> {
+  async findUserRoleDetailById(userId: string): Promise<UserRoleDetail | null> {
     const queryConfig: QueryConfig = {
       text: `
         SELECT
-            u.*,
-            count(ur.role_id) FILTER (
+            u.id,
+            email,
+            (u.password_hash IS NOT NULL)::boolean AS has_password,
+            username,
+            u.status,
+            u.deactived_at,
+            u.created_at,
+            u.updated_at,
+            COUNT(ur.role_id) FILTER (
                 WHERE
                     r.id IS NOT NULL
                     AND r.status = 'ACTIVE'
-            ) AS role_count,
+            )::int AS role_count,
             COALESCE(
                 json_agg(
                     json_build_object(
@@ -171,18 +258,20 @@ export default class UserRepo {
                 '[]'
             ) AS roles
         FROM
-            users_without_password u
+            users u
             LEFT JOIN user_roles ur ON (ur.user_id = u.id)
             LEFT JOIN roles r ON (ur.role_id = r.id)
         WHERE
             u.id = $1
         GROUP BY
-            u.id;
+            u.id
+        LIMIT
+            1;
       `,
       values: [userId],
     };
     try {
-      const { rows: userDetails } = await this.fastify.query<UserPassword>(
+      const { rows: userDetails } = await this.fastify.query<UserRoleDetail>(
         queryConfig
       );
       return userDetails[0] ?? null;
@@ -195,49 +284,168 @@ export default class UserRepo {
     }
   }
 
-  async findUserRoles(userId: string): Promise<Role[]> {
-    const queryConfig: QueryConfig = {
-      text: `
-        SELECT
-            r.*
-        FROM
-            user_roles ur
-            LEFT JOIN roles r ON (r.id = ur.role_id)
-        WHERE
-            user_id = $1 
-            AND r.status = 'ACTIVE'
-            AND r.deactived_at IS NULL;
-      `,
-      values: [userId],
-    };
+  async findRolesByUserId(
+    userId: string,
+    query?: QueryRolesType
+  ): Promise<QueryRoles> {
+    const newTable = `
+      WITH
+        roles AS (
+            SELECT
+                r.*
+            FROM
+                user_roles ur
+                LEFT JOIN roles r ON (r.id = ur.role_id)
+            WHERE
+                user_id = $1::text
+                AND r.status = 'ACTIVE'
+                AND r.deactived_at IS NULL
+        )
+    `;
+
+    const queryString = [`SELECT * FROM roles`];
+
+    const values: any[] = [userId];
+    let where: string[] = [];
+    let idx = 2;
+
+    if (query) {
+      if (query.name != undefined) {
+        where.push(`name ILIKE $${idx++}::text`);
+        values.push(`%${query.name.trim()}%`);
+      }
+
+      if (query.permissions != undefined) {
+        where.push(`permissions @> $${idx++}::text[]`);
+        values.push(query.permissions);
+      }
+
+      if (query.description != undefined) {
+        where.push(`description ILIKE $${idx++}::text`);
+        values.push(`%${query.description.trim()}%`);
+      }
+
+      if (query.status != undefined) {
+        where.push(`status = $${idx++}::text`);
+        values.push(`${query.status}`);
+      }
+
+      if (query.created_from) {
+        where.push(`created_at >= $${idx++}::timestamptz`);
+        values.push(
+          `${
+            isDataString(query.created_from.trim())
+              ? `${query.created_from.trim()}T00:00:00.000Z`
+              : query.created_from.trim()
+          }`
+        );
+      }
+
+      if (query.created_to) {
+        where.push(`created_at <= $${idx++}::timestamptz`);
+        values.push(
+          `${
+            isDataString(query.created_to.trim())
+              ? `${query.created_to.trim()}T23:59:59.999Z`
+              : query.created_to.trim()
+          }`
+        );
+      }
+    }
+
+    if (where.length > 0) {
+      queryString.push(`WHERE ${where.join(" AND ")}`);
+    }
+
     try {
-      const { rows }: QueryResult<Role> = await this.fastify.query(queryConfig);
-      return rows ?? null;
+      return await this.fastify.transaction(async (client) => {
+        const { rows } = await client.query<{ count: string }>({
+          text: [newTable, queryString.join(" ").replace("*", "count(*)")].join(
+            " "
+          ),
+          values,
+        });
+
+        const totalItem = parseInt(rows[0].count);
+
+        if (query && query.sort != undefined) {
+          const unqueField = query.sort.reduce<Record<string, string>>(
+            (prev, curr) => {
+              const [field, direction] = curr.split(".");
+              prev[field] = direction.toUpperCase();
+              return prev;
+            },
+            {}
+          );
+
+          const orderBy = Object.entries(unqueField)
+            .map(([field, direction]) => `${field} ${direction}`)
+            .join(", ");
+
+          queryString.push(`ORDER BY ${orderBy}`);
+        }
+
+        let limit = query?.limit ?? totalItem;
+        let page = query?.page ?? 1;
+        let offset = (page - 1) * limit;
+
+        queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
+        values.push(limit, offset);
+
+        const queryConfig: QueryConfig = {
+          text: [newTable, queryString.join(" ")].join(" "),
+          values,
+        };
+
+        const { rows: roles } = await client.query<Role>(queryConfig);
+
+        const totalPage = Math.ceil(totalItem / limit);
+
+        return {
+          roles,
+          metadata: {
+            totalItem,
+            totalPage,
+            hasNextPage: page < totalPage,
+            limit: totalItem > 0 ? limit : 0,
+            itemStart: totalItem > 0 ? (page - 1) * limit + 1 : 0,
+            itemEnd: Math.min(page * limit, totalItem),
+          },
+        };
+      });
     } catch (err: unknown) {
-      this.fastify.logger.error(
-        { metadata: { query: queryConfig } },
-        `UserRepo.findUserRoles() method error: ${err}`
+      // this.fastify.logger.error(
+      //   { metadata: { query: queryConfig } },
+      //   `UserRepo.findUserRoles() method error: ${err}`
+      // );
+      throw new BadRequestError(
+        `PackagingStockRepo.findRolesByUserId() method error: ${err}`
       );
-      return [];
     }
   }
 
-  async query(
-    query: QueryUsersType
-  ): Promise<{ users: User[]; metadata: Metadata }> {
+  async query(query: QueryUsersType): Promise<QueryUserRole> {
     let queryString = [
       `
       SELECT
-          id,
-          email,
-          (password_hash IS NOT NULL)::boolean AS has_password,
-          username,
-          status,
-          deactived_at,
-          created_at,
-          updated_at
+          u.id,
+          u.email,
+          (u.password_hash IS NOT NULL)::boolean AS has_password,
+          u.username,
+          u.status,
+          u.deactived_at,
+          u.created_at,
+          u.updated_at,
+          COUNT(ur.role_id) FILTER (
+              WHERE
+                  r.id IS NOT NULL
+                  AND r.status = 'ACTIVE'
+          )::int AS role_count
       FROM
-          users
+          users u
+          LEFT JOIN user_roles ur ON (ur.user_id = u.id)
+          LEFT JOIN roles r ON (ur.role_id = r.id)
+      
       `,
     ];
     const values: any[] = [];
@@ -255,12 +463,12 @@ export default class UserRepo {
     }
 
     if (query.status != undefined) {
-      where.push(`status = $${idx++}::text`);
+      where.push(`u.status = $${idx++}::text`);
       values.push(`${query.status}`);
     }
 
     if (query.created_from) {
-      where.push(`created_at >= $${idx++}::timestamptz`);
+      where.push(`u.created_at >= $${idx++}::timestamptz`);
       values.push(
         `${
           isDataString(query.created_from.trim())
@@ -271,7 +479,7 @@ export default class UserRepo {
     }
 
     if (query.created_to) {
-      where.push(`created_at <= $${idx++}::timestamptz`);
+      where.push(`u.created_at <= $${idx++}::timestamptz`);
       values.push(
         `${
           isDataString(query.created_to.trim())
@@ -284,6 +492,8 @@ export default class UserRepo {
     if (where.length > 0) {
       queryString.push(`WHERE ${where.join(" AND ")}`);
     }
+
+    queryString.push(`GROUP BY u.id`);
 
     try {
       return await this.fastify.transaction(async (client) => {
@@ -319,7 +529,7 @@ export default class UserRepo {
           values,
         };
 
-        const { rows: users } = await client.query<User>(queryConfig);
+        const { rows: users } = await client.query<UserRole>(queryConfig);
 
         const totalPage = Math.ceil(totalItem / limit) || 0;
 
@@ -351,9 +561,7 @@ export default class UserRepo {
 
     try {
       const newUser = await this.fastify.transaction(async (client) => {
-        const { rows: userRow }: QueryResult<User> = await client.query(
-          queryConfig
-        );
+        const { rows: userRow } = await client.query<User>(queryConfig);
 
         if (data.roleIds) {
           const values: any[] = [];

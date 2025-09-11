@@ -2,9 +2,9 @@ import { FastifyInstance } from "fastify";
 import {
   createUserController,
   currentUserController,
-  getUserByIdController,
+  getUserRoleByIdController,
   getUserDetailByIdController,
-  getUserRolesByUserIdController,
+  getRolesByUserIdController,
   logoutUserController,
   queryUserController,
   updateUserByIdController,
@@ -55,7 +55,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         checkPermissionMiddleware(["read:user:*"]),
       ],
     },
-    getUserRolesByUserIdController
+    getRolesByUserIdController
   );
 
   fastify.get(
@@ -67,7 +67,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         checkPermissionMiddleware(["read:user:id"]),
       ],
     },
-    getUserByIdController
+    getUserRoleByIdController
   );
 
   fastify.post(

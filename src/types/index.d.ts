@@ -21,57 +21,12 @@ type Metadata = {
   itemEnd: number;
 };
 
-type Session = {
-  id: string;
-  provider: "google" | "credential";
-  userId: string;
-  cookie: CookieOptions;
-  ip: string;
-  userAgent: UAParser.IResult;
-  lastAccess: Date;
-  createAt: Date;
-};
-
 type ReqInfo = {
   userId: string;
   ip: string;
   userAgentRaw: string;
   provider: "credential" | "google";
   cookie?: CookieOptions;
-};
-
-type UserWithoutPassword = {
-  id: string;
-  email: string;
-  has_password: boolean;
-  username: string;
-  status: string;
-  deactived_at: Date;
-  created_at: Date;
-  updated_at: Date;
-};
-
-type User = {
-  id: string;
-  email: string;
-  password_hash: string;
-  username: string;
-  status: string;
-  deactived_at: Date;
-  created_at: Date;
-  updated_at: Date;
-};
-
-type UserDetail = UserWithoutPassword & {};
-
-type Role = {
-  id: string;
-  name: string;
-  permissions: string[];
-  status: string;
-  deactived_at: Date;
-  created_at: Date;
-  updated_at: Date;
 };
 
 type Warehouse = {

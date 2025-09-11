@@ -2,22 +2,18 @@ import { FastifyInstance } from "fastify";
 import { QueryConfig, QueryResult } from "pg";
 import { StatusCodes } from "http-status-codes";
 
-import { CustomError } from "@/shared/error-handler";
-
 import {
   CreateNewRoleBodyType,
   QueryRolesType,
   UpdateRoleByIdBodyType,
 } from "@/modules/v1/roles/role.schema";
 import { isDataString } from "@/shared/utils";
+import { CustomError } from "@/shared/error-handler";
 
 export default class RoleRepo {
   constructor(private fastify: FastifyInstance) {}
 
-  async query(query: QueryRolesType): Promise<{
-    roles: Role[];
-    metadata: Metadata;
-  }> {
+  async query(query: QueryRolesType): Promise<QueryRoles> {
     let queryString = ["SELECT * FROM roles"];
     const values: any[] = [];
     let where: string[] = [];
@@ -118,10 +114,22 @@ export default class RoleRepo {
     }
   }
 
-  async findById(id: string): Promise<Role | null> {
+  async findById(roleId: string): Promise<Role | null> {
     const queryConfig: QueryConfig = {
-      text: `SELECT * FROM roles WHERE id = $1 LIMIT 1`,
-      values: [id],
+      text: `
+        SELECT
+            r.*,
+            COUNT(ur.user_id)::int as user_count
+        FROM
+            roles r
+            LEFT JOIN user_roles ur ON (ur.role_id = r.id)
+        WHERE
+            id = $1
+        GROUP BY r.id
+        LIMIT
+            1;
+      `,
+      values: [roleId],
     };
     try {
       const { rows }: QueryResult<Role> = await this.fastify.query(queryConfig);
@@ -129,6 +137,54 @@ export default class RoleRepo {
     } catch (error: any) {
       throw new CustomError({
         message: `RoleRepo.findById() method error: ${error}`,
+        statusCode: StatusCodes.BAD_REQUEST,
+        statusText: "BAD_REQUEST",
+      });
+    }
+  }
+
+  async findUsersByRoleId(roleId: string): Promise<QueryUserRole> {
+    const queryConfig: QueryConfig = {
+      text: `
+        SELECT
+            r.*,
+            COUNT(ur.user_id)::int as user_count
+        FROM
+            roles r
+            LEFT JOIN user_roles ur ON (ur.role_id = r.id)
+        WHERE
+            id = $1
+        GROUP BY r.id
+        LIMIT
+            1;
+      `,
+      values: [roleId],
+    };
+    try {
+      const { rows }: QueryResult<Role> = await this.fastify.query(queryConfig);
+      return rows[0] ?? null;
+    } catch (error: any) {
+      throw new CustomError({
+        message: `RoleRepo.findUserByRoleId() method error: ${error}`,
+        statusCode: StatusCodes.BAD_REQUEST,
+        statusText: "BAD_REQUEST",
+      });
+    }
+  }
+
+  async findDetailById(roleId: string): Promise<any> {
+    const queryConfig: QueryConfig = {
+      text: `
+        
+      `,
+      values: [roleId],
+    };
+    try {
+      const { rows }: QueryResult<Role> = await this.fastify.query(queryConfig);
+      return rows[0] ?? null;
+    } catch (error: any) {
+      throw new CustomError({
+        message: `RoleRepo.findUserByRoleId() method error: ${error}`,
         statusCode: StatusCodes.BAD_REQUEST,
         statusText: "BAD_REQUEST",
       });

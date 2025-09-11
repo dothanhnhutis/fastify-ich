@@ -15,12 +15,11 @@ import { BadRequestError } from "@/shared/error-handler";
 import { QueryRolesType } from "../roles/role.schema";
 
 // Admin
-
-export async function getUserByIdController(
+export async function getUserRoleByIdController(
   req: FastifyRequest<{ Params: GetUserByIdParamsType }>,
   reply: FastifyReply
 ) {
-  const existsUser = await req.users.findById(req.params.id);
+  const existsUser = await req.users.findUserRoleById(req.params.id);
   if (!existsUser) throw new BadRequestError("Người dùng không tồn tại.");
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
@@ -31,7 +30,7 @@ export async function getUserByIdController(
   });
 }
 
-export async function getUserRolesByUserIdController(
+export async function getRolesByUserIdController(
   req: FastifyRequest<{
     Params: GetUserRolesByUserIdParamsType;
     Querystring: QueryRolesType;
@@ -40,16 +39,11 @@ export async function getUserRolesByUserIdController(
 ) {
   const existsUser = await req.users.findById(req.params.id);
   if (!existsUser) throw new BadRequestError("Người dùng không tồn tại.");
-  const roles = await req.user_roles.findRolesByUserId(
-    req.params.id,
-    req.query
-  );
+  const roles = await req.users.findRolesByUserId(req.params.id, req.query);
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
     statusText: "OK",
-    data: {
-      roles,
-    },
+    data: roles,
   });
 }
 
@@ -57,7 +51,7 @@ export async function getUserDetailByIdController(
   req: FastifyRequest<{ Params: GetUserDetailByIdParamsType }>,
   reply: FastifyReply
 ) {
-  const userDetail = await req.users.findById(req.params.id);
+  const userDetail = await req.users.findUserRoleDetailById(req.params.id);
   if (!userDetail) throw new BadRequestError("Người dùng không tồn tại.");
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,

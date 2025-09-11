@@ -1,11 +1,10 @@
 import fp from "fastify-plugin";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import config from "../config";
 import { CryptoAES } from "../crypto";
 
 declare module "fastify" {
   interface FastifyRequest {
-    currUser: (User & { roles: Role[] }) | null;
+    currUser: UserRoleDetail | null;
     sessionId: string | null;
   }
 
@@ -51,13 +50,15 @@ async function session(fastify: FastifyInstance, options: SessionOptions) {
       const sessionId = cryptoCookie.decrypt(session);
       const sessionData = await req.sessions.findById(sessionId);
       if (!sessionData) return;
-      const user = await req.users.findById(sessionData.userId);
-      if (!user) {
+      const userRoleDetail = await req.users.findUserRoleDetailById(
+        sessionData.userId
+      );
+
+      if (!userRoleDetail) {
         res.clearCookie(cookieName);
       } else {
         req.sessionId = sessionId;
-        const roles = await req.users.findUserRoles(user.id);
-        req.currUser = { ...user, roles };
+        req.currUser = userRoleDetail;
       }
     }
   );
