@@ -4,7 +4,7 @@ import { CryptoAES } from "../crypto";
 
 declare module "fastify" {
   interface FastifyRequest {
-    currUser: UserRoleDetail | null;
+    currUser: UserDetail | null;
     sessionId: string | null;
   }
 
@@ -50,7 +50,7 @@ async function session(fastify: FastifyInstance, options: SessionOptions) {
       const sessionId = cryptoCookie.decrypt(session);
       const sessionData = await req.sessions.findById(sessionId);
       if (!sessionData) return;
-      const userRoleDetail = await req.users.findUserRoleDetailById(
+      const userRoleDetail = await req.users.findUserDetailById(
         sessionData.userId
       );
 

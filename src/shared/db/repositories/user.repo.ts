@@ -14,7 +14,9 @@ import { QueryRolesType } from "@/modules/v1/roles/role.schema";
 export default class UserRepo {
   constructor(private fastify: FastifyInstance) {}
 
-  async findByEmail(email: string): Promise<UserWithoutPassword | null> {
+  async findUserWithoutPasswordByEmail(
+    email: string
+  ): Promise<UserWithoutPassword | null> {
     const queryConfig: QueryConfig = {
       text: `
       SELECT
@@ -50,7 +52,9 @@ export default class UserRepo {
     }
   }
 
-  async findById(id: string): Promise<UserWithoutPassword | null> {
+  async findUserWithoutPasswordById(
+    id: string
+  ): Promise<UserWithoutPassword | null> {
     const queryConfig: QueryConfig = {
       text: `
       SELECT
@@ -85,7 +89,7 @@ export default class UserRepo {
     }
   }
 
-  async findUserRoleById(id: string): Promise<User | null> {
+  async findUserById(id: string): Promise<User | null> {
     const queryConfig: QueryConfig = {
       text: `
       SELECT
@@ -122,7 +126,7 @@ export default class UserRepo {
     }
   }
 
-  async findUserRoleByEmail(email: string): Promise<User | null> {
+  async findUserByEmail(email: string): Promise<User | null> {
     const queryConfig: QueryConfig = {
       text: `
         SELECT
@@ -213,7 +217,7 @@ export default class UserRepo {
     }
   }
 
-  async findUserRoleDetailById(userId: string): Promise<UserDetail | null> {
+  async findUserDetailById(userId: string): Promise<UserDetail | null> {
     const queryConfig: QueryConfig = {
       text: `
         SELECT
@@ -424,7 +428,7 @@ export default class UserRepo {
     }
   }
 
-  async query(query: QueryUsersType): Promise<QueryUserRole> {
+  async findUsers(query: QueryUsersType): Promise<QueryUsers> {
     let queryString = [
       `
       SELECT
@@ -553,7 +557,7 @@ export default class UserRepo {
     }
   }
 
-  async create(data: CreateNewUserBodyType): Promise<UserPassword> {
+  async createNewUser(data: CreateNewUserBodyType): Promise<UserPassword> {
     const password = data.password ?? Password.generate();
     const password_hash = await Password.hash(password);
 
@@ -604,7 +608,10 @@ export default class UserRepo {
     }
   }
 
-  async update(userId: string, data: UpdateUserByIdBodyType): Promise<void> {
+  async updateUserById(
+    userId: string,
+    data: UpdateUserByIdBodyType
+  ): Promise<void> {
     if (Object.keys(data).length == 0) return;
     try {
       await this.fastify.transaction(async (client) => {

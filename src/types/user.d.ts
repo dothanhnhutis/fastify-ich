@@ -20,7 +20,7 @@ type UserPassword = {
   updated_at: Date;
 };
 
-type QueryUserRole = { users: UserRole[]; metadata: Metadata };
+type QueryUsers = { users: User[]; metadata: Metadata };
 
 type User = UserWithoutPassword & {
   role_count: number;

@@ -19,7 +19,7 @@ export async function getUserRoleByIdController(
   req: FastifyRequest<{ Params: GetUserByIdParamsType }>,
   reply: FastifyReply
 ) {
-  const existsUser = await req.users.findUserRoleById(req.params.id);
+  const existsUser = await req.users.findUserWithoutPasswordById(req.params.id);
   if (!existsUser) throw new BadRequestError("Người dùng không tồn tại.");
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
@@ -37,7 +37,7 @@ export async function getRolesByUserIdController(
   }>,
   reply: FastifyReply
 ) {
-  const existsUser = await req.users.findById(req.params.id);
+  const existsUser = await req.users.findUserWithoutPasswordById(req.params.id);
   if (!existsUser) throw new BadRequestError("Người dùng không tồn tại.");
   const roles = await req.users.findRolesByUserId(req.params.id, req.query);
   reply.code(StatusCodes.OK).send({
@@ -51,7 +51,7 @@ export async function getUserDetailByIdController(
   req: FastifyRequest<{ Params: GetUserDetailByIdParamsType }>,
   reply: FastifyReply
 ) {
-  const userDetail = await req.users.findUserRoleDetailById(req.params.id);
+  const userDetail = await req.users.findUserDetailById(req.params.id);
   if (!userDetail) throw new BadRequestError("Người dùng không tồn tại.");
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
@@ -66,7 +66,7 @@ export async function queryUserController(
   req: FastifyRequest<{ Querystring: QueryUsersType }>,
   reply: FastifyReply
 ) {
-  const data = await req.users.query(req.query);
+  const data = await req.users.findUsers(req.query);
 
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
@@ -84,10 +84,10 @@ export async function updateUserByIdController(
 ) {
   const { id } = req.params;
 
-  const existsUser = await req.users.findById(id);
+  const existsUser = await req.users.findUserWithoutPasswordById(id);
   if (!existsUser) throw new BadRequestError("Người dùng không tồn tại.");
 
-  await req.users.update(id, req.body);
+  await req.users.updateUserById(id, req.body);
 
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
@@ -102,7 +102,9 @@ export async function createUserController(
   req: FastifyRequest<{ Body: CreateNewUserBodyType }>,
   reply: FastifyReply
 ) {
-  const existsUser = await req.users.findByEmail(req.body.email);
+  const existsUser = await req.users.findUserWithoutPasswordByEmail(
+    req.body.email
+  );
   if (existsUser) throw new BadRequestError("Email đã tồn tại.");
 
   if (req.body.roleIds) {
@@ -111,7 +113,7 @@ export async function createUserController(
       if (!role) throw new BadRequestError(`Quyền id='${id}' không tồn tại.`);
     }
   }
-  await req.users.create(req.body);
+  await req.users.createNewUser(req.body);
 
   reply.code(StatusCodes.CREATED).send({
     statusCode: StatusCodes.OK,
