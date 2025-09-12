@@ -18,3 +18,8 @@ type QueryRoles = {
   roles: Role[];
   metadata: Metadata;
 };
+
+type QueryUsersByRoleId = {
+  users: User[];
+  metadata: Metadata;
+};

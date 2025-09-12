@@ -17,7 +17,7 @@ export async function queryPackagingsController(
   req: FastifyRequest<{ Querystring: QueryPackagingsType }>,
   reply: FastifyReply
 ) {
-  const data = await req.packagings.query(req.query);
+  const data = await req.packagings.findPackagings(req.query);
 
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
@@ -30,7 +30,7 @@ export async function getPackagingByIdController(
   req: FastifyRequest<{ Params: GetPackagingByIdType }>,
   reply: FastifyReply
 ) {
-  const packaging = await req.packagings.findById(req.params.id);
+  const packaging = await req.packagings.findPackagingById(req.params.id);
   if (!packaging) throw new BadRequestError("Bao bì không tồn tại.");
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
@@ -63,9 +63,9 @@ export async function getWarehousesByPackagingIdController(
   }>,
   reply: FastifyReply
 ) {
-  const packaging = await req.packagings.findById(req.params.id);
+  const packaging = await req.packagings.findPackagingById(req.params.id);
   if (!packaging) throw new BadRequestError("Bao bì không tồn tại.");
-  const data = await req.packaging_stocks.findByPackagingId(
+  const data = await req.packagings.findWarehousesByPackagingId(
     req.params.id,
     req.query
   );
@@ -109,7 +109,7 @@ export async function updatePackagingByIdController(
   }>,
   reply: FastifyReply
 ) {
-  const packaging = await req.packagings.findById(req.params.id);
+  const packaging = await req.packagings.findPackagingById(req.params.id);
   if (!packaging) throw new BadRequestError("Bao bì không tồn tại.");
 
   if (req.body.warehouseIds) {
@@ -135,7 +135,7 @@ export async function deletePackagingByIdController(
   req: FastifyRequest<{ Params: DeletePackagingParamsType }>,
   reply: FastifyReply
 ) {
-  const packaging = await req.packagings.findById(req.params.id);
+  const packaging = await req.packagings.findPackagingById(req.params.id);
   if (!packaging) throw new BadRequestError("Bao bì không tồn tại.");
   await req.warehouses.delete(packaging.id);
   reply.code(StatusCodes.OK).send({

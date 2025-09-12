@@ -59,32 +59,3 @@ type WarehouseStock = {
   created_at: string;
   updated_at: string;
 };
-
-type Packaging = {
-  id: string;
-  name: string;
-  deleted_at: Date;
-  created_at: Date;
-  updated_at: Date;
-  quantity: number;
-};
-
-type PackagingDetail = {
-  id: string;
-  name: string;
-  deleted_at: Date;
-  total_quantity: number;
-  warehouses: {
-    id: string;
-    name: string;
-    address: string;
-    deleted_at: Date;
-    quantity: number;
-    created_at: Date;
-    updated_at: Date;
-  }[];
-  created_at: Date;
-  updated_at: Date;
-};
-
-type PackagingStock = Packaging;

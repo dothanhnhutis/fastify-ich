@@ -4,6 +4,7 @@ import { QueryConfig, QueryResult } from "pg";
 import { BadRequestError } from "@/shared/error-handler";
 import {
   CreatePackagingBodyType,
+  GetWarehousesByPackagingIdQueryType,
   QueryPackagingsType,
   UpdatePackagingByIdBodyType,
 } from "@/modules/v1/packagings/packaging.schema";
@@ -12,17 +13,23 @@ import { isDataString } from "@/shared/utils";
 export default class PackagingRepo {
   constructor(private fastify: FastifyInstance) {}
 
-  async query(
-    query: QueryPackagingsType
-  ): Promise<{ packagings: Packaging[]; metadata: Metadata }> {
+  async findPackagings(query: QueryPackagingsType): Promise<QueryPackagings> {
     let queryString = [
       `
       SELECT
           p.*,
-          SUM(ps.quantity)::int AS quantity
+          COUNT(pi.warehouse_id) FILTER (
+              WHERE
+                  pi.warehouse_id IS NOT NULL
+          )::int as warehouse_count,
+          SUM(pi.quantity) FILTER (
+              WHERE
+                  pi.warehouse_id IS NOT NULL
+          )::int as total_quantity
       FROM
           packagings p
-          LEFT JOIN packaging_stocks ps ON (p.id = ps.packaging_id)
+          LEFT JOIN packaging_inventory pi ON (pi.packaging_id = p.id)
+          LEFT JOIN warehouses w ON (pi.warehouse_id = w.id)
       `,
     ];
     const values: any[] = [];
@@ -34,10 +41,19 @@ export default class PackagingRepo {
       values.push(`%${query.name.trim()}%`);
     }
 
-    if (query.deleted != undefined) {
+    if (query.unit != undefined) {
+      where.push(`p.unit = $${idx++}::text`);
+      values.push(query.unit);
+    }
+
+    if (query.status != undefined) {
       where.push(
-        query.deleted ? `p.deleted_at IS NOT NULL` : `p.deleted_at IS NULL`
+        `status = $${idx++}::text`,
+        query.status == "ACTIVE"
+          ? "deactived_at IS NULL"
+          : "deactived_at IS NOT NULL"
       );
+      values.push(query.status);
     }
 
     if (query.created_from) {
@@ -79,14 +95,20 @@ export default class PackagingRepo {
         const totalItem = parseInt(rows[0].count);
 
         if (query.sort != undefined) {
-          queryString.push(
-            `ORDER BY ${query.sort
-              .map((sort) => {
-                const [field, direction] = sort.split(".");
-                return `${field} ${direction.toUpperCase()}`;
-              })
-              .join(", ")}`
+          const unqueField = query.sort.reduce<Record<string, string>>(
+            (prev, curr) => {
+              const [field, direction] = curr.split(".");
+              prev[field] = direction.toUpperCase();
+              return prev;
+            },
+            {}
           );
+
+          const orderBy = Object.entries(unqueField)
+            .map(([field, direction]) => `${field} ${direction}`)
+            .join(", ");
+
+          queryString.push(`ORDER BY ${orderBy}`);
         }
 
         let limit = query.limit ?? totalItem;
@@ -103,7 +125,7 @@ export default class PackagingRepo {
 
         const { rows: packagings } = await client.query<Packaging>(queryConfig);
 
-        const totalPage = Math.ceil(totalItem / limit);
+        const totalPage = Math.ceil(totalItem / limit) || 0;
 
         return {
           packagings,
@@ -122,21 +144,29 @@ export default class PackagingRepo {
     }
   }
 
-  async findById(id: string): Promise<Packaging | null> {
+  async findPackagingById(packagingId: string): Promise<Packaging | null> {
     const queryConfig: QueryConfig = {
       text: `
         SELECT
             p.*,
-            SUM(ps.quantity)::int AS quantity
+            COUNT(pi.warehouse_id) FILTER (
+                WHERE
+                    pi.warehouse_id IS NOT NULL
+            )::int as warehouse_count,
+            SUM(pi.quantity) FILTER (
+                WHERE
+                    pi.warehouse_id IS NOT NULL
+            )::int as total_quantity
         FROM
             packagings p
-            LEFT JOIN packaging_stocks ps ON (p.id = ps.packaging_id)
+            LEFT JOIN packaging_inventory pi ON (pi.packaging_id = p.id)
+            LEFT JOIN warehouses w ON (pi.warehouse_id = w.id)
         WHERE
-            id = $1
+            p.id = $1
         GROUP BY
             p.id;
       `,
-      values: [id],
+      values: [packagingId],
     };
 
     try {
@@ -150,12 +180,159 @@ export default class PackagingRepo {
     }
   }
 
-  async findPackagingDetailById(id: string) {
+  async findWarehousesByPackagingId(
+    packagingId: string,
+    query?: GetWarehousesByPackagingIdQueryType
+  ): Promise<QueryWarehousesByPackagingId> {
+    const newTable = `
+      WITH 
+        warehouses AS (
+          SELECT
+              w.*,
+              pi.quantity
+          FROM
+              packaging_inventory pi
+              LEFT JOIN warehouses w ON (pi.warehouse_id = w.id)
+          WHERE
+              pi.packaging_id = $1
+              AND w.status = 'ACTIVE'
+              AND w.deactived_at IS NULL
+        )
+    `;
+
+    const queryString = [`SELECT * FROM warehouses`];
+
+    const values: any[] = [packagingId];
+    let where: string[] = [];
+    let idx = 2;
+
+    if (query) {
+      if (query.name != undefined) {
+        where.push(`name ILIKE $${idx++}::text`);
+        values.push(`%${query.name.trim()}%`);
+      }
+
+      if (query.address != undefined) {
+        where.push(`address ILIKE $${idx++}::text`);
+        values.push(`%${query.address.trim()}%`);
+      }
+
+      if (query.status != undefined) {
+        where.push(
+          `status = $${idx++}::text`,
+          query.status == "ACTIVE"
+            ? "deactived_at IS NULL"
+            : "deactived_at IS NOT NULL"
+        );
+        values.push(query.status);
+      }
+
+      if (query.created_from) {
+        where.push(`created_at >= $${idx++}::timestamptz`);
+        values.push(
+          `${
+            isDataString(query.created_from.trim())
+              ? `${query.created_from.trim()}T00:00:00.000Z`
+              : query.created_from.trim()
+          }`
+        );
+      }
+
+      if (query.created_to) {
+        where.push(`created_at <= $${idx++}::timestamptz`);
+        values.push(
+          `${
+            isDataString(query.created_to.trim())
+              ? `${query.created_to.trim()}T23:59:59.999Z`
+              : query.created_to.trim()
+          }`
+        );
+      }
+    }
+
+    if (where.length > 0) {
+      queryString.push(`WHERE ${where.join(" AND ")}`);
+    }
+
+    try {
+      return await this.fastify.transaction(async (client) => {
+        const { rows } = await client.query<{ count: string }>({
+          text: [newTable, queryString.join(" ").replace("*", "count(*)")].join(
+            " "
+          ),
+          values,
+        });
+        const totalItem = parseInt(rows[0].count);
+
+        if (query?.sort != undefined) {
+          const unqueField = query.sort.reduce<Record<string, string>>(
+            (prev, curr) => {
+              const [field, direction] = curr.split(".");
+              prev[field] = direction.toUpperCase();
+              return prev;
+            },
+            {}
+          );
+
+          const orderBy = Object.entries(unqueField)
+            .map(([field, direction]) => `${field} ${direction}`)
+            .join(", ");
+
+          queryString.push(`ORDER BY ${orderBy}`);
+        }
+
+        let limit = query?.limit ?? totalItem;
+        let page = query?.page ?? 1;
+        let offset = (page - 1) * limit;
+
+        queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
+        values.push(limit, offset);
+
+        const queryConfig: QueryConfig = {
+          text: [newTable, queryString.join(" ")].join(" "),
+          values,
+        };
+
+        const { rows: warehouses } = await this.fastify.query<Warehouse>(
+          queryConfig
+        );
+
+        const totalPage = Math.ceil(totalItem / limit) || 0;
+
+        return {
+          warehouses,
+          metadata: {
+            totalItem,
+            totalPage,
+            hasNextPage: page < totalPage,
+            limit: totalItem > 0 ? limit : 0,
+            itemStart: totalItem > 0 ? (page - 1) * limit + 1 : 0,
+            itemEnd: Math.min(page * limit, totalItem),
+          },
+        };
+      });
+    } catch (error: any) {
+      throw new BadRequestError(
+        `PackagingRepo.findById() method error: ${error}`
+      );
+    }
+  }
+
+  async findPackagingDetailById(id: string): Promise<PackagingDetail | null> {
     const queryConfig: QueryConfig = {
       text: `
         SELECT
             p.*,
-            SUM(ps.quantity)::int AS total_quantity,
+            COUNT(pi.warehouse_id) FILTER (
+                WHERE
+                    pi.warehouse_id IS NOT NULL
+                    AND w.status = 'ACTIVE'
+            )::int as warehouse_count,
+            SUM(pi.quantity) FILTER (
+                WHERE
+                    pi.warehouse_id IS NOT NULL
+                    AND w.status = 'ACTIVE'
+            )::int as total_quantity,
             COALESCE(
                 json_agg(
                     json_build_object(
@@ -165,31 +342,28 @@ export default class PackagingRepo {
                         w.name,
                         'address',
                         w.address,
-                        'quantity',
-                        ps.quantity,
-                        'deleted_at',
-                        to_char(
-                            w.deleted_at AT TIME ZONE 'UTC',
-                            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
-                        ),
+                        'status',
+                        w.status,
+                        'deactived_at',
+                        w.deactived_at,
                         'created_at',
-                        to_char(
-                            w.created_at AT TIME ZONE 'UTC',
-                            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
-                        ),
+                        w.created_at,
                         'updated_at',
-                        to_char(
-                            w.updated_at AT TIME ZONE 'UTC',
-                            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
-                        )
+                        w.updated_at,
+                        'quantity',
+                        pi.quantity
                     )
+                ) FILTER (
+                    WHERE
+                        w.id IS NOT NULL
+                        AND w.status = 'ACTIVE'
                 ),
                 '[]'
-            ) as warehouses
+            ) AS warehouses
         FROM
             packagings p
-            LEFT JOIN packaging_stocks ps ON (p.id = ps.packaging_id)
-            LEFT JOIN warehouses w ON (w.id = ps.warehouse_id)
+            LEFT JOIN packaging_inventory pi ON (pi.packaging_id = p.id)
+            LEFT JOIN warehouses w ON (pi.warehouse_id = w.id)
         WHERE
             p.id = $1
         GROUP BY
@@ -208,7 +382,7 @@ export default class PackagingRepo {
       );
     }
   }
-
+  //
   async create(data: CreatePackagingBodyType) {
     const queryConfig: QueryConfig = {
       text: `INSERT INTO packagings (name) VALUES ($1::text) RETURNING *;`,
@@ -236,7 +410,7 @@ export default class PackagingRepo {
       );
     }
   }
-
+  //
   async update(id: string, data: UpdatePackagingByIdBodyType): Promise<void> {
     if (Object.keys(data).length == 0) return;
 
@@ -307,7 +481,7 @@ export default class PackagingRepo {
       );
     }
   }
-
+  //
   async delete(id: string): Promise<Packaging> {
     const queryConfig: QueryConfig = {
       text: `DELETE FROM packagings WHERE id = $1 RETURNING *;`,

@@ -14,82 +14,7 @@ import { QueryRolesType } from "@/modules/v1/roles/role.schema";
 export default class UserRepo {
   constructor(private fastify: FastifyInstance) {}
 
-  async findUserWithoutPasswordByEmail(
-    email: string
-  ): Promise<UserWithoutPassword | null> {
-    const queryConfig: QueryConfig = {
-      text: `
-      SELECT
-          id,
-          email,
-          (password_hash IS NOT NULL)::boolean AS has_password,
-          username,
-          status,
-          deactived_at,
-          created_at,
-          updated_at
-      FROM
-          users
-      WHERE
-          email = $1
-      LIMIT
-          1;
-      `,
-      values: [email],
-    };
-
-    try {
-      const { rows } = await this.fastify.query<UserWithoutPassword>(
-        queryConfig
-      );
-      return rows[0] ?? null;
-    } catch (err: unknown) {
-      this.fastify.logger.error(
-        { metadata: { query: queryConfig } },
-        `UserRepo.findByEmail() method error: ${err}`
-      );
-      return null;
-    }
-  }
-
-  async findUserWithoutPasswordById(
-    id: string
-  ): Promise<UserWithoutPassword | null> {
-    const queryConfig: QueryConfig = {
-      text: `
-      SELECT
-          id,
-          email,
-          (password_hash IS NOT NULL)::boolean AS has_password,
-          username,
-          status,
-          deactived_at,
-          created_at,
-          updated_at
-      FROM
-          users
-      WHERE
-          id = $1
-      LIMIT
-          1;
-      `,
-      values: [id],
-    };
-    try {
-      const { rows } = await this.fastify.query<UserWithoutPassword>(
-        queryConfig
-      );
-      return rows[0] ?? null;
-    } catch (err: unknown) {
-      this.fastify.logger.error(
-        { metadata: { query: queryConfig } },
-        `UserRepo.findById() method error: ${err}`
-      );
-      return null;
-    }
-  }
-
-  async findUserById(id: string): Promise<User | null> {
+  async findUserWithoutPasswordById(id: string): Promise<User | null> {
     const queryConfig: QueryConfig = {
       text: `
       SELECT
@@ -126,7 +51,7 @@ export default class UserRepo {
     }
   }
 
-  async findUserByEmail(email: string): Promise<User | null> {
+  async findUserWithoutPasswordByEmail(email: string): Promise<User | null> {
     const queryConfig: QueryConfig = {
       text: `
         SELECT
@@ -163,7 +88,7 @@ export default class UserRepo {
     }
   }
 
-  async findUserPasswordById(userId: string): Promise<UserPassword | null> {
+  async findUserById(userId: string): Promise<UserPassword | null> {
     const queryConfig: QueryConfig = {
       text: `
       SELECT
@@ -190,7 +115,7 @@ export default class UserRepo {
     }
   }
 
-  async findUserPasswordByEmail(email: string): Promise<UserPassword | null> {
+  async findUserByEmail(email: string): Promise<UserPassword | null> {
     const queryConfig: QueryConfig = {
       text: `
       SELECT

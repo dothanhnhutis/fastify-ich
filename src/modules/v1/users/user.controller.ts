@@ -15,7 +15,21 @@ import { BadRequestError } from "@/shared/error-handler";
 import { QueryRolesType } from "../roles/role.schema";
 
 // Admin
-export async function getUserRoleByIdController(
+
+export async function queryUsersController(
+  req: FastifyRequest<{ Querystring: QueryUsersType }>,
+  reply: FastifyReply
+) {
+  const data = await req.users.findUsers(req.query);
+
+  reply.code(StatusCodes.OK).send({
+    statusCode: StatusCodes.OK,
+    statusText: "OK",
+    data,
+  });
+}
+
+export async function getUserByIdController(
   req: FastifyRequest<{ Params: GetUserByIdParamsType }>,
   reply: FastifyReply
 ) {
@@ -62,42 +76,6 @@ export async function getUserDetailByIdController(
   });
 }
 
-export async function queryUserController(
-  req: FastifyRequest<{ Querystring: QueryUsersType }>,
-  reply: FastifyReply
-) {
-  const data = await req.users.findUsers(req.query);
-
-  reply.code(StatusCodes.OK).send({
-    statusCode: StatusCodes.OK,
-    statusText: "OK",
-    data,
-  });
-}
-
-export async function updateUserByIdController(
-  req: FastifyRequest<{
-    Params: UpdateUserByIdParamsType;
-    Body: UpdateUserByIdBodyType;
-  }>,
-  reply: FastifyReply
-) {
-  const { id } = req.params;
-
-  const existsUser = await req.users.findUserWithoutPasswordById(id);
-  if (!existsUser) throw new BadRequestError("Người dùng không tồn tại.");
-
-  await req.users.updateUserById(id, req.body);
-
-  reply.code(StatusCodes.OK).send({
-    statusCode: StatusCodes.OK,
-    statusText: "OK",
-    data: {
-      message: "Cập nhật người dùng thành công.",
-    },
-  });
-}
-
 export async function createUserController(
   req: FastifyRequest<{ Body: CreateNewUserBodyType }>,
   reply: FastifyReply
@@ -120,6 +98,29 @@ export async function createUserController(
     statusText: "CREATED",
     data: {
       message: "Tạo người dùng thành công.",
+    },
+  });
+}
+
+export async function updateUserByIdController(
+  req: FastifyRequest<{
+    Params: UpdateUserByIdParamsType;
+    Body: UpdateUserByIdBodyType;
+  }>,
+  reply: FastifyReply
+) {
+  const { id } = req.params;
+
+  const existsUser = await req.users.findUserWithoutPasswordById(id);
+  if (!existsUser) throw new BadRequestError("Người dùng không tồn tại.");
+
+  await req.users.updateUserById(id, req.body);
+
+  reply.code(StatusCodes.OK).send({
+    statusCode: StatusCodes.OK,
+    statusText: "OK",
+    data: {
+      message: "Cập nhật người dùng thành công.",
     },
   });
 }

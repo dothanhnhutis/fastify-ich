@@ -13,27 +13,16 @@ import {
   createPackagingSchema,
   deletePackagingByIdSchema,
   getPackagingByIdSchema,
+  getWarehousesByPackagingIdSchema,
   queryPackagingsSchema,
   updatePackagingByIdSchema,
 } from "./packaging.schema";
 
 export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
-    "/",
-    {
-      schema: queryPackagingsSchema,
-      preHandler: [
-        requiredAuthMiddleware,
-        // checkPermissionMiddleware(["read:packaging:*"]),
-      ],
-    },
-    queryPackagingsController
-  );
-
-  fastify.get(
     "/:id/warehouses",
     {
-      schema: getPackagingByIdSchema,
+      schema: getWarehousesByPackagingIdSchema,
       preHandler: [
         requiredAuthMiddleware,
         // checkPermissionMiddleware(["read:packaging:*"]),
@@ -66,6 +55,19 @@ export default async function userRoutes(fastify: FastifyInstance) {
     getPackagingByIdController
   );
 
+  fastify.get(
+    "/",
+    {
+      schema: queryPackagingsSchema,
+      preHandler: [
+        requiredAuthMiddleware,
+        // checkPermissionMiddleware(["read:packaging:*"]),
+      ],
+    },
+    queryPackagingsController
+  );
+
+  //
   fastify.post(
     "/",
     {
@@ -77,7 +79,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
     },
     createPackagingController
   );
-
+  //
   fastify.patch(
     "/:id",
     {
@@ -89,7 +91,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
     },
     updatePackagingByIdController
   );
-
+  //
   fastify.delete(
     "/:id",
     {

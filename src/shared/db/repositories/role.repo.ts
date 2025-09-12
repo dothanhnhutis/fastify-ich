@@ -170,7 +170,7 @@ export default class RoleRepo {
   async findUsersByRoleId(
     roleId: string,
     query?: QueryUsersType
-  ): Promise<QueryUserRole> {
+  ): Promise<QueryUsersByRoleId> {
     const newTable = `
       WITH
         users AS (
@@ -276,7 +276,7 @@ export default class RoleRepo {
           values,
         };
 
-        const { rows: users } = await client.query<UserRole>(queryConfig);
+        const { rows: users } = await client.query<User>(queryConfig);
 
         const totalPage = Math.ceil(totalItem / limit) || 0;
 

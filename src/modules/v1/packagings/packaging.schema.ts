@@ -1,13 +1,23 @@
 import { Static, Type } from "@sinclair/typebox";
 import { FastifySchema } from "fastify";
 
+const packagingParamsSchema = Type.Object({
+  id: Type.String({
+    errorMessage: {
+      type: "Mã bao bì phải là chuỗi.",
+    },
+  }),
+});
+
 const sortWarehouseEnum = [
   "name.asc",
   "name.desc",
   "address.asc",
   "address.desc",
-  "deleted.asc",
-  "deleted.desc",
+  "status.asc",
+  "status.desc",
+  "deactived_at.asc",
+  "deactived_at.desc",
   "created_at.asc",
   "created_at.desc",
   "updated_at.asc",
@@ -28,9 +38,11 @@ const queryStringWarehousesByPackagingIdSchema = Type.Partial(
         type: "Địa chỉ kho phải là chuỗi.",
       },
     }),
-    deleted: Type.Boolean({
+    status: Type.String({
+      enum: ["ACTIVE", "INACTIVE"],
       errorMessage: {
-        type: "Trạng thái kho phải là boolean.",
+        type: "Trạng thái phải là chuỗi.",
+        enum: `Trạng thái phải là một trong 'ACTIVE', 'INACTIVE'.}`,
       },
     }),
     created_from: Type.String({
@@ -82,26 +94,45 @@ const queryStringWarehousesByPackagingIdSchema = Type.Partial(
 const sortEnum = [
   "name.asc",
   "name.desc",
-  "deleted.asc",
-  "deleted.desc",
+  "min_stock_level.asc",
+  "min_stock_level.desc",
+  "unit.asc",
+  "unit.desc",
+  "pcs_ctn.asc",
+  "pcs_ctn.desc",
+  "status.asc",
+  "status.desc",
+  "deactived_at.asc",
+  "deactived_at.desc",
   "created_at.asc",
   "created_at.desc",
   "updated_at.asc",
   "updated_at.desc",
-  "quantity.asc",
-  "quantity.desc",
+  "warehouse_count.asc",
+  "warehouse_count.desc",
+  "total_quantity.asc",
+  "total_quantity.desc",
 ];
 
-const queryStringPackagingSchema = Type.Partial(
+const queryStringPackagingsSchema = Type.Partial(
   Type.Object({
     name: Type.String({
       errorMessage: {
         type: "Tên bao bì phải là chuỗi.",
       },
     }),
-    deleted: Type.Boolean({
+    unit: Type.String({
+      enum: ["PIECE", "CARTON"],
       errorMessage: {
-        type: "Trạng thái bao bì phải là boolean.",
+        type: "Loại bao bì phải là chuỗi.",
+        enum: `Loại bao bì phải là 'PIECE' hoặc 'CARTON'.}`,
+      },
+    }),
+    status: Type.String({
+      enum: ["ACTIVE", "INACTIVE"],
+      errorMessage: {
+        type: "Trạng thái phải là chuỗi.",
+        enum: `Trạng thái phải là 'ACTIVE' hoặc 'INACTIVE'.}`,
       },
     }),
     created_from: Type.String({
@@ -205,21 +236,13 @@ const updatePackagingBodySchema = Type.Partial(
   })
 );
 
-const packagingParamsSchema = Type.Object({
-  id: Type.String({
-    errorMessage: {
-      type: "Mã bao bì phải là chuỗi.",
-    },
-  }),
-});
-
 export const getWarehousesByPackagingIdSchema: FastifySchema = {
   params: packagingParamsSchema,
   querystring: queryStringWarehousesByPackagingIdSchema,
 };
 
 export const queryPackagingsSchema: FastifySchema = {
-  querystring: queryStringPackagingSchema,
+  querystring: queryStringPackagingsSchema,
 };
 export const getPackagingByIdSchema: FastifySchema = {
   params: packagingParamsSchema,
@@ -243,7 +266,7 @@ export type GetWarehousesByPackagingIdQueryType = Static<
   typeof queryStringWarehousesByPackagingIdSchema
 >;
 
-export type QueryPackagingsType = Static<typeof queryStringPackagingSchema>;
+export type QueryPackagingsType = Static<typeof queryStringPackagingsSchema>;
 export type GetPackagingByIdType = Static<typeof packagingParamsSchema>;
 
 export type CreatePackagingBodyType = Static<typeof createPackagingBodySchema>;

@@ -2,11 +2,11 @@ import { FastifyInstance } from "fastify";
 import {
   createUserController,
   currentUserController,
-  getUserRoleByIdController,
+  getUserByIdController,
   getUserDetailByIdController,
   getRolesByUserIdController,
   logoutUserController,
-  queryUserController,
+  queryUsersController,
   updateUserByIdController,
 } from "./user.controller";
 import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
@@ -31,19 +31,19 @@ export default async function userRoutes(fastify: FastifyInstance) {
         checkPermissionMiddleware(["read:user:*"]),
       ],
     },
-    queryUserController
+    queryUsersController
   );
 
   fastify.get(
-    "/:id/detail",
+    "/:id",
     {
-      schema: getUserDetailByIdSchema,
+      schema: getUserByIdSchema,
       preHandler: [
         requiredAuthMiddleware,
-        checkPermissionMiddleware(["read:user:*"]),
+        checkPermissionMiddleware(["read:user:id"]),
       ],
     },
-    getUserDetailByIdController
+    getUserByIdController
   );
 
   fastify.get(
@@ -59,15 +59,15 @@ export default async function userRoutes(fastify: FastifyInstance) {
   );
 
   fastify.get(
-    "/:id",
+    "/:id/detail",
     {
-      schema: getUserByIdSchema,
+      schema: getUserDetailByIdSchema,
       preHandler: [
         requiredAuthMiddleware,
-        checkPermissionMiddleware(["read:user:id"]),
+        checkPermissionMiddleware(["read:user:*"]),
       ],
     },
-    getUserRoleByIdController
+    getUserDetailByIdController
   );
 
   fastify.post(
@@ -76,7 +76,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
       schema: createNewUserSchema,
       preHandler: [
         requiredAuthMiddleware,
-        // checkPermissionMiddleware(["create:user"]),
+        checkPermissionMiddleware(["create:user"]),
       ],
     },
     createUserController
@@ -88,7 +88,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
       schema: updateUserByIdSchema,
       preHandler: [
         requiredAuthMiddleware,
-        // checkPermissionMiddleware(["create:user"]),
+        checkPermissionMiddleware(["update:user"]),
       ],
     },
     updateUserByIdController
