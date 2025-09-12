@@ -28,34 +28,3 @@ type ReqInfo = {
   provider: "credential" | "google";
   cookie?: CookieOptions;
 };
-
-type Warehouse = {
-  id: string;
-  name: string;
-  address: string;
-  deleted_at: Date;
-  created_at: Date;
-  updated_at: Date;
-  packaging_count: number;
-};
-
-type WarehouseDetail = {
-  id: string;
-  name: string;
-  address: string;
-  deleted_at: Date;
-  created_at: Date;
-  updated_at: Date;
-  packaging_count: number;
-  packagings: Packaging[];
-};
-
-type WarehouseStock = {
-  id: string;
-  name: string;
-  address: string;
-  quantity: number;
-  deleted_at: null | string;
-  created_at: string;
-  updated_at: string;
-};

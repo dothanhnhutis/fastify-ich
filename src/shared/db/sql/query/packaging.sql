@@ -4,6 +4,7 @@ SELECT
     COUNT(pi.warehouse_id) FILTER (
         WHERE
             pi.warehouse_id IS NOT NULL
+            AND w.status = 'ACTIVE'
     )::int as warehouse_count,
     COALESCE(
         SUM(pi.quantity) FILTER (
@@ -25,6 +26,7 @@ SELECT
     COUNT(pi.warehouse_id) FILTER (
         WHERE
             pi.warehouse_id IS NOT NULL
+            AND w.status = 'ACTIVE'
     )::int as warehouse_count,
     COALESCE(
         SUM(pi.quantity) FILTER (

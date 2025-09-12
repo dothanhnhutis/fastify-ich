@@ -21,6 +21,7 @@ export default class PackagingRepo {
           COUNT(pi.warehouse_id) FILTER (
               WHERE
                   pi.warehouse_id IS NOT NULL
+                  AND w.status = 'ACTIVE'
           )::int as warehouse_count,
           COALESCE(
               SUM(pi.quantity) FILTER (
@@ -155,6 +156,7 @@ export default class PackagingRepo {
             COUNT(pi.warehouse_id) FILTER (
                 WHERE
                     pi.warehouse_id IS NOT NULL
+                    AND w.status = 'ACTIVE'
             )::int as warehouse_count,
             COALESCE(
                 SUM(pi.quantity) FILTER (
@@ -492,10 +494,11 @@ export default class PackagingRepo {
         if (data.unit !== undefined) {
           sets.push(`unit = $${idx++}::text`);
           values.push(data.unit);
-          if (data.unit == "CARTON") {
-            sets.push(`pcs_ctn = $${idx++}::integer`);
-            values.push(data.pcs_ctn);
-          }
+        }
+
+        if (data.pcs_ctn !== undefined) {
+          sets.push(`pcs_ctn = $${idx++}::integer`);
+          values.push(data.pcs_ctn);
         }
 
         if (data.min_stock_level !== undefined) {

@@ -291,10 +291,10 @@ const createPackagingCartonBodySchema = Type.Object(
 
 const createNewPackagingBodySchema = Type.Unsafe({
   oneOf: [createPackagingPieceBodySchema, createPackagingCartonBodySchema],
-  discriminator: { propertyName: "unit" }, // nếu bạn muốn dùng Ajv discriminator
+  discriminator: { propertyName: "unit" },
 });
 
-const updatePackagingPieceBodySchema = Type.Partial(
+const updatePackagingByIdBodySchema = Type.Partial(
   Type.Object({
     name: Type.String({
       minLength: 1,
@@ -312,11 +312,23 @@ const updatePackagingPieceBodySchema = Type.Partial(
         },
       })
     ),
-    unit: Type.Literal("PIECE", {
+    unit: Type.String({
+      enum: ["PIECE", "CARTON"],
       errorMessage: {
-        type: `Loại bao bì phải là 'PIECE' hoặc 'CARTON'.}`,
+        type: "Loại bao bì phải là chuỗi.",
+        enum: `Loại bao bì phải là một trong 'PIECE', 'CARTON'.`,
       },
     }),
+    pcs_ctn: Type.Union([
+      Type.Integer({
+        minimum: 1,
+        errorMessage: {
+          type: "Quy cách phải là số nguyên.1",
+          minimum: "Quy cách phải là số nguyên dương.1",
+        },
+      }),
+      Type.Null(),
+    ]),
     status: Type.String({
       enum: ["ACTIVE", "INACTIVE"],
       errorMessage: {
@@ -340,65 +352,6 @@ const updatePackagingPieceBodySchema = Type.Partial(
     ),
   })
 );
-
-const updatePackagingCartonBodySchema = Type.Partial(
-  Type.Object({
-    name: Type.String({
-      minLength: 1,
-      errorMessage: {
-        type: "Tên bao bì phải là chuỗi.",
-        minLength: "Tên bao bì không được bỏ trống.",
-      },
-    }),
-    min_stock_level: Type.Optional(
-      Type.Integer({
-        minimum: 1,
-        errorMessage: {
-          type: "Mức tồn kho tối thiểu phải là số nguyên.",
-          minimum: "Mức tồn kho tối thiểu phải là số nguyên dương.",
-        },
-      })
-    ),
-    unit: Type.Literal("CARTON", {
-      errorMessage: {
-        type: `Loại bao bì phải là 'PIECE' hoặc 'CARTON'.}`,
-      },
-    }),
-    pcs_ctn: Type.Integer({
-      minimum: 1,
-      errorMessage: {
-        type: "Quy cách phải là số nguyên.",
-        minimum: "Quy cách phải là số nguyên dương.",
-      },
-    }),
-    status: Type.String({
-      enum: ["ACTIVE", "INACTIVE"],
-      errorMessage: {
-        type: "Trạng thái phải là chuỗi.",
-        enum: `Trạng thái phải là một trong 'ACTIVE', 'INACTIVE'.`,
-      },
-    }),
-    warehouseIds: Type.Optional(
-      Type.Array(
-        Type.String({
-          errorMessage: {
-            type: "Mã kho hàng phải là chuỗi.",
-          },
-        }),
-        {
-          errorMessage: {
-            type: "Danh sách mã kho hàng phải là mãng.",
-          },
-        }
-      )
-    ),
-  })
-);
-
-const updatePackagingByIdBodySchema = Type.Union([
-  updatePackagingPieceBodySchema,
-  updatePackagingCartonBodySchema,
-]);
 
 export const getWarehousesByPackagingIdSchema: FastifySchema = {
   params: packagingParamsSchema,

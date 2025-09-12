@@ -56,8 +56,8 @@ WITH
         INSERT INTO
             packagings (name, min_stock_level, unit, pcs_ctn)
         VALUES
-            ('packaging 1', 5, 'carton', 250),
-            ('packaging 2', 1000, 'item', null)
+            ('packaging 1', 5, 'CARTON', 250),
+            ('packaging 2', 1000, 'PIECE', null)
         RETURNING
             id
     ),

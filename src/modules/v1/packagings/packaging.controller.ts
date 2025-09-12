@@ -63,6 +63,7 @@ export async function getWarehousesByPackagingIdController(
   }>,
   reply: FastifyReply
 ) {
+  console.log(req.query);
   const packaging = await req.packagings.findPackagingById(req.params.id);
   if (!packaging) throw new BadRequestError("Bao bì không tồn tại.");
   const data = await req.packagings.findWarehousesByPackagingId(
@@ -112,6 +113,14 @@ export async function updatePackagingByIdController(
   const packaging = await req.packagings.findPackagingById(req.params.id);
   if (!packaging) throw new BadRequestError("Bao bì không tồn tại.");
 
+  const unit = req.body.unit || packaging.unit;
+  const pcs_ctn =
+    unit == "PIECE" ? null : req.body.pcs_ctn || packaging.pcs_ctn;
+
+  if (unit == "CARTON" && !pcs_ctn) {
+    throw new BadRequestError("Thiếu trường 'pcs_ctn' bắt buộc.");
+  }
+
   if (req.body.warehouseIds) {
     for (const warehouseId of req.body.warehouseIds) {
       const existsWarehouse = await req.warehouses.findById(warehouseId);
@@ -122,15 +131,11 @@ export async function updatePackagingByIdController(
     }
   }
 
-  if (
-    packaging.unit == "PIECE" &&
-    req.body.unit == "CARTON" &&
-    req.body.pcs_ctn == undefined
-  ) {
-    throw new BadRequestError("Thiếu trường 'pcs_ctn' bắt buộc.");
-  }
-
-  await req.packagings.updatePackagingById(req.params.id, req.body);
+  await req.packagings.updatePackagingById(req.params.id, {
+    ...req.body,
+    unit,
+    pcs_ctn,
+  });
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
     statusText: "OK",

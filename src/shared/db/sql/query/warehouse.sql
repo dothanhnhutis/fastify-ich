@@ -1,64 +1,54 @@
---- count row afater GROUP BY
-WITH
-    grouped AS (
-        SELECT
-            w.*,
-            count(ps.packaging_id) FILTER (
-                WHERE
-                    p.deleted_at IS NULL
-            ) AS packaging_count
-        FROM
-            packaging_stocks ps
-            LEFT JOIN packagings p ON (ps.packaging_id = p.id)
-            LEFT JOIN warehouses w ON (ps.warehouse_id = w.id)
-        GROUP BY
-            w.id
-    )
-SELECT
-    COUNT(*)::int AS total_groups
-FROM
-    grouped;
-
----
+--- findWarehouses
 SELECT
     w.*,
-    count(ps.packaging_id) FILTER (
+    COUNT(pi.packaging_id) FILTER (
         WHERE
-            p.deleted_at IS NULL
+            pi.packaging_id IS NOT NULL
+            AND p.status = 'ACTIVE'
     ) AS packaging_count
 FROM
-    packaging_stocks ps
-    LEFT JOIN packagings p ON (ps.packaging_id = p.id)
-    LEFT JOIN warehouses w ON (ps.warehouse_id = w.id)
-    -- WHERE
-    --     warehouse_id = '8a6a5a04-33fe-4f41-a0a0-b5da135d68c0'
+    warehouses w
+    LEFT JOIN packaging_inventory pi ON (pi.warehouse_id = w.id)
+    LEFT JOIN packagings p ON (pi.packaging_id = p.id)
 WHERE
-    created_at >= '2025-09-07T00:00:00Z'::timestamptz
+    id = '0676db90-178b-4d24-8c2a-4db4a198ab82'
 GROUP BY
     w.id;
 
----
+--- findWarehouseById
 SELECT
     w.*,
-    COUNT(ps.packaging_id) FILTER (
+    COUNT(pi.packaging_id) FILTER (
         WHERE
-            p.deleted_at IS NULL
+            pi.packaging_id IS NOT NULL
+            AND p.status = 'ACTIVE'
     ) AS packaging_count
 FROM
-    packaging_stocks ps
-    LEFT JOIN packagings p ON ps.packaging_id = p.id
-    LEFT JOIN warehouses w ON ps.warehouse_id = w.id
-WHERE
-    w.created_at >= '2025-09-06T00:00:0Z'::timestamptz
+    warehouses w
+    LEFT JOIN packaging_inventory pi ON (pi.warehouse_id = w.id)
+    LEFT JOIN packagings p ON (pi.packaging_id = p.id)
 GROUP BY
     w.id;
 
---- get full
+--- findPackagingsByWarehouseId
+SELECT
+    p.*,
+    pi.quantity
+FROM
+    packaging_inventory pi
+    LEFT JOIN packagings p ON (pi.packaging_id = p.id)
+WHERE
+    pi.warehouse_id = '0676db90-178b-4d24-8c2a-4db4a198ab82'
+    AND p.status = 'ACTIVE'
+    AND p.deactived_at IS NULL;
+
+--- findWarehouseDetailById
 SELECT
     w.*,
-    count(ps.packaging_id) FILTER (
+    COUNT(pi.packaging_id) FILTER (
         WHERE
-            p.deleted_at IS NULL
+            pi.packaging_id IS NOT NULL
+            AND p.status = 'ACTIVE'
     ) AS packaging_count,
     COALESCE(
         json_agg(
@@ -67,37 +57,33 @@ SELECT
                 p.id,
                 'name',
                 p.name,
-                'deleted_at',
-                to_char(
-                    p.created_at AT TIME ZONE 'UTC',
-                    'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
-                ),
+                'min_stock_level',
+                p.min_stock_level,
+                'unit',
+                p.unit,
+                'pcs_ctn',
+                p.pcs_ctn,
+                'status',
+                p.status,
+                'deactived_at',
+                p.deactived_at,
                 'created_at',
-                to_char(
-                    p.created_at AT TIME ZONE 'UTC',
-                    'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
-                ),
+                p.created_at,
                 'updated_at',
-                to_char(
-                    p.updated_at AT TIME ZONE 'UTC',
-                    'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
-                ),
+                p.updated_at,
                 'quantity',
-                ps.quantity
+                pi.quantity
             )
         ) FILTER (
             WHERE
-                p.deleted_at IS NULL
+                p.id IS NOT NULL
+                AND p.status = 'ACTIVE'
         ),
         '[]'
     ) AS packagings
 FROM
-    packaging_stocks ps
-    LEFT JOIN packagings p ON (ps.packaging_id = p.id)
-    LEFT JOIN warehouses w ON (ps.warehouse_id = w.id)
-WHERE
-    warehouse_id = 'ed2e320e-d0db-4be7-8a0b-fa387f2ef045'
+    packagings p
+    LEFT JOIN packaging_inventory pi ON (pi.packaging_id = p.id)
+    LEFT JOIN warehouses w ON (pi.warehouse_id = w.id)
 GROUP BY
-    w.id
-LIMIT
-    1;
+    w.id;
