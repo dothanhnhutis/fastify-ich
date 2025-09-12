@@ -15,7 +15,6 @@ import { BadRequestError } from "@/shared/error-handler";
 import { QueryRolesType } from "../roles/role.schema";
 
 // Admin
-
 export async function queryUsersController(
   req: FastifyRequest<{ Querystring: QueryUsersType }>,
   reply: FastifyReply
@@ -76,7 +75,7 @@ export async function getUserDetailByIdController(
   });
 }
 
-export async function createUserController(
+export async function createNewUserController(
   req: FastifyRequest<{ Body: CreateNewUserBodyType }>,
   reply: FastifyReply
 ) {

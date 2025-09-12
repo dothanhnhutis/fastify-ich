@@ -10,7 +10,7 @@ import {
   updatePackagingByIdController,
 } from "./packaging.controller";
 import {
-  createPackagingSchema,
+  createNewPackagingSchema,
   deletePackagingByIdSchema,
   getPackagingByIdSchema,
   getWarehousesByPackagingIdSchema,
@@ -67,11 +67,10 @@ export default async function userRoutes(fastify: FastifyInstance) {
     queryPackagingsController
   );
 
-  //
   fastify.post(
     "/",
     {
-      schema: createPackagingSchema,
+      schema: createNewPackagingSchema,
       preHandler: [
         requiredAuthMiddleware,
         // checkPermissionMiddleware(["create:packaging"]),

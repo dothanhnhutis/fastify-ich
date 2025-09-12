@@ -168,7 +168,7 @@ export const getUserByIdSchema: FastifySchema = {
   params: paramsIdSchema,
 };
 
-export const getUserRolesByUserIdSchema: FastifySchema = {
+export const getRolesByUserIdSchema: FastifySchema = {
   params: paramsIdSchema,
   querystring: queryStringRolesSchema,
 };

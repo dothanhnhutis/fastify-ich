@@ -129,3 +129,58 @@ ADD CONSTRAINT packaging_inventory_warehouse_id_fkey FOREIGN KEY (warehouse_id) 
 
 ALTER TABLE packaging_inventory
 ADD CONSTRAINT packaging_inventory_packaging_id_fkey FOREIGN KEY (packaging_id) REFERENCES packagings (id) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+--- func set_updated_at
+CREATE OR REPLACE FUNCTION set_updated_at () RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  NEW.updated_at := NOW();
+  RETURN NEW;
+END; 
+$$;
+
+--- func check_quantity_before_delete
+CREATE OR REPLACE FUNCTION check_quantity_before_delete () RETURNS TRIGGER AS $$
+BEGIN 
+    IF OLD.quantity > 0 THEN 
+        RAISE EXCEPTION 'Không thể xoá vì quantity = % (phải bằng 0)', OLD.quantity;
+    END IF;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+-- DROP FUNCTION IF EXISTS check_unit_pcs_ctn_after_update;
+--- func check_unit_pcs_ctn_validate
+CREATE OR REPLACE FUNCTION check_unit_pcs_ctn_validate () RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.unit = 'CARTON' AND (NEW.pcs_ctn IS NULL OR NEW.pcs_ctn = 0) THEN
+        RAISE EXCEPTION 'Không thể % khi unit = CARTON và pcs_ctn = %', TG_OP, NEW.pcs_ctn;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- DROP TRIGGER IF EXISTS trg_updated_at_users ON users;
+-- DROP TRIGGER IF EXISTS trg_updated_at_roles ON roles;
+-- DROP TRIGGER IF EXISTS check_unit_pcs_ctn_after_update ON packagings;
+--- trigger tự động cập nhật updated_at
+CREATE TRIGGER trg_updated_at_users BEFORE
+UPDATE ON users FOR EACH ROW
+EXECUTE FUNCTION set_updated_at ();
+
+CREATE TRIGGER trg_updated_at_roles BEFORE
+UPDATE ON roles FOR EACH ROW
+EXECUTE FUNCTION set_updated_at ();
+
+CREATE TRIGGER trg_updated_at_packagings BEFORE
+UPDATE ON packagings FOR EACH ROW
+EXECUTE FUNCTION set_updated_at ();
+
+--- trigger kiểm quantity phải bằng 0 trước khi xoá
+CREATE TRIGGER trg_updated_at_packagings BEFORE DELETE ON packagings FOR EACH ROW
+EXECUTE FUNCTION check_quantity_before_delete ();
+
+--- trigger kiểm tra tính hợp lệ giữa unit và pcs_ctn
+CREATE TRIGGER trg_check_unit_pcs_ctn_validate BEFORE INSERT
+OR
+UPDATE ON packagings FOR EACH ROW
+EXECUTE FUNCTION check_unit_pcs_ctn_validate ();

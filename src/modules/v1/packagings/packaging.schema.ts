@@ -125,14 +125,14 @@ const queryStringPackagingsSchema = Type.Partial(
       enum: ["PIECE", "CARTON"],
       errorMessage: {
         type: "Loại bao bì phải là chuỗi.",
-        enum: `Loại bao bì phải là 'PIECE' hoặc 'CARTON'.}`,
+        enum: `Loại bao bì phải là 'PIECE' hoặc 'CARTON'.`,
       },
     }),
     status: Type.String({
       enum: ["ACTIVE", "INACTIVE"],
       errorMessage: {
         type: "Trạng thái phải là chuỗi.",
-        enum: `Trạng thái phải là 'ACTIVE' hoặc 'INACTIVE'.}`,
+        enum: `Trạng thái phải là 'ACTIVE' hoặc 'INACTIVE'.`,
       },
     }),
     created_from: Type.String({
@@ -181,31 +181,120 @@ const queryStringPackagingsSchema = Type.Partial(
   })
 );
 
-const createPackagingBodySchema = Type.Object({
-  name: Type.String({
-    minLength: 1,
+const createPackagingPieceBodySchema = Type.Object(
+  {
+    name: Type.String({
+      minLength: 1,
+      errorMessage: {
+        type: "Tên bao bì phải là chuỗi.",
+        minLength: "Tên bao bì không được bỏ trống.",
+      },
+    }),
+    min_stock_level: Type.Optional(
+      Type.Integer({
+        minimum: 1,
+        errorMessage: {
+          type: "Mức tồn kho tối thiểu phải là số nguyên.",
+          minimum: "Mức tồn kho tối thiểu phải là số nguyên dương.",
+        },
+      })
+    ),
+    unit: Type.Literal("PIECE", {
+      errorMessage: {
+        type: `Loại bao bì phải là 'PIECE' hoặc 'CARTON'.}`,
+      },
+    }),
+    warehouseIds: Type.Optional(
+      Type.Array(
+        Type.String({
+          errorMessage: {
+            type: "Mã kho hàng phải là chuỗi.",
+          },
+        }),
+        {
+          minItems: 1,
+          errorMessage: {
+            type: "Danh sách mã kho hàng phải là mãng.",
+            minItems: "Danh sách mã kho hàng phải có ít nhất 1 phần tử.",
+          },
+        }
+      )
+    ),
+  },
+  {
     errorMessage: {
-      type: "Tên bao bì phải là chuỗi.",
-      minLength: "Tên bao bì không được bỏ trống.",
+      required: {
+        name: "Thiếu trường 'name' bắt buộc.",
+        unit: "Thiếu trường 'unit' bắt buộc.",
+      },
     },
-  }),
-  warehouseIds: Type.Optional(
-    Type.Array(
-      Type.String({
+  }
+);
+
+const createPackagingCartonBodySchema = Type.Object(
+  {
+    name: Type.String({
+      minLength: 1,
+      errorMessage: {
+        type: "Tên bao bì phải là chuỗi.",
+        minLength: "Tên bao bì không được bỏ trống.",
+      },
+    }),
+    min_stock_level: Type.Optional(
+      Type.Integer({
+        minimum: 1,
         errorMessage: {
-          type: "Mã kho hàng phải là chuỗi.",
+          type: "Mức tồn kho tối thiểu phải là số nguyên.",
+          minimum: "Mức tồn kho tối thiểu phải là số nguyên dương.",
         },
-      }),
-      {
-        errorMessage: {
-          type: "Mã kho hàng phải là mãng.",
-        },
-      }
-    )
-  ),
+      })
+    ),
+    unit: Type.Literal("CARTON", {
+      errorMessage: {
+        type: `Loại bao bì phải là 'PIECE' hoặc 'CARTON'.}`,
+      },
+    }),
+    pcs_ctn: Type.Integer({
+      minimum: 1,
+      errorMessage: {
+        type: "Quy cách phải là số nguyên.",
+        minimum: "Quy cách phải là số nguyên dương.",
+      },
+    }),
+    warehouseIds: Type.Optional(
+      Type.Array(
+        Type.String({
+          errorMessage: {
+            type: "Mã kho hàng phải là chuỗi.",
+          },
+        }),
+        {
+          minItems: 1,
+          errorMessage: {
+            type: "Danh sách mã kho hàng phải là mãng.",
+            minItems: "Danh sách mã kho hàng phải có ít nhất 1 phần tử.",
+          },
+        }
+      )
+    ),
+  },
+  {
+    errorMessage: {
+      required: {
+        name: "Thiếu trường 'name' bắt buộc.",
+        unit: "Thiếu trường 'unit' bắt buộc.",
+        pcs_ctn: "Thiếu trường 'pcs_ctn' bắt buộc.",
+      },
+    },
+  }
+);
+
+const createNewPackagingBodySchema = Type.Unsafe({
+  oneOf: [createPackagingPieceBodySchema, createPackagingCartonBodySchema],
+  discriminator: { propertyName: "unit" }, // nếu bạn muốn dùng Ajv discriminator
 });
 
-const updatePackagingBodySchema = Type.Partial(
+const updatePackagingPieceBodySchema = Type.Partial(
   Type.Object({
     name: Type.String({
       minLength: 1,
@@ -214,27 +303,102 @@ const updatePackagingBodySchema = Type.Partial(
         minLength: "Tên bao bì không được bỏ trống.",
       },
     }),
-    warehouseIds: Type.Array(
-      Type.String({
-        minLength: 1,
+    min_stock_level: Type.Optional(
+      Type.Integer({
+        minimum: 1,
         errorMessage: {
-          type: "Mã kho hàng phải là chuỗi.",
-          minLength: "Mã kho hàng không được trống.",
+          type: "Mức tồn kho tối thiểu phải là số nguyên.",
+          minimum: "Mức tồn kho tối thiểu phải là số nguyên dương.",
         },
-      }),
-      {
-        errorMessage: {
-          type: "Mã kho hàng phải là mãng.",
-        },
-      }
+      })
     ),
-    isDelete: Type.Boolean({
+    unit: Type.Literal("PIECE", {
       errorMessage: {
-        type: "Xoá bao bì phải là boolean.",
+        type: `Loại bao bì phải là 'PIECE' hoặc 'CARTON'.}`,
       },
     }),
+    status: Type.String({
+      enum: ["ACTIVE", "INACTIVE"],
+      errorMessage: {
+        type: "Trạng thái phải là chuỗi.",
+        enum: `Trạng thái phải là một trong 'ACTIVE', 'INACTIVE'.`,
+      },
+    }),
+    warehouseIds: Type.Optional(
+      Type.Array(
+        Type.String({
+          errorMessage: {
+            type: "Mã kho hàng phải là chuỗi.",
+          },
+        }),
+        {
+          errorMessage: {
+            type: "Danh sách mã kho hàng phải là mãng.",
+          },
+        }
+      )
+    ),
   })
 );
+
+const updatePackagingCartonBodySchema = Type.Partial(
+  Type.Object({
+    name: Type.String({
+      minLength: 1,
+      errorMessage: {
+        type: "Tên bao bì phải là chuỗi.",
+        minLength: "Tên bao bì không được bỏ trống.",
+      },
+    }),
+    min_stock_level: Type.Optional(
+      Type.Integer({
+        minimum: 1,
+        errorMessage: {
+          type: "Mức tồn kho tối thiểu phải là số nguyên.",
+          minimum: "Mức tồn kho tối thiểu phải là số nguyên dương.",
+        },
+      })
+    ),
+    unit: Type.Literal("CARTON", {
+      errorMessage: {
+        type: `Loại bao bì phải là 'PIECE' hoặc 'CARTON'.}`,
+      },
+    }),
+    pcs_ctn: Type.Integer({
+      minimum: 1,
+      errorMessage: {
+        type: "Quy cách phải là số nguyên.",
+        minimum: "Quy cách phải là số nguyên dương.",
+      },
+    }),
+    status: Type.String({
+      enum: ["ACTIVE", "INACTIVE"],
+      errorMessage: {
+        type: "Trạng thái phải là chuỗi.",
+        enum: `Trạng thái phải là một trong 'ACTIVE', 'INACTIVE'.`,
+      },
+    }),
+    warehouseIds: Type.Optional(
+      Type.Array(
+        Type.String({
+          errorMessage: {
+            type: "Mã kho hàng phải là chuỗi.",
+          },
+        }),
+        {
+          errorMessage: {
+            type: "Danh sách mã kho hàng phải là mãng.",
+          },
+        }
+      )
+    ),
+  })
+);
+
+const updatePackagingByIdBodySchema = Type.Union([
+  updatePackagingPieceBodySchema,
+  updatePackagingCartonBodySchema,
+]);
 
 export const getWarehousesByPackagingIdSchema: FastifySchema = {
   params: packagingParamsSchema,
@@ -244,17 +408,18 @@ export const getWarehousesByPackagingIdSchema: FastifySchema = {
 export const queryPackagingsSchema: FastifySchema = {
   querystring: queryStringPackagingsSchema,
 };
+
 export const getPackagingByIdSchema: FastifySchema = {
   params: packagingParamsSchema,
 };
 
-export const createPackagingSchema: FastifySchema = {
-  body: createPackagingBodySchema,
+export const createNewPackagingSchema: FastifySchema = {
+  body: createNewPackagingBodySchema,
 };
 
 export const updatePackagingByIdSchema: FastifySchema = {
   params: packagingParamsSchema,
-  body: updatePackagingBodySchema,
+  body: updatePackagingByIdBodySchema,
 };
 
 export const deletePackagingByIdSchema: FastifySchema = getPackagingByIdSchema;
@@ -269,13 +434,17 @@ export type GetWarehousesByPackagingIdQueryType = Static<
 export type QueryPackagingsType = Static<typeof queryStringPackagingsSchema>;
 export type GetPackagingByIdType = Static<typeof packagingParamsSchema>;
 
-export type CreatePackagingBodyType = Static<typeof createPackagingBodySchema>;
+export type CreateNewPackagingBodyType =
+  | Static<typeof createPackagingPieceBodySchema>
+  | Static<typeof createPackagingCartonBodySchema>;
 
 export type UpdatePackagingByIdParamsType = Static<
   typeof packagingParamsSchema
 >;
 export type UpdatePackagingByIdBodyType = Static<
-  typeof updatePackagingBodySchema
+  typeof updatePackagingByIdBodySchema
 >;
 
-export type DeletePackagingParamsType = Static<typeof packagingParamsSchema>;
+export type DeletePackagingByIdParamsType = Static<
+  typeof packagingParamsSchema
+>;

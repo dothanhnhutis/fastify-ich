@@ -3,7 +3,7 @@ import { QueryConfig, QueryResult } from "pg";
 
 import { BadRequestError } from "@/shared/error-handler";
 import {
-  CreatePackagingBodyType,
+  CreateNewPackagingBodyType,
   GetWarehousesByPackagingIdQueryType,
   QueryPackagingsType,
   UpdatePackagingByIdBodyType,
@@ -22,9 +22,12 @@ export default class PackagingRepo {
               WHERE
                   pi.warehouse_id IS NOT NULL
           )::int as warehouse_count,
-          SUM(pi.quantity) FILTER (
-              WHERE
-                  pi.warehouse_id IS NOT NULL
+          COALESCE(
+              SUM(pi.quantity) FILTER (
+                  WHERE
+                      pi.warehouse_id IS NOT NULL
+              ),
+              0
           )::int as total_quantity
       FROM
           packagings p
@@ -153,9 +156,12 @@ export default class PackagingRepo {
                 WHERE
                     pi.warehouse_id IS NOT NULL
             )::int as warehouse_count,
-            SUM(pi.quantity) FILTER (
-                WHERE
-                    pi.warehouse_id IS NOT NULL
+            COALESCE(
+                SUM(pi.quantity) FILTER (
+                    WHERE
+                        pi.warehouse_id IS NOT NULL
+                ),
+                0
             )::int as total_quantity
         FROM
             packagings p
@@ -318,7 +324,9 @@ export default class PackagingRepo {
     }
   }
 
-  async findPackagingDetailById(id: string): Promise<PackagingDetail | null> {
+  async findPackagingDetailById(
+    packagingId: string
+  ): Promise<PackagingDetail | null> {
     const queryConfig: QueryConfig = {
       text: `
         SELECT
@@ -369,7 +377,7 @@ export default class PackagingRepo {
         GROUP BY
             p.id;
       `,
-      values: [id],
+      values: [packagingId],
     };
 
     try {
@@ -382,19 +390,40 @@ export default class PackagingRepo {
       );
     }
   }
-  //
-  async create(data: CreatePackagingBodyType) {
+
+  async createNewPackaging(data: CreateNewPackagingBodyType) {
+    const columns: string[] = ["name", "unit"];
+    const values: any[] = [data.name, data.unit];
+    const placeholders: string[] = ["$1::text", "$2::text"];
+
+    let idx = values.length;
+
+    if (data.unit == "CARTON") {
+      columns.push("pcs_ctn");
+      values.push(data.pcs_ctn);
+      placeholders.push(`$${++idx}::integer`);
+    }
+
+    if (data.min_stock_level != undefined) {
+      columns.push("min_stock_level");
+      values.push(data.min_stock_level);
+      placeholders.push(`$${++idx}::integer`);
+    }
+
     const queryConfig: QueryConfig = {
-      text: `INSERT INTO packagings (name) VALUES ($1::text) RETURNING *;`,
-      values: [data.name],
+      text: `INSERT INTO packagings (${columns.join(
+        ", "
+      )}) VALUES (${placeholders.join(", ")}) RETURNING *;`,
+      values,
     };
+
     try {
       return await this.fastify.transaction(async (client) => {
         const { rows: packagings } = await client.query<Packaging>(queryConfig);
 
         if (data.warehouseIds && data.warehouseIds.length > 0) {
           await client.query({
-            text: `INSERT INTO packaging_stocks (packaging_id, warehouse_id ) VALUES ${data.warehouseIds
+            text: `INSERT INTO packaging_inventory (packaging_id, warehouse_id ) VALUES ${data.warehouseIds
               .map((_, i) => {
                 return `($1, $${i + 2})`;
               })
@@ -410,8 +439,11 @@ export default class PackagingRepo {
       );
     }
   }
-  //
-  async update(id: string, data: UpdatePackagingByIdBodyType): Promise<void> {
+
+  async updatePackagingById(
+    packagingId: string,
+    data: UpdatePackagingByIdBodyType
+  ): Promise<void> {
     if (Object.keys(data).length == 0) return;
 
     try {
@@ -420,7 +452,7 @@ export default class PackagingRepo {
           if (data.warehouseIds.length > 0) {
             // delete warehouse
             await client.query({
-              text: `DELETE FROM packaging_stocks
+              text: `DELETE FROM packaging_inventory
             WHERE packaging_id = $1::text 
               AND warehouse_id NOT IN (${data.warehouseIds
                 .map((_, i) => {
@@ -428,22 +460,22 @@ export default class PackagingRepo {
                 })
                 .join(", ")})
             RETURNING *;`,
-              values: [id, ...data.warehouseIds],
+              values: [packagingId, ...data.warehouseIds],
             });
             // insert warehouse
             await client.query({
-              text: `INSERT INTO packaging_stocks (packaging_id, warehouse_id)
+              text: `INSERT INTO packaging_inventory (packaging_id, warehouse_id)
           VALUES ${data.warehouseIds
             .map((_, i) => `($1, $${i + 2})`)
             .join(", ")} 
           ON CONFLICT DO NOTHING;`,
-              values: [id, ...data.warehouseIds],
+              values: [packagingId, ...data.warehouseIds],
             });
           } else {
             await client.query({
-              text: `DELETE FROM packaging_stocks
+              text: `DELETE FROM packaging_inventory
             WHERE packaging_id = $1::text RETURNING *;`,
-              values: [id],
+              values: [packagingId],
             });
           }
         }
@@ -453,15 +485,32 @@ export default class PackagingRepo {
         const values: any[] = [];
 
         if (data.name !== undefined) {
-          sets.push(`"name" = $${idx++}`);
+          sets.push(`name = $${idx++}::text`);
           values.push(data.name);
         }
 
-        if (data.isDelete !== undefined) {
-          sets.push(`"deleted_at" = $${idx++}`);
-          values.push(data.isDelete ? new Date() : null);
+        if (data.unit !== undefined) {
+          sets.push(`unit = $${idx++}::text`);
+          values.push(data.unit);
+          if (data.unit == "CARTON") {
+            sets.push(`pcs_ctn = $${idx++}::integer`);
+            values.push(data.pcs_ctn);
+          }
         }
-        values.push(id);
+
+        if (data.min_stock_level !== undefined) {
+          sets.push(`min_stock_level = $${idx++}::integer`);
+          values.push(data.min_stock_level);
+        }
+
+        if (data.status !== undefined) {
+          sets.push(
+            `status = $${idx++}::text`,
+            `deactived_at = $${idx++}::timestamptz`
+          );
+          values.push(data.status, data.status == "ACTIVE" ? null : new Date());
+        }
+        values.push(packagingId);
 
         if (sets.length > 0) {
           const queryConfig: QueryConfig = {
@@ -470,22 +519,20 @@ export default class PackagingRepo {
             )} WHERE id = $${idx} RETURNING *;`,
             values,
           };
-          const { rows: warehouses } = await client.query<Warehouse>(
-            queryConfig
-          );
+          await client.query<Warehouse>(queryConfig);
         }
       });
     } catch (error: unknown) {
       throw new BadRequestError(
-        `PackagingRepo.update() method error: ${error}`
+        `PackagingRepo.updatePackagingById() method error: ${error}`
       );
     }
   }
-  //
-  async delete(id: string): Promise<Packaging> {
+
+  async deletePackagingById(packagingId: string): Promise<Packaging> {
     const queryConfig: QueryConfig = {
       text: `DELETE FROM packagings WHERE id = $1 RETURNING *;`,
-      values: [id],
+      values: [packagingId],
     };
     try {
       const { rows }: QueryResult<Packaging> =
@@ -493,7 +540,7 @@ export default class PackagingRepo {
       return rows[0] ?? null;
     } catch (error: unknown) {
       throw new BadRequestError(
-        `PackagingRepo.delete() method error: ${error}`
+        `PackagingRepo.deletePackagingById() method error: ${error}`
       );
     }
   }

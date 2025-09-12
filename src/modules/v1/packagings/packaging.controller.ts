@@ -1,8 +1,8 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { QueryWarehousesType } from "../warehouses/warehouse.schema";
 import {
-  CreatePackagingBodyType,
-  DeletePackagingParamsType,
+  CreateNewPackagingBodyType,
+  DeletePackagingByIdParamsType,
   GetPackagingByIdType,
   GetWarehousesByPackagingIdParamsType,
   GetWarehousesByPackagingIdQueryType,
@@ -77,7 +77,7 @@ export async function getWarehousesByPackagingIdController(
 }
 
 export async function createPackagingController(
-  req: FastifyRequest<{ Body: CreatePackagingBodyType }>,
+  req: FastifyRequest<{ Body: CreateNewPackagingBodyType }>,
   reply: FastifyReply
 ) {
   if (req.body.warehouseIds) {
@@ -90,7 +90,7 @@ export async function createPackagingController(
     }
   }
 
-  const packaging = await req.packagings.create(req.body);
+  const packaging = await req.packagings.createNewPackaging(req.body);
 
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
@@ -121,7 +121,16 @@ export async function updatePackagingByIdController(
         );
     }
   }
-  await req.packagings.update(req.params.id, req.body);
+
+  if (
+    packaging.unit == "PIECE" &&
+    req.body.unit == "CARTON" &&
+    req.body.pcs_ctn == undefined
+  ) {
+    throw new BadRequestError("Thiếu trường 'pcs_ctn' bắt buộc.");
+  }
+
+  await req.packagings.updatePackagingById(req.params.id, req.body);
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
     statusText: "OK",
@@ -132,12 +141,12 @@ export async function updatePackagingByIdController(
 }
 
 export async function deletePackagingByIdController(
-  req: FastifyRequest<{ Params: DeletePackagingParamsType }>,
+  req: FastifyRequest<{ Params: DeletePackagingByIdParamsType }>,
   reply: FastifyReply
 ) {
   const packaging = await req.packagings.findPackagingById(req.params.id);
   if (!packaging) throw new BadRequestError("Bao bì không tồn tại.");
-  await req.warehouses.delete(packaging.id);
+  await req.packagings.deletePackagingById(packaging.id);
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
     statusText: "OK",

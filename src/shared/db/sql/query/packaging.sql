@@ -5,9 +5,12 @@ SELECT
         WHERE
             pi.warehouse_id IS NOT NULL
     )::int as warehouse_count,
-    SUM(pi.quantity) FILTER (
-        WHERE
-            pi.warehouse_id IS NOT NULL
+    COALESCE(
+        SUM(pi.quantity) FILTER (
+            WHERE
+                pi.warehouse_id IS NOT NULL
+        ),
+        0
     )::int as total_quantity
 FROM
     packagings p
@@ -23,9 +26,12 @@ SELECT
         WHERE
             pi.warehouse_id IS NOT NULL
     )::int as warehouse_count,
-    SUM(pi.quantity) FILTER (
-        WHERE
-            pi.warehouse_id IS NOT NULL
+    COALESCE(
+        SUM(pi.quantity) FILTER (
+            WHERE
+                pi.warehouse_id IS NOT NULL
+        ),
+        0
     )::int as total_quantity
 FROM
     packagings p
@@ -97,7 +103,7 @@ WHERE
 GROUP BY
     p.id;
 
----
+--- createnewPackaging
 INSERT INTO
     packagings (name, min_stock_level, unit, pcs_ctn)
 VALUES
@@ -106,57 +112,7 @@ VALUES
 RETURNING
     *;
 
---- 
-SELECT
-    p.*,
-    SUM(ps.quantity)::int AS quantity
-FROM
-    packagings p
-    LEFT JOIN packaging_stocks ps ON (p.id = ps.packaging_id)
+---deletePackagingById
+DELETE FROM packagings
 WHERE
-    p.created_at >= '2025-09-06T00:00:00.000Z'::timestamptz
-GROUP BY
-    p.id;
-
---- 
-SELECT
-    p.*,
-    SUM(ps.quantity)::int AS total_quantity,
-    COALESCE(
-        json_agg(
-            json_build_object(
-                'id',
-                w.id,
-                'name',
-                w.name,
-                'address',
-                w.address,
-                'quantity',
-                ps.quantity,
-                'deleted_at',
-                to_char(
-                    w.deleted_at AT TIME ZONE 'UTC',
-                    'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
-                ),
-                'created_at',
-                to_char(
-                    w.created_at AT TIME ZONE 'UTC',
-                    'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
-                ),
-                'updated_at',
-                to_char(
-                    w.updated_at AT TIME ZONE 'UTC',
-                    'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
-                )
-            )
-        ),
-        '[]'
-    ) as warehouses
-FROM
-    packagings p
-    LEFT JOIN packaging_stocks ps ON (p.id = ps.packaging_id)
-    LEFT JOIN warehouses w ON (w.id = ps.warehouse_id)
-WHERE
-    p.id = 'b4bdb315-18c5-44a7-b110-16779e4934b5'
-GROUP BY
-    p.id;
+    id = 'a42a0458-844e-4a71-a169-f09f20513359';

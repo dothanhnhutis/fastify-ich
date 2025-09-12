@@ -143,14 +143,14 @@ export default class WarehouseRepo {
     const queryConfig: QueryConfig = {
       text: `SELECT
                 w.*,
-                count(ps.packaging_id) FILTER (
+                count(pi.packaging_id) FILTER (
                     WHERE
-                        p.deleted_at IS NULL
+                        p.status = 'ACTIVE'
                 )::int AS packaging_count
             FROM
-                packaging_stocks ps
-                LEFT JOIN packagings p ON (ps.packaging_id = p.id)
-                LEFT JOIN warehouses w ON (ps.warehouse_id = w.id)
+                packaging_inventory pi
+                LEFT JOIN packagings p ON (pi.packaging_id = p.id)
+                LEFT JOIN warehouses w ON (pi.warehouse_id = w.id)
             WHERE warehouse_id = $1
             GROUP BY
                 w.id`,

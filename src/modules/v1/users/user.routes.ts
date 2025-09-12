@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import {
-  createUserController,
+  createNewUserController,
   currentUserController,
   getUserByIdController,
   getUserDetailByIdController,
@@ -15,7 +15,7 @@ import {
   createNewUserSchema,
   getUserByIdSchema,
   getUserDetailByIdSchema,
-  getUserRolesByUserIdSchema,
+  getRolesByUserIdSchema,
   queryUsersSchema,
   updateUserByIdSchema,
 } from "./user.schema";
@@ -49,7 +49,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/:id/roles",
     {
-      schema: getUserRolesByUserIdSchema,
+      schema: getRolesByUserIdSchema,
       preHandler: [
         requiredAuthMiddleware,
         checkPermissionMiddleware(["read:user:*"]),
@@ -79,7 +79,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         checkPermissionMiddleware(["create:user"]),
       ],
     },
-    createUserController
+    createNewUserController
   );
 
   fastify.patch(
