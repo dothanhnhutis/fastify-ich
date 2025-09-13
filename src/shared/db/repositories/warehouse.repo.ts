@@ -1,9 +1,10 @@
 import { FastifyInstance } from "fastify";
 import { QueryConfig, QueryResult } from "pg";
 
-import { BadRequestError, CustomError } from "@/shared/error-handler";
+import { BadRequestError } from "@/shared/error-handler";
 import {
   CreateWarehouseBodyType,
+  GetPackagingsByWarehouseIdQueryType,
   QueryWarehousesType,
   UpdateWarehouseByIdBodyType,
 } from "@/modules/v1/warehouses/warehouse.schema";
@@ -12,21 +13,22 @@ import { isDataString } from "@/shared/utils";
 export default class WarehouseRepo {
   constructor(private fastify: FastifyInstance) {}
 
-  async query(
+  async findWarehouses(
     query: QueryWarehousesType
   ): Promise<{ warehouses: Warehouse[]; metadata: Metadata }> {
     let queryString = [
       `
       SELECT
-        w.*,
-          count(ps.packaging_id) FILTER (
+          w.*,
+          COUNT(pi.packaging_id) FILTER (
               WHERE
-                  p.deleted_at IS NULL
-          )::int AS packaging_count
+                  pi.packaging_id IS NOT NULL
+                  AND p.status = 'ACTIVE'
+          ) AS packaging_count
       FROM
-        packaging_stocks ps
-        LEFT JOIN packagings p ON (ps.packaging_id = p.id)
-        LEFT JOIN warehouses w ON (ps.warehouse_id = w.id)
+          warehouses w
+          LEFT JOIN packaging_inventory pi ON (pi.warehouse_id = w.id)
+          LEFT JOIN packagings p ON (pi.packaging_id = p.id)
       `,
     ];
     const values: any[] = [];
@@ -79,13 +81,13 @@ export default class WarehouseRepo {
 
     try {
       return await this.fastify.transaction(async (client) => {
-        const { rows } = await client.query<{ total_groups: string }>({
-          text: `WITH grouped AS (${queryString.join(
+        const { rows } = await client.query<{ count: string }>({
+          text: `WITH warehouses AS (${queryString.join(
             " "
-          )}) SELECT  COUNT(*)::int AS total_groups FROM grouped;`,
+          )}) SELECT  COUNT(*)::int AS count FROM warehouses;`,
           values,
         });
-        const totalItem = parseInt(rows[0].total_groups);
+        const totalItem = parseInt(rows[0].count);
 
         if (query.sort != undefined) {
           const unqueField = query.sort.reduce<Record<string, string>>(
@@ -139,22 +141,24 @@ export default class WarehouseRepo {
     }
   }
 
-  async findById(id: string): Promise<Warehouse | null> {
+  async findWarehouseById(warehouseId: string): Promise<Warehouse | null> {
     const queryConfig: QueryConfig = {
       text: `SELECT
                 w.*,
-                count(pi.packaging_id) FILTER (
+                COUNT(pi.packaging_id) FILTER (
                     WHERE
-                        p.status = 'ACTIVE'
-                )::int AS packaging_count
+                        pi.packaging_id IS NOT NULL
+                        AND p.status = 'ACTIVE'
+                ) AS packaging_count
             FROM
-                packaging_inventory pi
+                warehouses w
+                LEFT JOIN packaging_inventory pi ON (pi.warehouse_id = w.id)
                 LEFT JOIN packagings p ON (pi.packaging_id = p.id)
-                LEFT JOIN warehouses w ON (pi.warehouse_id = w.id)
-            WHERE warehouse_id = $1
+            WHERE
+                w.id = '9c21c29c-342b-47fa-afb9-4c84eea87bec'
             GROUP BY
-                w.id`,
-      values: [id],
+                w.id;`,
+      values: [warehouseId],
     };
     try {
       const { rows }: QueryResult<Warehouse> =
@@ -167,55 +171,195 @@ export default class WarehouseRepo {
     }
   }
 
-  async findWarehouseDetailById(id: string): Promise<WarehouseDetail | null> {
+  async findPackagingsByWarehouseId(
+    warehouseId: string,
+    query?: GetPackagingsByWarehouseIdQueryType
+  ): Promise<QueryPackagingsByWarehouseId> {
+    const newTable = `
+       WITH 
+        warehouses AS (
+          SELECT
+              p.*,
+              pi.quantity
+          FROM
+              packaging_inventory pi
+              LEFT JOIN packagings p ON (pi.packaging_id = p.id)
+          WHERE
+              pi.warehouse_id = $1
+              AND p.status = 'ACTIVE'
+              AND p.deactived_at IS NULL;
+        )
+    `;
+    const queryString = [`SELECT * FROM packagings`];
+    const values: any[] = [warehouseId];
+    let where: string[] = [];
+    let idx = 2;
+
+    if (query) {
+      if (query.name != undefined) {
+        where.push(`name ILIKE $${idx++}::text`);
+        values.push(`%${query.name.trim()}%`);
+      }
+
+      if (query.unit != undefined) {
+        where.push(`unit = $${idx++}::text`);
+        values.push(query.unit);
+      }
+
+      if (query.status != undefined) {
+        where.push(
+          `status = $${idx++}::text`,
+          query.status == "ACTIVE"
+            ? "deactived_at IS NULL"
+            : "deactived_at IS NOT NULL"
+        );
+        values.push(query.status);
+      }
+
+      if (query.created_from) {
+        where.push(`created_at >= $${idx++}::timestamptz`);
+        values.push(
+          `${
+            isDataString(query.created_from.trim())
+              ? `${query.created_from.trim()}T00:00:00.000Z`
+              : query.created_from.trim()
+          }`
+        );
+      }
+
+      if (query.created_to) {
+        where.push(`created_at <= $${idx++}::timestamptz`);
+        values.push(
+          `${
+            isDataString(query.created_to.trim())
+              ? `${query.created_to.trim()}T23:59:59.999Z`
+              : query.created_to.trim()
+          }`
+        );
+      }
+    }
+
+    if (where.length > 0) {
+      queryString.push(`WHERE ${where.join(" AND ")}`);
+    }
+
+    try {
+      return await this.fastify.transaction(async (client) => {
+        const { rows } = await client.query<{ count: string }>({
+          text: [newTable, queryString.join(" ").replace("*", "count(*)")].join(
+            " "
+          ),
+          values,
+        });
+        const totalItem = parseInt(rows[0].count);
+
+        if (query?.sort != undefined) {
+          const unqueField = query.sort.reduce<Record<string, string>>(
+            (prev, curr) => {
+              const [field, direction] = curr.split(".");
+              prev[field] = direction.toUpperCase();
+              return prev;
+            },
+            {}
+          );
+
+          const orderBy = Object.entries(unqueField)
+            .map(([field, direction]) => `${field} ${direction}`)
+            .join(", ");
+
+          queryString.push(`ORDER BY ${orderBy}`);
+        }
+
+        let limit = query?.limit ?? totalItem;
+        let page = query?.page ?? 1;
+        let offset = (page - 1) * limit;
+
+        queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
+        values.push(limit, offset);
+
+        const queryConfig: QueryConfig = {
+          text: [newTable, queryString.join(" ")].join(" "),
+          values,
+        };
+
+        const { rows: packagings } = await this.fastify.query<
+          WarehouseDetail["packagings"][number]
+        >(queryConfig);
+
+        const totalPage = Math.ceil(totalItem / limit) || 0;
+
+        return {
+          packagings,
+          metadata: {
+            totalItem,
+            totalPage,
+            hasNextPage: page < totalPage,
+            limit: totalItem > 0 ? limit : 0,
+            itemStart: totalItem > 0 ? (page - 1) * limit + 1 : 0,
+            itemEnd: Math.min(page * limit, totalItem),
+          },
+        };
+      });
+    } catch (error: any) {
+      throw new BadRequestError(
+        `PackagingRepo.findPackagingsByWarehouseId() method error: ${error}`
+      );
+    }
+  }
+
+  async findWarehouseDetailById(
+    warehouseId: string
+  ): Promise<WarehouseDetail | null> {
     const queryConfig: QueryConfig = {
-      text: `SELECT
-                w.*,
-                count(ps.packaging_id) FILTER (
+      text: `
+        SELECT
+            w.*,
+            COUNT(pi.packaging_id) FILTER (
+                WHERE
+                    pi.packaging_id IS NOT NULL
+                    AND p.status = 'ACTIVE'
+            ) AS packaging_count,
+            COALESCE(
+                json_agg(
+                    json_build_object(
+                        'id',
+                        p.id,
+                        'name',
+                        p.name,
+                        'min_stock_level',
+                        p.min_stock_level,
+                        'unit',
+                        p.unit,
+                        'pcs_ctn',
+                        p.pcs_ctn,
+                        'status',
+                        p.status,
+                        'deactived_at',
+                        p.deactived_at,
+                        'created_at',
+                        p.created_at,
+                        'updated_at',
+                        p.updated_at,
+                        'quantity',
+                        pi.quantity
+                    )
+                ) FILTER (
                     WHERE
-                        p.deleted_at IS NULL
-                )::int AS packaging_count,
-                COALESCE(
-                    json_agg(
-                        json_build_object(
-                            'id',
-                            p.id,
-                            'name',
-                            p.name,
-                            'deleted_at',
-                            to_char(
-                                p.created_at AT TIME ZONE 'UTC',
-                                'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
-                            ),
-                            'created_at',
-                            to_char(
-                                p.created_at AT TIME ZONE 'UTC',
-                                'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
-                            ),
-                            'updated_at',
-                            to_char(
-                                p.updated_at AT TIME ZONE 'UTC',
-                                'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
-                            ),
-                            'quantity',
-                            ps.quantity
-                        )
-                    ) FILTER (
-                        WHERE
-                            p.deleted_at IS NULL
-                    ),
-                    '[]'
-                ) AS packagings
-            FROM
-                packaging_stocks ps
-                LEFT JOIN packagings p ON (ps.packaging_id = p.id)
-                LEFT JOIN warehouses w ON (ps.warehouse_id = w.id)
-            WHERE
-                warehouse_id = $1
-            GROUP BY
-                w.id
-            LIMIT 1;`,
-      values: [id],
+                        p.id IS NOT NULL
+                        AND p.status = 'ACTIVE'
+                ),
+                '[]'
+            ) AS packagings
+        FROM
+            packagings p
+            LEFT JOIN packaging_inventory pi ON (pi.packaging_id = p.id)
+            LEFT JOIN warehouses w ON (pi.warehouse_id = w.id)
+        WHERE
+            w.id = $1
+        GROUP BY
+            w.id;
+      `,
+      values: [warehouseId],
     };
     try {
       const { rows }: QueryResult<WarehouseDetail> =
@@ -227,7 +371,7 @@ export default class WarehouseRepo {
       );
     }
   }
-
+  //
   async create(data: CreateWarehouseBodyType): Promise<Warehouse> {
     const queryConfig: QueryConfig = {
       text: `INSERT INTO warehouses (name, address) VALUES ($1::text, $2::text) RETURNING *;`,
@@ -264,7 +408,7 @@ export default class WarehouseRepo {
       );
     }
   }
-
+  //
   async update(id: string, data: UpdateWarehouseByIdBodyType): Promise<void> {
     if (Object.keys(data).length == 0) return;
 
@@ -339,7 +483,7 @@ export default class WarehouseRepo {
       );
     }
   }
-
+  //
   async delete(id: string): Promise<Warehouse> {
     const queryConfig: QueryConfig = {
       text: `DELETE FROM warehouses WHERE id = $1 RETURNING *;`,

@@ -4,8 +4,16 @@ import { Type, Static } from "@sinclair/typebox";
 const sortPackagingEnum = [
   "name.asc",
   "name.desc",
-  "deleted.asc",
-  "deleted.desc",
+  "min_stock_level.asc",
+  "min_stock_level.desc",
+  "unit.asc",
+  "unit.desc",
+  "pcs_ctn.asc",
+  "pcs_ctn.desc",
+  "status.asc",
+  "status.desc",
+  "deactived_at.asc",
+  "deactived_at.desc",
   "created_at.asc",
   "created_at.desc",
   "updated_at.asc",
@@ -20,9 +28,18 @@ export const queryStringPackagingByWarehouseIdSchema = Type.Partial(
         type: "Tên kho hàng phải là chuỗi.",
       },
     }),
-    deleted: Type.Boolean({
+    unit: Type.String({
+      enum: ["PIECE", "CARTON"],
       errorMessage: {
-        type: "Trạng thái kho hàng phải là boolean.",
+        type: "Loại bao bì phải là chuỗi.",
+        enum: `Loại bao bì phải là 'PIECE' hoặc 'CARTON'.`,
+      },
+    }),
+    status: Type.String({
+      enum: ["ACTIVE", "INACTIVE"],
+      errorMessage: {
+        type: "Trạng thái phải là chuỗi.",
+        enum: `Trạng thái phải là một trong 'ACTIVE', 'INACTIVE'.}`,
       },
     }),
     created_from: Type.String({

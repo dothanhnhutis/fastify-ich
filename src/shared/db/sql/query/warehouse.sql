@@ -10,8 +10,6 @@ FROM
     warehouses w
     LEFT JOIN packaging_inventory pi ON (pi.warehouse_id = w.id)
     LEFT JOIN packagings p ON (pi.packaging_id = p.id)
-WHERE
-    id = '0676db90-178b-4d24-8c2a-4db4a198ab82'
 GROUP BY
     w.id;
 
@@ -27,6 +25,8 @@ FROM
     warehouses w
     LEFT JOIN packaging_inventory pi ON (pi.warehouse_id = w.id)
     LEFT JOIN packagings p ON (pi.packaging_id = p.id)
+WHERE
+    w.id = '9c21c29c-342b-47fa-afb9-4c84eea87bec'
 GROUP BY
     w.id;
 
@@ -38,7 +38,7 @@ FROM
     packaging_inventory pi
     LEFT JOIN packagings p ON (pi.packaging_id = p.id)
 WHERE
-    pi.warehouse_id = '0676db90-178b-4d24-8c2a-4db4a198ab82'
+    pi.warehouse_id = '9c21c29c-342b-47fa-afb9-4c84eea87bec'
     AND p.status = 'ACTIVE'
     AND p.deactived_at IS NULL;
 
@@ -85,5 +85,7 @@ FROM
     packagings p
     LEFT JOIN packaging_inventory pi ON (pi.packaging_id = p.id)
     LEFT JOIN warehouses w ON (pi.warehouse_id = w.id)
+WHERE
+    w.id = '9c21c29c-342b-47fa-afb9-4c84eea87bec'
 GROUP BY
     w.id;

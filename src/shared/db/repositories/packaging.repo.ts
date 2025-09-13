@@ -321,7 +321,7 @@ export default class PackagingRepo {
       });
     } catch (error: any) {
       throw new BadRequestError(
-        `PackagingRepo.findById() method error: ${error}`
+        `PackagingRepo.findWarehousesByPackagingId() method error: ${error}`
       );
     }
   }

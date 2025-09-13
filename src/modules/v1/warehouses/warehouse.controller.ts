@@ -17,7 +17,7 @@ export async function queryWarehousesController(
   req: FastifyRequest<{ Querystring: QueryWarehousesType }>,
   reply: FastifyReply
 ) {
-  const data = await req.warehouses.query(req.query);
+  const data = await req.warehouses.findWarehouses(req.query);
 
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
@@ -30,7 +30,7 @@ export async function getWarehouseByIdController(
   req: FastifyRequest<{ Params: GetWarehouseByIdParamsType }>,
   reply: FastifyReply
 ) {
-  const warehouse = await req.warehouses.findById(req.params.id);
+  const warehouse = await req.warehouses.findWarehouseById(req.params.id);
   if (!warehouse) throw new BadRequestError("Nhà kho không tồn tại.");
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
@@ -48,9 +48,9 @@ export async function getWarehousesByPackagingIdController(
   }>,
   reply: FastifyReply
 ) {
-  const warehouse = await req.warehouses.findById(req.params.id);
+  const warehouse = await req.warehouses.findWarehouseById(req.params.id);
   if (!warehouse) throw new BadRequestError("Nhà kho không tồn tại.");
-  const detail = await req.packaging_stocks.findByWarehouseId(
+  const detail = await req.warehouses.findPackagingsByWarehouseId(
     req.params.id,
     req.query
   );
@@ -80,7 +80,9 @@ export async function createWarehouseController(
 ) {
   if (req.body.packagingIds) {
     for (const packagingId of req.body.packagingIds) {
-      const existsPackaging = await req.packagings.findById(packagingId);
+      const existsPackaging = await req.packagings.findPackagingById(
+        packagingId
+      );
       if (!existsPackaging)
         throw new BadRequestError(`Mã bao bì id=${packagingId} không tồn tại`);
     }
@@ -103,12 +105,14 @@ export async function updateWarehouseByIdController(
   }>,
   reply: FastifyReply
 ) {
-  const warehouse = await req.warehouses.findById(req.params.id);
+  const warehouse = await req.warehouses.findWarehouseById(req.params.id);
   if (!warehouse) throw new BadRequestError("Nhà kho không tồn tại.");
 
   if (req.body.packagingIds) {
     for (const packagingId of req.body.packagingIds) {
-      const existsPackaging = await req.packagings.findById(packagingId);
+      const existsPackaging = await req.packagings.findPackagingById(
+        packagingId
+      );
       if (!existsPackaging)
         throw new BadRequestError(`Mã bao bì id=${packagingId} không tồn tại`);
     }
@@ -129,7 +133,7 @@ export async function deleteWarehouseByIdController(
   req: FastifyRequest<{ Params: DeleteWarehouseByIdParamsType }>,
   reply: FastifyReply
 ) {
-  const warehouse = await req.warehouses.findById(req.params.id);
+  const warehouse = await req.warehouses.findWarehouseById(req.params.id);
   if (!warehouse) throw new BadRequestError("Nhà kho không tồn tại.");
 
   await req.warehouses.delete(warehouse.id);

@@ -23,3 +23,13 @@ type WarehouseDetail = Warehouse & {
     updated_at: Date;
   }[];
 };
+
+type QueryWarehousesType = {
+  warehouses: Warehouse[];
+  metadata: Metadata;
+};
+
+type QueryPackagingsByWarehouseId = {
+  packagings: WarehouseDetail["packagings"];
+  metadata: Metadata;
+};
