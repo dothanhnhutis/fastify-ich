@@ -102,16 +102,41 @@ CREATE TABLE IF NOT EXISTS packaging_inventory (
 );
 
 --- create packaging_transactions
--- CREATE TABLE IF NOT EXISTS packaging_transactions (
---     id TEXT NOT NULL DEFAULT gen_random_uuid ()::text,
---     code VARCHAR(20) UNIQUE NOT NULL,
---     type VARCHAR(20) NOT NULL,
---     from_warehouse_id TEXT NOT NULL,
---     to_warehouse_id TEXT,
---     note VARCHAR(255) NOT NULL DEFAULT '',
---     created_by INTEGER REFERENCES users (id),
---     created_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
---     updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS packaging_transactions (
+    id TEXT NOT NULL DEFAULT gen_random_uuid ()::text,
+    code VARCHAR(20) UNIQUE NOT NULL, -- mã phiếu: IMP001, EXP001, ADJ001, TRF001
+    type VARCHAR(20) NOT NULL, -- IMPORT, EXPORT, ADJUST, TRANSFER
+    from_warehouse_id TEXT NOT NULL,
+    to_warehouse_id TEXT,
+    note VARCHAR(255) NOT NULL DEFAULT '',
+    transaction_date DATE NOT NULL,
+    status VARCHAR(20) DEFAULT 'CREATED', -- CREATED, COMPLETED, CANCELLED
+    created_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
+    CONSTRAINT packaging_transactions_pkey PRIMARY KEY (id)
+);
+
+--- create packaging_transactions_items 
+CREATE TABLE IF NOT EXISTS packaging_transaction_items (
+    packaging_transaction_id TEXT NOT NULL,
+    packaging_id TEXT NOT NULL,
+    warehouse_id TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    signed_quantity INTEGER NOT NULL,
+    created_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
+    CONSTRAINT packaging_transaction_items_pkey PRIMARY KEY (
+        packaging_transaction_id,
+        warehouse_id,
+        packaging_id
+    )
+);
+
+-- ALTER TABLE packaging_transaction_items
+-- ADD CONSTRAINT packaging_transaction_items_pkey PRIMARY KEY (
+--     packaging_transaction_id,
+--     warehouse_id,
+--     packaging_id
 -- );
 --- create index users table
 CREATE UNIQUE INDEX users_email_key ON users (email);
@@ -123,12 +148,22 @@ ADD CONSTRAINT user_roles_user_id_fkey FOREIGN KEY (user_id) REFERENCES users (i
 ALTER TABLE user_roles
 ADD CONSTRAINT user_roles_role_id_fkey FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
---- AddForgeignKey 
+--- AddForgeignKey packaging_inventory
 ALTER TABLE packaging_inventory
 ADD CONSTRAINT packaging_inventory_warehouse_id_fkey FOREIGN KEY (warehouse_id) REFERENCES warehouses (id) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE packaging_inventory
 ADD CONSTRAINT packaging_inventory_packaging_id_fkey FOREIGN KEY (packaging_id) REFERENCES packagings (id) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+--- AddForgeignKey packaging_transaction_items
+ALTER TABLE packaging_transaction_items
+ADD CONSTRAINT packaging_transaction_items_packaging_transaction_id_fkey FOREIGN KEY (packaging_transaction_id) REFERENCES packaging_transactions (id) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+ALTER TABLE packaging_transaction_items
+ADD CONSTRAINT packaging_transaction_items_packaging_id_fkey FOREIGN KEY (packaging_id) REFERENCES packagings (id) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+ALTER TABLE packaging_transaction_items
+ADD CONSTRAINT packaging_transaction_items_warehouse_id_fkey FOREIGN KEY (warehouse_id) REFERENCES warehouses (id) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --- func set_updated_at
 CREATE OR REPLACE FUNCTION set_updated_at () RETURNS TRIGGER LANGUAGE plpgsql AS $$
@@ -159,6 +194,67 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+
+CREATE OR REPLACE FUNCTION function_name(type VARCHAR(20), transaction_date DATE, ...)
+RETURNS VARCHAR(50)
+AS $$
+DECLARE
+    code VARCHAR(50);
+BEGIN
+    CASE type
+        WHEN 'IMPORT' THEN prefix := 'IMP';
+        WHEN 'EXPORT' THEN prefix := 'EXP';
+        WHEN 'ADJUST' THEN prefix := 'ADJ';
+        WHEN 'TRANSFER' THEN prefix := 'TRF';
+        ELSE prefix := 'STK';
+    END CASE;
+
+    sequence_name := 'seq_' || prefix || '_' || EXTRACT(YEAR FROM transaction_date);
+
+
+
+    RETURN code;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE SEQUENCE IF NOT EXISTS seq_imp_2025 START 1;
+SELECT nextval('seq_imp_2025');
+SELECT to_regclass('seq_imp_2026');
+
+
+-- Function để tự động tạo mã phiếu
+CREATE OR REPLACE FUNCTION generate_transaction_code () RETURNS TRIGGER AS $$
+DECLARE
+    prefix VARCHAR(10);
+    sequence_name VARCHAR(50);
+    next_number INTEGER;
+BEGIN
+    -- Xác định prefix theo loại phiếu
+    CASE NEW.type
+        WHEN 'IMPORT' THEN prefix := 'IMP';
+        WHEN 'EXPORT' THEN prefix := 'EXP';
+        WHEN 'ADJUST' THEN prefix := 'ADJ';
+        WHEN 'TRANSFER' THEN prefix := 'TRF';
+        ELSE prefix := 'STK';
+    END CASE;
+    
+    -- Tạo sequence name
+    sequence_name := 'seq_' || prefix || '_' || EXTRACT(YEAR FROM NEW.transaction_date);
+    
+    -- Tạo sequence nếu chưa tồn tại
+    EXECUTE format('CREATE SEQUENCE IF NOT EXISTS %I START 1', sequence_name);
+    
+    -- Lấy số tiếp theo
+    EXECUTE format('SELECT nextval(%L)', sequence_name) INTO next_number;
+    
+    -- Tạo mã phiếu: PREFIX + YYYY + 6 số
+    NEW.code := prefix || EXTRACT(YEAR FROM NEW.transaction_date) || LPAD(next_number::TEXT, 6, '0');
+    
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
 -- DROP TRIGGER IF EXISTS trg_updated_at_users ON users;
 -- DROP TRIGGER IF EXISTS trg_updated_at_roles ON roles;
 -- DROP TRIGGER IF EXISTS check_unit_pcs_ctn_after_update ON packagings;
@@ -184,3 +280,10 @@ CREATE TRIGGER trg_check_unit_pcs_ctn_validate BEFORE INSERT
 OR
 UPDATE ON packagings FOR EACH ROW
 EXECUTE FUNCTION check_unit_pcs_ctn_validate ();
+
+--- trigger tự động tạo mã phiếu
+CREATE TRIGGER generate_stock_transaction_code BEFORE INSERT ON packaging_transactions FOR EACH ROW WHEN (
+    NEW.code IS NULL
+    OR NEW.code = ''
+)
+EXECUTE FUNCTION generate_transaction_code ();

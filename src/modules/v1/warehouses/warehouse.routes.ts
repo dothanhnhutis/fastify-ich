@@ -1,7 +1,7 @@
 import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
 import { FastifyInstance } from "fastify";
 import {
-  createWarehouseController,
+  createNewWarehouseController,
   deleteWarehouseByIdController,
   getWarehousesByPackagingIdController,
   getWarehouseByIdController,
@@ -10,7 +10,7 @@ import {
   getWarehouseDetailByIdController,
 } from "./warehouse.controller";
 import {
-  createWarehouseSchema,
+  createNewWarehouseSchema,
   deleteWarehouseByIdSchema,
   getPackagingsByWarehouseIdSchema,
   getWarehouseByIdSchema,
@@ -70,13 +70,13 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/",
     {
-      schema: createWarehouseSchema,
+      schema: createNewWarehouseSchema,
       preHandler: [
         requiredAuthMiddleware,
         // checkPermissionMiddleware(["read:warehouse"]),
       ],
     },
-    createWarehouseController
+    createNewWarehouseController
   );
 
   fastify.patch(
@@ -91,15 +91,15 @@ export default async function userRoutes(fastify: FastifyInstance) {
     updateWarehouseByIdController
   );
 
-  fastify.delete(
-    "/:id",
-    {
-      schema: deleteWarehouseByIdSchema,
-      preHandler: [
-        requiredAuthMiddleware,
-        // checkPermissionMiddleware(["delete:warehouse"]),
-      ],
-    },
-    deleteWarehouseByIdController
-  );
+  // fastify.delete(
+  //   "/:id",
+  //   {
+  //     schema: deleteWarehouseByIdSchema,
+  //     preHandler: [
+  //       requiredAuthMiddleware,
+  //       // checkPermissionMiddleware(["delete:warehouse"]),
+  //     ],
+  //   },
+  //   deleteWarehouseByIdController
+  // );
 }

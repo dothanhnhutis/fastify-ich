@@ -1,6 +1,6 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import {
-  CreateWarehouseBodyType,
+  CreateNewWarehouseBodyType,
   DeleteWarehouseByIdParamsType,
   GetPackagingsByWarehouseIdParamsType,
   GetPackagingsByWarehouseIdQueryType,
@@ -74,8 +74,8 @@ export async function getWarehouseDetailByIdController(
   });
 }
 
-export async function createWarehouseController(
-  req: FastifyRequest<{ Body: CreateWarehouseBodyType }>,
+export async function createNewWarehouseController(
+  req: FastifyRequest<{ Body: CreateNewWarehouseBodyType }>,
   reply: FastifyReply
 ) {
   if (req.body.packagingIds) {
@@ -87,7 +87,7 @@ export async function createWarehouseController(
         throw new BadRequestError(`Mã bao bì id=${packagingId} không tồn tại`);
     }
   }
-  const role = await req.warehouses.create(req.body);
+  const role = await req.warehouses.createNewWarehouse(req.body);
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
     statusText: "OK",
@@ -118,7 +118,7 @@ export async function updateWarehouseByIdController(
     }
   }
 
-  await req.warehouses.update(warehouse.id, req.body);
+  await req.warehouses.updateWarehouseById(warehouse.id, req.body);
 
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
@@ -136,7 +136,7 @@ export async function deleteWarehouseByIdController(
   const warehouse = await req.warehouses.findWarehouseById(req.params.id);
   if (!warehouse) throw new BadRequestError("Nhà kho không tồn tại.");
 
-  await req.warehouses.delete(warehouse.id);
+  await req.warehouses.findWarehouseDetailById(warehouse.id);
 
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,

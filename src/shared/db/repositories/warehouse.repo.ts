@@ -3,7 +3,7 @@ import { QueryConfig, QueryResult } from "pg";
 
 import { BadRequestError } from "@/shared/error-handler";
 import {
-  CreateWarehouseBodyType,
+  CreateNewWarehouseBodyType,
   GetPackagingsByWarehouseIdQueryType,
   QueryWarehousesType,
   UpdateWarehouseByIdBodyType,
@@ -24,7 +24,7 @@ export default class WarehouseRepo {
               WHERE
                   pi.packaging_id IS NOT NULL
                   AND p.status = 'ACTIVE'
-          ) AS packaging_count
+          )::int AS packaging_count
       FROM
           warehouses w
           LEFT JOIN packaging_inventory pi ON (pi.warehouse_id = w.id)
@@ -149,13 +149,13 @@ export default class WarehouseRepo {
                     WHERE
                         pi.packaging_id IS NOT NULL
                         AND p.status = 'ACTIVE'
-                ) AS packaging_count
+                )::int AS packaging_count
             FROM
                 warehouses w
                 LEFT JOIN packaging_inventory pi ON (pi.warehouse_id = w.id)
                 LEFT JOIN packagings p ON (pi.packaging_id = p.id)
             WHERE
-                w.id = '9c21c29c-342b-47fa-afb9-4c84eea87bec'
+                w.id = $1
             GROUP BY
                 w.id;`,
       values: [warehouseId],
@@ -177,7 +177,7 @@ export default class WarehouseRepo {
   ): Promise<QueryPackagingsByWarehouseId> {
     const newTable = `
        WITH 
-        warehouses AS (
+        packagings AS (
           SELECT
               p.*,
               pi.quantity
@@ -187,7 +187,7 @@ export default class WarehouseRepo {
           WHERE
               pi.warehouse_id = $1
               AND p.status = 'ACTIVE'
-              AND p.deactived_at IS NULL;
+              AND p.deactived_at IS NULL
         )
     `;
     const queryString = [`SELECT * FROM packagings`];
@@ -318,7 +318,7 @@ export default class WarehouseRepo {
                 WHERE
                     pi.packaging_id IS NOT NULL
                     AND p.status = 'ACTIVE'
-            ) AS packaging_count,
+            )::int AS packaging_count,
             COALESCE(
                 json_agg(
                     json_build_object(
@@ -371,8 +371,10 @@ export default class WarehouseRepo {
       );
     }
   }
-  //
-  async create(data: CreateWarehouseBodyType): Promise<Warehouse> {
+
+  async createNewWarehouse(
+    data: CreateNewWarehouseBodyType
+  ): Promise<Warehouse> {
     const queryConfig: QueryConfig = {
       text: `INSERT INTO warehouses (name, address) VALUES ($1::text, $2::text) RETURNING *;`,
       values: [data.name, data.address],
@@ -393,7 +395,7 @@ export default class WarehouseRepo {
             .join(", ");
 
           await client.query({
-            text: `INSERT INTO packaging_stocks (warehouse_id, packaging_id) VALUES ${placeholders};`,
+            text: `INSERT INTO packaging_inventory (warehouse_id, packaging_id) VALUES ${placeholders};`,
             values,
           });
         }
@@ -404,21 +406,25 @@ export default class WarehouseRepo {
       return newWarehouse;
     } catch (error: unknown) {
       throw new BadRequestError(
-        `WarehouseRepo.create() method error: ${error}`
+        `WarehouseRepo.createNewWarehouse() method error: ${error}`
       );
     }
   }
-  //
-  async update(id: string, data: UpdateWarehouseByIdBodyType): Promise<void> {
+
+  async updateWarehouseById(
+    warehouseId: string,
+    data: UpdateWarehouseByIdBodyType
+  ): Promise<void> {
     if (Object.keys(data).length == 0) return;
 
     try {
       await this.fastify.transaction(async (client) => {
+        console.log(data.packagingIds);
         if (data.packagingIds) {
           if (data.packagingIds.length > 0) {
             // delete warehouse
             await client.query({
-              text: `DELETE FROM packaging_stocks
+              text: `DELETE FROM packaging_inventory
             WHERE warehouse_id = $1::text 
               AND packaging_id NOT IN (${data.packagingIds
                 .map((_, i) => {
@@ -426,22 +432,22 @@ export default class WarehouseRepo {
                 })
                 .join(", ")})
             RETURNING *;`,
-              values: [id, ...data.packagingIds],
+              values: [warehouseId, ...data.packagingIds],
             });
             // insert warehouse
             await client.query({
-              text: `INSERT INTO packaging_stocks (packaging_id, warehouse_id)
+              text: `INSERT INTO packaging_inventory (warehouse_id,packaging_id)
           VALUES ${data.packagingIds
             .map((_, i) => `($1, $${i + 2})`)
             .join(", ")} 
           ON CONFLICT DO NOTHING;`,
-              values: [id, ...data.packagingIds],
+              values: [warehouseId, ...data.packagingIds],
             });
           } else {
             await client.query({
-              text: `DELETE FROM packaging_stocks
+              text: `DELETE FROM packaging_inventory
             WHERE warehouse_id = $1::text RETURNING *;`,
-              values: [id],
+              values: [warehouseId],
             });
           }
         }
@@ -459,11 +465,15 @@ export default class WarehouseRepo {
           values.push(data.address);
         }
 
-        if (data.isDelete !== undefined) {
-          sets.push(`"deleted_at" = $${idx++}`);
-          values.push(data.isDelete ? new Date() : null);
+        if (data.status !== undefined) {
+          sets.push(
+            `status = $${idx++}::text`,
+            `deactived_at = $${idx++}::timestamptz`
+          );
+          values.push(data.status, data.status == "ACTIVE" ? null : new Date());
         }
-        values.push(id);
+
+        values.push(warehouseId);
 
         if (sets.length > 0) {
           const queryConfig: QueryConfig = {
@@ -479,12 +489,12 @@ export default class WarehouseRepo {
       });
     } catch (error) {
       throw new BadRequestError(
-        `WarehouseRepo.update() method error: ${error}`
+        `WarehouseRepo.updateWarehouseById() method error: ${error}`
       );
     }
   }
   //
-  async delete(id: string): Promise<Warehouse> {
+  async deleteWarehouseById(id: string): Promise<Warehouse> {
     const queryConfig: QueryConfig = {
       text: `DELETE FROM warehouses WHERE id = $1 RETURNING *;`,
       values: [id],
@@ -495,7 +505,7 @@ export default class WarehouseRepo {
       return rows[0] ?? null;
     } catch (error: unknown) {
       throw new BadRequestError(
-        `WarehouseRepo.delete() method error: ${error}`
+        `WarehouseRepo.deleteWarehouseById() method error: ${error}`
       );
     }
   }

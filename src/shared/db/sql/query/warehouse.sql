@@ -5,7 +5,7 @@ SELECT
         WHERE
             pi.packaging_id IS NOT NULL
             AND p.status = 'ACTIVE'
-    ) AS packaging_count
+    )::int AS packaging_count
 FROM
     warehouses w
     LEFT JOIN packaging_inventory pi ON (pi.warehouse_id = w.id)
@@ -20,7 +20,7 @@ SELECT
         WHERE
             pi.packaging_id IS NOT NULL
             AND p.status = 'ACTIVE'
-    ) AS packaging_count
+    )::int AS packaging_count
 FROM
     warehouses w
     LEFT JOIN packaging_inventory pi ON (pi.warehouse_id = w.id)
@@ -49,7 +49,7 @@ SELECT
         WHERE
             pi.packaging_id IS NOT NULL
             AND p.status = 'ACTIVE'
-    ) AS packaging_count,
+    )::int AS packaging_count,
     COALESCE(
         json_agg(
             json_build_object(

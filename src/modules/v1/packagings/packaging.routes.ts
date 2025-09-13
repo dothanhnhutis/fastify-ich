@@ -78,7 +78,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
     },
     createPackagingController
   );
-  //
+
   fastify.patch(
     "/:id",
     {
@@ -90,16 +90,16 @@ export default async function userRoutes(fastify: FastifyInstance) {
     },
     updatePackagingByIdController
   );
-  //
-  fastify.delete(
-    "/:id",
-    {
-      schema: deletePackagingByIdSchema,
-      preHandler: [
-        requiredAuthMiddleware,
-        // checkPermissionMiddleware(["delete:packaging"]),
-      ],
-    },
-    deletePackagingByIdController
-  );
+
+  // fastify.delete(
+  //   "/:id",
+  //   {
+  //     schema: deletePackagingByIdSchema,
+  //     preHandler: [
+  //       requiredAuthMiddleware,
+  //       // checkPermissionMiddleware(["delete:packaging"]),
+  //     ],
+  //   },
+  //   deletePackagingByIdController
+  // );
 }

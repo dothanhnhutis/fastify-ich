@@ -1,6 +1,10 @@
 import { FastifySchema } from "fastify";
 import { Type, Static } from "@sinclair/typebox";
 
+const warehouseParamsSchema = Type.Object({
+  id: Type.String(),
+});
+
 const sortPackagingEnum = [
   "name.asc",
   "name.desc",
@@ -164,7 +168,7 @@ const queryStringWarehouseSchema = Type.Partial(
   })
 );
 
-const createWarehouseBodySchema = Type.Object({
+const createNewWarehouseBodySchema = Type.Object({
   name: Type.String({
     minLength: 1,
     errorMessage: {
@@ -213,7 +217,6 @@ const updateWarehouseByIdBodySchema = Type.Partial(
     }),
     packagingIds: Type.Array(
       Type.String({
-        minLength: 1,
         errorMessage: {
           type: "Mã bao bì phải là chuỗi.",
           minLength: "Mã bao bì không được trống.",
@@ -225,17 +228,15 @@ const updateWarehouseByIdBodySchema = Type.Partial(
         },
       }
     ),
-    isDelete: Type.Boolean({
+    status: Type.String({
+      enum: ["ACTIVE", "INACTIVE"],
       errorMessage: {
-        type: "Xoá kho hàng phải là boolean.",
+        type: "Trạng thái phải là chuỗi.",
+        enum: `Trạng thái phải là một trong 'ACTIVE', 'INACTIVE'.`,
       },
     }),
   })
 );
-
-const warehouseParamsSchema = Type.Object({
-  id: Type.String(),
-});
 
 export const getWarehouseByIdSchema: FastifySchema = {
   params: warehouseParamsSchema,
@@ -246,8 +247,8 @@ export const getPackagingsByWarehouseIdSchema: FastifySchema = {
   querystring: queryStringPackagingByWarehouseIdSchema,
 };
 
-export const createWarehouseSchema: FastifySchema = {
-  body: createWarehouseBodySchema,
+export const createNewWarehouseSchema: FastifySchema = {
+  body: createNewWarehouseBodySchema,
 };
 
 export const updateWarehouseByIdSchema: FastifySchema = {
@@ -271,7 +272,9 @@ export type GetPackagingsByWarehouseIdQueryType = Static<
 >;
 
 export type GetWarehouseByIdParamsType = Static<typeof warehouseParamsSchema>;
-export type CreateWarehouseBodyType = Static<typeof createWarehouseBodySchema>;
+export type CreateNewWarehouseBodyType = Static<
+  typeof createNewWarehouseBodySchema
+>;
 
 export type UpdateWarehouseByIdParamsType = Static<
   typeof warehouseParamsSchema
