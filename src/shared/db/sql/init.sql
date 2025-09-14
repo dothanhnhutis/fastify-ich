@@ -245,7 +245,6 @@ END;
 
 $$ LANGUAGE plpgsql;
 
---
 -- DROP TRIGGER trg_update_packaging_stocks_quantity ON packaging_transaction_items;
 CREATE TRIGGER trg_update_packaging_stocks_quantity
 AFTER INSERT
@@ -254,54 +253,7 @@ UPDATE
 OR DELETE ON packaging_transaction_items FOR EACH ROW
 EXECUTE FUNCTION update_packaging_stock ();
 
--- create function
--- CREATE OR REPLACE FUNCTION log_packaging_transaction_audit() RETURNS TRIGGER AS $$
--- DECLARE action TEXT;
--- changed_data JSONB;
--- performed_by TEXT;
--- BEGIN -- Lấy user từ session (nếu chưa set sẽ là NULL)
--- performed_by := current_setting('app.user', true);
--- -- Xác định loại hành động
--- IF TG_OP = 'INSERT' THEN action := 'CREATE'::action_type;
--- changed_data := to_jsonb(NEW);
--- ELSIF TG_OP = 'UPDATE' THEN action := 'UPDATE'::action_type;
--- changed_data := jsonb_build_object(
---     'old',
---     to_jsonb(OLD),
---     'new',
---     to_jsonb(NEW)
--- );
--- ELSIF TG_OP = 'DELETE' THEN action := 'DELETE'::action_type;
--- changed_data := to_jsonb(OLD);
--- END IF;
--- -- Ghi log
--- INSERT INTO packaging_transaction_audits (
---         packaging_transaction_id,
---         actionType,
---         changedData,
---         performedBy
---     )
--- VALUES (
---         COALESCE(NEW.id, OLD.id),
---         action,
---         changed_data,
---         COALESCE(performed_by, 'unknown')
---     );
--- RETURN NEW;
--- END;
--- $$ LANGUAGE plpgsql;
----
--- DROP FUNCTION if EXISTS log_packaging_transaction_audit();
--- DROP TRIGGER trg_packaging_transaction_audit ON packaging_transactions;
--- create Trigger 
--- CREATE TRIGGER trg_packaging_transaction_audit
--- AFTER
--- INSERT
---     OR
--- UPDATE
---     OR DELETE ON packaging_transactions FOR EACH ROW EXECUTE FUNCTION log_packaging_transaction_audit();
---- reset DB bằng shell
--- Đóng tất cả kết nối (nếu database đang dùng)
+
 SELECT
     pg_terminate_backend(pid)
 FROM

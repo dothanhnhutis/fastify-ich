@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS packaging_transactions (
     to_warehouse_id TEXT,
     note VARCHAR(255) NOT NULL DEFAULT '',
     transaction_date DATE NOT NULL,
-    status VARCHAR(20) DEFAULT 'CREATED', -- CREATED, COMPLETED, CANCELLED
+    status VARCHAR(20) DEFAULT 'CREATED', -- DRAF, CREATED, COMPLETED, CANCELLED
     created_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
     CONSTRAINT packaging_transactions_pkey PRIMARY KEY (id)
@@ -132,12 +132,6 @@ CREATE TABLE IF NOT EXISTS packaging_transaction_items (
     )
 );
 
--- ALTER TABLE packaging_transaction_items
--- ADD CONSTRAINT packaging_transaction_items_pkey PRIMARY KEY (
---     packaging_transaction_id,
---     warehouse_id,
---     packaging_id
--- );
 --- create index users table
 CREATE UNIQUE INDEX users_email_key ON users (email);
 
@@ -193,35 +187,6 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
-
-CREATE OR REPLACE FUNCTION function_name(type VARCHAR(20), transaction_date DATE, ...)
-RETURNS VARCHAR(50)
-AS $$
-DECLARE
-    code VARCHAR(50);
-BEGIN
-    CASE type
-        WHEN 'IMPORT' THEN prefix := 'IMP';
-        WHEN 'EXPORT' THEN prefix := 'EXP';
-        WHEN 'ADJUST' THEN prefix := 'ADJ';
-        WHEN 'TRANSFER' THEN prefix := 'TRF';
-        ELSE prefix := 'STK';
-    END CASE;
-
-    sequence_name := 'seq_' || prefix || '_' || EXTRACT(YEAR FROM transaction_date);
-
-
-
-    RETURN code;
-END;
-$$ LANGUAGE plpgsql;
-
-
-CREATE SEQUENCE IF NOT EXISTS seq_imp_2025 START 1;
-SELECT nextval('seq_imp_2025');
-SELECT to_regclass('seq_imp_2026');
-
 
 -- Function để tự động tạo mã phiếu
 CREATE OR REPLACE FUNCTION generate_transaction_code () RETURNS TRIGGER AS $$
