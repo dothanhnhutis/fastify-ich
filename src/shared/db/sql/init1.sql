@@ -188,7 +188,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
 --- func update_packaging_inventory
 CREATE OR REPLACE FUNCTION update_packaging_inventory () RETURNS TRIGGER AS $$
 BEGIN
