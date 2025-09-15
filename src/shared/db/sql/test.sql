@@ -8,7 +8,6 @@ BEGIN
         UPDATE packaging_inventory pi
         SET 
             quantity = pi.quantity + pti.signed_quantity,
-            available_quantity = pi.available_quantity + pti.signed_quantity,
             updated_at = NOW()
         FROM packaging_transaction_items pti
         WHERE pti.packaging_transaction_id = NEW.id
@@ -47,8 +46,7 @@ BEGIN
     IF OLD.status = 'COMPLETED' AND NEW.status = 'CANCELLED' THEN
         UPDATE packaging_inventory pi
         SET 
-            quantity = quantity - pti.signed_quantity,
-            available_quantity = available_quantity - pti.signed_quantity,
+            quantity = pi.quantity - pti.signed_quantity,
             updated_at = NOW()
         FROM packaging_transaction_items pti
         WHERE pti.packaging_transaction_id = OLD.id
@@ -70,9 +68,9 @@ EXECUTE FUNCTION update_packaging_inventory ();
 
 UPDATE packaging_transactions
 set
-    status = 'COMPLETED'
+    status = 'CANCELLED'
 where
-    id = 'fbf13cef-1d3e-4b77-81b8-05d4b85a9eda'
+    id = 'a02d7367-8406-4ca3-8bd6-0069c0ea2a8a'
 returning
     *;
 
@@ -94,7 +92,7 @@ WITH
             (
                 'EXP2025000001',
                 'EXPORT',
-                '0676db90-178b-4d24-8c2a-4db4a198ab82',
+                '9c21c29c-342b-47fa-afb9-4c84eea87bec',
                 'xuất kho, kiểm tra trigger',
                 '2025-09-14',
                 'DRAFT' -- bạn ghi nhầm "DRAF"
@@ -121,14 +119,14 @@ FROM
     CROSS JOIN (
         VALUES
             (
-                '0f2175cd-e4f6-4353-ac9e-d549c3af8641',
-                '0676db90-178b-4d24-8c2a-4db4a198ab82',
+                '0d8c5ca8-639e-473c-b42f-d5edc51c33e6',
+                '9c21c29c-342b-47fa-afb9-4c84eea87bec',
                 100,
                 -100
             ),
             (
-                'f6b7261a-2902-40fe-8831-51999929df56',
-                '0676db90-178b-4d24-8c2a-4db4a198ab82',
+                'fa660c2a-4772-4982-8a2e-d4c0e01c197b',
+                '9c21c29c-342b-47fa-afb9-4c84eea87bec',
                 100,
                 -100
             )

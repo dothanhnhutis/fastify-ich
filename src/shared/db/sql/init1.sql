@@ -188,37 +188,65 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Function để tự động tạo mã phiếu
-CREATE OR REPLACE FUNCTION generate_transaction_code () RETURNS TRIGGER AS $$
-DECLARE
-    prefix VARCHAR(10);
-    sequence_name VARCHAR(50);
-    next_number INTEGER;
+
+--- func update_packaging_inventory
+CREATE OR REPLACE FUNCTION update_packaging_inventory () RETURNS TRIGGER AS $$
 BEGIN
-    -- Xác định prefix theo loại phiếu
-    CASE NEW.type
-        WHEN 'IMPORT' THEN prefix := 'IMP';
-        WHEN 'EXPORT' THEN prefix := 'EXP';
-        WHEN 'ADJUST' THEN prefix := 'ADJ';
-        WHEN 'TRANSFER' THEN prefix := 'TRF';
-        ELSE prefix := 'STK';
-    END CASE;
-    
-    -- Tạo sequence name
-    sequence_name := 'seq_' || prefix || '_' || EXTRACT(YEAR FROM NEW.transaction_date);
-    
-    -- Tạo sequence nếu chưa tồn tại
-    EXECUTE format('CREATE SEQUENCE IF NOT EXISTS %I START 1', sequence_name);
-    
-    -- Lấy số tiếp theo
-    EXECUTE format('SELECT nextval(%L)', sequence_name) INTO next_number;
-    
-    -- Tạo mã phiếu: PREFIX + YYYY + 6 số
-    NEW.code := prefix || EXTRACT(YEAR FROM NEW.transaction_date) || LPAD(next_number::TEXT, 6, '0');
-    
+    -- Khi status chuyển sang COMPLETED (hoàn tất)
+    IF NEW.status = 'COMPLETED' AND OLD.status <> 'COMPLETED' THEN
+        -- Cập nhật tồn kho
+        UPDATE packaging_inventory pi
+        SET 
+            quantity = pi.quantity + pti.signed_quantity,
+            updated_at = NOW()
+        FROM packaging_transaction_items pti
+        WHERE pti.packaging_transaction_id = NEW.id
+          AND pi.packaging_id = pti.packaging_id
+          AND pi.warehouse_id = pti.warehouse_id;
+
+        -- Thêm record tồn kho nếu chưa có
+        -- INSERT INTO packaging_inventory (
+        --     packaging_id,
+        --     warehouse_id,
+        --     quantity,
+        --     reserved_quantity,
+        --     available_quantity,
+        --     created_at,
+        --     updated_at
+        -- )
+        -- SELECT 
+        --     pti.packaging_id,
+        --     pti.warehouse_id,
+        --     pti.signed_quantity,
+        --     0,
+        --     pti.signed_quantity,
+        --     NOW(),
+        --     NOW()
+        -- FROM packaging_transaction_items pti
+        -- WHERE pti.packaging_transaction_id = NEW.id
+        --   AND NOT EXISTS (
+        --       SELECT 1 
+        --       FROM packaging_inventory pi
+        --       WHERE pi.packaging_id = pti.packaging_id
+        --         AND pi.warehouse_id = pti.warehouse_id
+        --   );
+    END IF;
+
+    -- Khi status chuyển từ COMPLETED sang CANCELLED (rollback)
+    IF OLD.status = 'COMPLETED' AND NEW.status = 'CANCELLED' THEN
+        UPDATE packaging_inventory pi
+        SET 
+            quantity = pi.quantity - pti.signed_quantity,
+            updated_at = NOW()
+        FROM packaging_transaction_items pti
+        WHERE pti.packaging_transaction_id = OLD.id
+          AND pi.packaging_id = pti.packaging_id
+          AND pi.warehouse_id = pti.warehouse_id;
+    END IF;
+
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ LANGUAGE plpgsql;
 
 -- DROP TRIGGER IF EXISTS trg_updated_at_users ON users;
 -- DROP TRIGGER IF EXISTS trg_updated_at_roles ON roles;
@@ -246,9 +274,9 @@ OR
 UPDATE ON packagings FOR EACH ROW
 EXECUTE FUNCTION check_unit_pcs_ctn_validate ();
 
---- trigger tự động tạo mã phiếu
-CREATE TRIGGER generate_stock_transaction_code BEFORE INSERT ON packaging_transactions FOR EACH ROW WHEN (
-    NEW.code IS NULL
-    OR NEW.code = ''
-)
-EXECUTE FUNCTION generate_transaction_code ();
+-- Trigger cập nhật lại packaging_inventory khi có transaction
+-- DROP TRIGGER IF EXISTS trg_update_inventory_after_transaction_completed ON packaging_transactions;
+CREATE TRIGGER trg_update_inventory_after_transaction_completed
+AFTER
+UPDATE ON packaging_transactions FOR EACH ROW
+EXECUTE FUNCTION update_packaging_inventory ();
