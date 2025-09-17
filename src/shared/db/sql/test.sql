@@ -1,16 +1,3 @@
-SELECT
-    version();
-
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
-SELECT
-    gen_random_uuid ()::text;
-
-DROP FUNCTION IF EXISTS update_packaging_inventory;
-
-SELECT
-    gen_uuid_v7 ();
-
 CREATE OR REPLACE FUNCTION update_packaging_inventory () RETURNS TRIGGER AS $$
 BEGIN
     -- Khi status chuyển sang COMPLETED (hoàn tất)
