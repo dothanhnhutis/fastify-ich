@@ -4,7 +4,7 @@ import { v7 as uuidv7 } from "uuid";
 import { pipeline } from "stream/promises";
 import { MultipartFile } from "@fastify/multipart";
 
-type FileUploadType = {
+export type FileUploadType = {
   originalName: string;
   mimeType: string;
   encoding: string;

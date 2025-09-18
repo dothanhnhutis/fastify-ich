@@ -6,10 +6,12 @@ import {
   QueryUsersType,
   UpdateUserByIdBodyType,
 } from "@/modules/v1/users/user.schema";
+import fileUpload, { FileUploadType } from "@/shared/upload";
 import Password from "@/shared/password";
 import { isDataString } from "@/shared/utils";
 import { BadRequestError } from "@/shared/error-handler";
 import { QueryRolesType } from "@/modules/v1/roles/role.schema";
+import { MultipartFile } from "@fastify/multipart";
 
 export default class UserRepo {
   constructor(private fastify: FastifyInstance) {}
@@ -601,6 +603,24 @@ export default class UserRepo {
       });
     } catch (error) {
       throw new BadRequestError(`UserRepo.update() method error: ${error}`);
+    }
+  }
+
+  async updateAvatarById(userId: string, data: MultipartFile) {
+    let file: FileUploadType | null = null;
+    try {
+      await this.fastify.transaction(async (client) => {
+        file = await fileUpload.singleUpload(data, { subDir: "avatars" });
+
+        const queryConfig: QueryConfig = {
+          text: ``,
+          values: [],
+        };
+      });
+    } catch (error) {
+      throw new BadRequestError(
+        `UserRepo.updateAvatarById() method error: ${error}`
+      );
     }
   }
 }

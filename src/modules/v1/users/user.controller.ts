@@ -14,6 +14,7 @@ import config from "@/shared/config";
 import { BadRequestError } from "@/shared/error-handler";
 import { QueryRolesType } from "../roles/role.schema";
 import fileUpload from "@/shared/upload";
+import { isFastifyError } from "@/shared/utils";
 
 // Admin
 export async function queryUsersController(
@@ -163,18 +164,82 @@ export async function updateAvatarController(
   req: FastifyRequest,
   reply: FastifyReply
 ) {
-  if (!req.isMultipart()) {
-    return reply
-      .code(400)
-      .send({ error: "Request must be multipart/form-data" });
-  }
+  try {
+    if (!req.isMultipart()) {
+      return reply
+        .code(400)
+        .send({ error: "Request must be multipart/form-data" });
+    }
 
-  const data = req.files();
-  if (!data) {
-    return reply.code(400).send({ error: "No file uploaded" });
-  }
+    const data = await req.file({
+      limits: {
+        fieldNameSize: 50,
+        fileSize: 2 * 1024 * 1024,
+        files: 1,
+        fields: 0,
+      },
+    });
 
-  return reply.send({
-    data: await fileUpload.multipleUpload(data, { subDir: "hihi" }),
-  });
+    if (!data || data.fieldname != "avatar") {
+      return reply.code(StatusCodes.BAD_REQUEST).send({
+        statusCode: StatusCodes.BAD_REQUEST,
+        statusText: "BAD_REQUEST",
+        data: {
+          message: "Không có tập tin nào được tải lên.",
+        },
+      });
+    }
+
+    const file = await fileUpload.singleUpload(data, { subDir: "avatar" });
+
+    return reply.send({
+      data: file,
+    });
+  } catch (error: unknown) {
+    if (isFastifyError(error)) {
+      switch (error.code) {
+        case "FST_REQ_FILE_TOO_LARGE":
+          reply.code(StatusCodes.REQUEST_TOO_LONG).send({
+            statusCode: StatusCodes.BAD_REQUEST,
+            statusText: "BAD_REQUEST",
+            data: {
+              message: "Kích thước file quá lớn.",
+            },
+          });
+          break;
+        // case "FST_PARTS_LIMIT":
+        //   reply.code(StatusCodes.BAD_REQUEST).send({
+        //     statusCode: StatusCodes.BAD_REQUEST,
+        //     statusText: "BAD_REQUEST",
+        //     data: {
+        //       message: "FST_PARTS_LIMIT",
+        //     },
+        //   });
+        //   break;
+
+        case "FST_FIELDS_LIMIT":
+          reply.code(StatusCodes.BAD_REQUEST).send({
+            statusCode: StatusCodes.BAD_REQUEST,
+            statusText: "BAD_REQUEST",
+            data: {
+              message: "Quá nhiều field không phải field file",
+            },
+          });
+          break;
+        case "FST_FILES_LIMIT":
+          reply.code(StatusCodes.BAD_REQUEST).send({
+            statusCode: StatusCodes.BAD_REQUEST,
+            statusText: "BAD_REQUEST",
+            data: {
+              message: "Quá nhiều file tải lên.",
+            },
+          });
+          break;
+
+        default:
+          break;
+      }
+    }
+    throw error;
+  }
 }
