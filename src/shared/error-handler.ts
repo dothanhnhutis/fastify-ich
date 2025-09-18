@@ -104,6 +104,8 @@ export async function errorHandler(
     return reply.status(error.statusCode).send(error.serialize());
   }
 
+  console.log(error);
+
   reply.status(500).send({
     statusText: "INTERNAL_SERVER_ERROR",
     statusCode: StatusCodes.INTERNAL_SERVER_ERROR,

@@ -1,9 +1,12 @@
+import fs from "fs";
+import path from "path";
 import fastify from "fastify";
 import addErrors from "ajv-errors";
 import addFormats from "ajv-formats";
 import fastifyCors from "@fastify/cors";
 import fastifyHelmet from "@fastify/helmet";
 import fastifyCompress from "@fastify/compress";
+import fastifyMultipart from "@fastify/multipart";
 
 import config from "./config";
 import appRoutes from "../modules";
@@ -34,8 +37,30 @@ export async function buildServer() {
     },
   });
 
+  const uploadsDir = path.join(__dirname, "uploads");
+  console.log("uploadsDir", uploadsDir);
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+
   // Plugins
   server.register(fastifyHelmet);
+  server.register(fastifyMultipart, {
+    // limits: {
+    //   fieldNameSize: 100, // độ dài tối đa của tên field
+    //   fieldSize: 100000, // kích thước tối đa của giá trị field (non-file)
+    //   fields: 10, // số field không phải file tối đa
+    //   fileSize: 5 * 1024 * 1024, // 5 MB cho mỗi file
+    //   files: 5, // số file tối đa
+    //   headerPairs: 2000, // header key=>value pairs
+    //   parts: 10, // tổng parts = fields + files
+    // },
+
+    // Nếu attachFieldsToBody true thì các field + file được gắn vào req.body
+    attachFieldsToBody: false, // true: khi muốn chuyển toàn bộ file upload và req.body và file không quá lớn.
+    // Nếu muốn khi vượt giới hạn fileSize ném lỗi
+    throwFileSizeLimit: true,
+  });
   server.register(fastifyCors, {
     origin: config.CLIENT_URL,
     credentials: true,

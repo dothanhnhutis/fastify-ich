@@ -8,6 +8,7 @@ import {
   logoutUserController,
   queryUsersController,
   updateUserByIdController,
+  updateAvatarController,
 } from "./user.controller";
 import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
 import checkPermissionMiddleware from "@/shared/middleware/checkPermission";
@@ -100,6 +101,8 @@ export default async function userRoutes(fastify: FastifyInstance) {
     { preHandler: [requiredAuthMiddleware] },
     currentUserController
   );
+
+  fastify.patch("/avatar", updateAvatarController);
 
   fastify.delete("/logout", logoutUserController);
 }

@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS packagings (
     CONSTRAINT packagings_pkey PRIMARY KEY (id)
 );
 
---- create packaging_inventory
+--- create packaging_inventory table
 CREATE TABLE IF NOT EXISTS packaging_inventory (
     packaging_id TEXT NOT NULL,
     warehouse_id TEXT NOT NULL,
@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS packaging_inventory (
     CONSTRAINT packaging_inventory_pkey PRIMARY KEY (warehouse_id, packaging_id)
 );
 
---- create packaging_transactions
+--- create packaging_transactions table
 CREATE TABLE IF NOT EXISTS packaging_transactions (
     id TEXT NOT NULL DEFAULT gen_random_uuid ()::text,
     code VARCHAR(20) UNIQUE NOT NULL, -- mã phiếu: IMP001, EXP001, ADJ001, TRF001
@@ -116,7 +116,7 @@ CREATE TABLE IF NOT EXISTS packaging_transactions (
     CONSTRAINT packaging_transactions_pkey PRIMARY KEY (id)
 );
 
---- create packaging_transactions_items 
+--- create packaging_transactions_items table 
 CREATE TABLE IF NOT EXISTS packaging_transaction_items (
     packaging_transaction_id TEXT NOT NULL,
     packaging_id TEXT NOT NULL,
@@ -132,8 +132,70 @@ CREATE TABLE IF NOT EXISTS packaging_transaction_items (
     )
 );
 
---- create index users table
-CREATE UNIQUE INDEX users_email_key ON users (email);
+---create user_avatars table
+CREATE TABLE IF NOT EXISTS user_avatars (
+    user_id TEXT NOT NULL,
+    file_id TEXT NOT NULL,
+    width INTEGER NOT NULL,
+    height INTEGER NOT NULL,
+    is_primary BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ(3),
+    CONSTRAINT user_avatars_pkey PRIMARY KEY (user_id, file_id)
+);
+
+--- create files table
+CREATE TABLE IF NOT EXISTS files (
+    id TEXT NOT NULL DEFAULT gen_random_uuid ()::text,
+    original_name TEXT NOT NULL,
+    mime_type TEXT NOT NULL,
+    destination TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+    path TEXT NOT NULL,
+    size BIGINT NOT NULL,
+    category_id TEXT owner_id TEXT NOT NULL,
+    created_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ(3),
+    CONSTRAINT files_pkey PRIMARY KEY (id)
+);
+
+-- Bảng phân loại file (tùy chọn)
+CREATE TABLE IF NOT EXISTS file_categories (
+    id TEXT NOT NULL DEFAULT gen_random_uuid ()::text,
+    name TEXT NOT NULL,
+    description TEXT,
+    allowed_mime_types TEXT[], -- Array các mime type được phép
+    max_file_size BIGINT, -- Kích thước tối đa (bytes)
+    created_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
+    CONSTRAINT file_categories_pkey PRIMARY KEY (id),
+    CONSTRAINT file_categories_name_unique UNIQUE (name)
+);
+
+-- Indexes cho performance
+CREATE INDEX IF NOT EXISTS idx_files_owner_id ON files (owner_id);
+
+CREATE INDEX IF NOT EXISTS idx_files_created_at ON files (created_at);
+
+CREATE INDEX IF NOT EXISTS idx_files_mime_type ON files (mime_type);
+
+CREATE INDEX IF NOT EXISTS idx_files_deleted_at ON files (deleted_at)
+WHERE
+    deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_user_avatars_user_id ON user_avatars (user_id);
+
+CREATE INDEX IF NOT EXISTS idx_user_avatars_deleted_at ON user_avatars (deleted_at)
+WHERE
+    deleted_at IS NULL;
+
+--- create unique index
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_unique ON users (email);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_avatars_primary_unique ON user_avatars (user_id)
+WHERE
+    is_primary = true
+    AND deleted_at IS NULL;
 
 --- AddForeignKey user_roles
 ALTER TABLE user_roles
@@ -158,6 +220,14 @@ ADD CONSTRAINT packaging_transaction_items_packaging_id_fkey FOREIGN KEY (packag
 
 ALTER TABLE packaging_transaction_items
 ADD CONSTRAINT packaging_transaction_items_warehouse_id_fkey FOREIGN KEY (warehouse_id) REFERENCES warehouses (id) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForgeignKey user_avatars 
+ALTER TABLE user_avatars
+ADD CONSTRAINT user_avatars_file_fkey FOREIGN KEY (file_id) REFERENCES files (id) ON DELETE CASCADE;
+
+-- AddForgeignKey files 
+ALTER TABLE files
+ADD CONSTRAINT files_category_id_fkey FOREIGN KEY (category_id) REFERENCES file_categories (id);
 
 --- func set_updated_at
 CREATE OR REPLACE FUNCTION set_updated_at () RETURNS TRIGGER LANGUAGE plpgsql AS $$

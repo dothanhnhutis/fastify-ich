@@ -30,6 +30,7 @@
     "@fastify/compress": "^8.1.0",
     "@fastify/cors": "^11.1.0",
     "@fastify/helmet": "^13.0.1",
+    "@fastify/multipart": "^9.2.1",
     "@sinclair/typebox": "^0.34.40",
     "ajv-errors": "^3.0.0",
     "ajv-formats": "^3.0.1",
@@ -44,6 +45,7 @@
     "pg": "^8.16.3",
     "pino": "^9.9.0",
     "rotating-file-stream": "^3.2.7",
+    "sharp": "^0.34.4",
     "ua-parser-js": "^2.0.4",
     "uuid": "^11.1.0"
   }

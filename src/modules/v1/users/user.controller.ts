@@ -13,6 +13,7 @@ import {
 import config from "@/shared/config";
 import { BadRequestError } from "@/shared/error-handler";
 import { QueryRolesType } from "../roles/role.schema";
+import fileUpload from "@/shared/upload";
 
 // Admin
 export async function queryUsersController(
@@ -156,4 +157,24 @@ export async function logoutUserController(
         message: "Đăng xuất thành công",
       },
     });
+}
+
+export async function updateAvatarController(
+  req: FastifyRequest,
+  reply: FastifyReply
+) {
+  if (!req.isMultipart()) {
+    return reply
+      .code(400)
+      .send({ error: "Request must be multipart/form-data" });
+  }
+
+  const data = req.files();
+  if (!data) {
+    return reply.code(400).send({ error: "No file uploaded" });
+  }
+
+  return reply.send({
+    data: await fileUpload.multipleUpload(data, { subDir: "hihi" }),
+  });
 }
