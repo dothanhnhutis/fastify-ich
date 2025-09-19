@@ -1,43 +1,27 @@
-import { FastifyReply, FastifyRequest } from "fastify";
 import path from "path";
 import fs from "fs";
 import mime from "mime-types";
+import { FastifyReply, FastifyRequest } from "fastify";
+import { securityPath } from "@/shared/utils";
 
-// cách 1: best
 export async function viewFileController(
-  request: FastifyRequest<{ Params: { dir: string; filename: string } }>,
+  request: FastifyRequest<{ Params: { "*": string } }>,
   reply: FastifyReply
 ) {
-  const { dir, filename } = request.params;
-
-  console.log("dir", dir, filename);
-
-  // Security: Ngăn path traversal attacks
-  if (
-    dir.includes("..") ||
-    dir.includes("/") ||
-    dir.includes("\\") ||
-    filename.includes("..") ||
-    filename.includes("/") ||
-    filename.includes("\\")
-  ) {
-    return reply.code(400).send({ error: "Invalid filename" });
-  }
-
-  const filePath = path.join(__dirname, "uploads", dir, filename);
-
-  console.log("filePath", filePath);
+  const absPath = securityPath("uploads", request.params["*"]);
 
   try {
     // Sử dụng fs.promises thay vì fs.existsSync (non-blocking)
-    const stats = await fs.promises.stat(filePath);
+    const stats = await fs.promises.stat(absPath);
 
     if (!stats.isFile()) {
       return reply.code(404).send({ error: "File not found" });
     }
 
+    const filename = path.basename(absPath);
+
     // Lấy content-type từ đuôi file
-    const contentType = mime.lookup(filePath) || "application/octet-stream";
+    const contentType = mime.lookup(absPath) || "application/octet-stream";
 
     // Set headers
     reply.header("Content-Type", contentType);
@@ -63,12 +47,12 @@ export async function viewFileController(
       reply.header("Content-Length", end - start + 1);
       reply.header("Accept-Ranges", "bytes");
 
-      return fs.createReadStream(filePath, { start, end });
+      return fs.createReadStream(absPath, { start, end });
     }
 
     // Normal response
     reply.header("Accept-Ranges", "bytes");
-    return fs.createReadStream(filePath);
+    return fs.createReadStream(absPath);
   } catch (error: any) {
     if (error.code === "ENOENT") {
       return reply.code(404).send({ error: "File not found" });
@@ -103,6 +87,7 @@ export async function downloadFileController(
     if (error.code === "ENOENT") {
       return reply.code(404).send({ error: "File not found" });
     }
-    return reply.code(500).send({ error: "Internal server error" });
+    // return reply.code(500).send({ error: "Internal server error" });
+    throw error;
   }
 }

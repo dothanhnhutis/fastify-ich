@@ -197,12 +197,14 @@ export async function updateAvatarController(
       });
     }
 
-    const file = await privateFileUpload.singleUpload(data, {
-      subDir: "avatar",
-    });
+    await req.users.updateAvatarById(req.currUser!.id, data);
 
     return reply.send({
-      data: file,
+      statusCode: StatusCodes.OK,
+      statusText: "OK",
+      data: {
+        message: "Cập nhật avatar thành công.",
+      },
     });
   } catch (error: unknown) {
     if (isFastifyError(error)) {

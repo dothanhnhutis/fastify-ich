@@ -1,7 +1,58 @@
 ---
+SELECT
+    u.id,
+    email,
+    (u.password_hash IS NOT NULL)::boolean AS has_password,
+    username,
+    status,
+    u.deactived_at,
+    u.created_at,
+    u.updated_at,
+    COALESCE(
+        json_agg(json_build_object("id", a.file_id)) FILTER (
+            WHERE
+                a.file_id IS NOT NULL
+        ),
+        '[]'
+    ) as avatar,
+    COUNT(ur.role_id)::int AS role_count
+FROM
+    users u
+    LEfT JOIN user_roles ur ON (ur.user_id = u.id)
+    LEFT JOIN user_avatars a ON (a.user_id = u.id)
+WHERE
+    id = '2b6d8104-c4d1-41af-a1a5-2600f2a7a676'
+GROUP BY
+    u.id
+LIMIT
+    1;
 
-
-
+---
+SELECT
+    u.id,
+    email,
+    (u.password_hash IS NOT NULL)::boolean AS has_password,
+    username,
+    status,
+    u.deactived_at,
+    u.created_at,
+    u.updated_at,
+    (
+        SELECT
+            COUNT(*)
+        FROM
+            user_roles
+        WHERE
+            user_id = '2b6d8104-c4d1-41af-a1a5-2600f2a7a676'
+    ) AS role_count
+FROM
+    users u
+WHERE
+    id = '2b6d8104-c4d1-41af-a1a5-2600f2a7a676'
+GROUP BY
+    u.id
+LIMIT
+    1;
 
 CREATE OR REPLACE FUNCTION update_packaging_inventory () RETURNS TRIGGER AS $$
 BEGIN

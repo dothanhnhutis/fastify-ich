@@ -8,10 +8,12 @@ import {
 } from "@/modules/v1/users/user.schema";
 import { privateFileUpload, type FileUploadType } from "@/shared/upload";
 import Password from "@/shared/password";
-import { isDataString } from "@/shared/utils";
+import { deleteFile, isDataString } from "@/shared/utils";
 import { BadRequestError } from "@/shared/error-handler";
 import { QueryRolesType } from "@/modules/v1/roles/role.schema";
 import { MultipartFile } from "@fastify/multipart";
+import sharp from "sharp";
+import path from "path";
 
 export default class UserRepo {
   constructor(private fastify: FastifyInstance) {}
@@ -31,7 +33,7 @@ export default class UserRepo {
           COUNT(ur.role_id)::int AS role_count
       FROM
           users u
-          LEfT JOIN user_roles ur ON (ur.user_id = u.id)
+          LEFT JOIN user_roles ur ON (ur.user_id = u.id)
       WHERE
           id = $1
       GROUP BY
@@ -607,19 +609,41 @@ export default class UserRepo {
   }
 
   async updateAvatarById(userId: string, data: MultipartFile) {
-    let file: FileUploadType | null = null;
+    let file: FileUploadType = await privateFileUpload.singleUpload(data, {
+      subDir: "avatars",
+    });
     try {
       await this.fastify.transaction(async (client) => {
-        file = await privateFileUpload.singleUpload(data, {
-          subDir: "avatars",
-        });
-
         const queryConfig: QueryConfig = {
-          text: ``,
-          values: [],
+          text: `
+            INSERT INTO files (original_name, mime_type, destination, file_name, path, size, owner_id) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;      
+          `,
+          values: [
+            file.fileName,
+            file.mimeType,
+            file.destination,
+            file.fileName,
+            file.path,
+            file.size,
+            userId,
+          ],
         };
+
+        const { rows: files } = await client.query<FileUpload>(queryConfig);
+
+        const metadata = await sharp(files[0].path).metadata();
+
+        await client.query({
+          text: `
+            INSERT INTO user_avatars (user_id, file_id, width, height, is_primary)
+            VALUES ($1, $2, $3, $4, $5) RETURNING *;
+          `,
+          values: [userId, files[0].id, metadata.width, metadata.height, true],
+        });
       });
     } catch (error) {
+      deleteFile(file.path);
       throw new BadRequestError(
         `UserRepo.updateAvatarById() method error: ${error}`
       );
