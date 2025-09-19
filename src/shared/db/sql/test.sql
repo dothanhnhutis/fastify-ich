@@ -1,3 +1,29 @@
+SELECT
+    u.*,
+    CASE
+        WHEN av.file_id IS NOT NULL THEN json_build_object(
+            'id',
+            av.file_id,
+            'file_id',
+            av.file_id,
+            'is_primary',
+            av.is_primary,
+            'created_at',
+            av.created_at
+        )
+        ELSE NULL
+    END AS avatar
+FROM
+    users u
+    LEFT JOIN user_avatars av ON av.user_id = u.id
+    AND av.is_primary = true
+    AND av.deleted_at IS NULL
+    LEFT JOIN files f ON av.file_id = f.id
+WHERE
+    u.id = 'ef4f3873-319b-4349-9428-f2bae3877d9f'
+LIMIT
+    1;
+
 ---
 SELECT
     u.id,
@@ -13,7 +39,7 @@ FROM
     users u
     LEfT JOIN user_roles ur ON (ur.user_id = u.id)
 WHERE
-    id = '2b6d8104-c4d1-41af-a1a5-2600f2a7a676'
+    id = 'ef4f3873-319b-4349-9428-f2bae3877d9f'
 GROUP BY
     u.id
 LIMIT
