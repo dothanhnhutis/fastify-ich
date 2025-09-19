@@ -13,7 +13,7 @@ import {
 import config from "@/shared/config";
 import { BadRequestError } from "@/shared/error-handler";
 import { QueryRolesType } from "../roles/role.schema";
-import fileUpload from "@/shared/upload";
+import { privateFileUpload } from "@/shared/upload";
 import { isFastifyError } from "@/shared/utils";
 
 // Admin
@@ -189,8 +189,17 @@ export async function updateAvatarController(
         },
       });
     }
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    if (!allowedTypes.includes(data.mimetype)) {
+      return reply.code(400).send({
+        error: "Invalid file type",
+        message: "Only JPEG, PNG, GIF, and WebP images are allowed",
+      });
+    }
 
-    const file = await fileUpload.singleUpload(data, { subDir: "avatar" });
+    const file = await privateFileUpload.singleUpload(data, {
+      subDir: "avatar",
+    });
 
     return reply.send({
       data: file,

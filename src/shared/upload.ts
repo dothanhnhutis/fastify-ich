@@ -11,12 +11,14 @@ export type FileUploadType = {
   fileName: string;
   path: string;
   size: number;
+  destination: string;
 };
 
 class FileUpload {
-  constructor(private rootDir: string) {
-    if (!fs.existsSync(this.rootDir)) {
-      fs.mkdirSync(this.rootDir, { recursive: true });
+  constructor(private root: string) {
+    const rootDir = path.join(__dirname, this.root);
+    if (!fs.existsSync(rootDir)) {
+      fs.mkdirSync(rootDir, { recursive: true });
     }
   }
 
@@ -24,14 +26,16 @@ class FileUpload {
     data: MultipartFile,
     options?: { subDir?: string }
   ): Promise<FileUploadType> {
+    const rootDir = path.join(__dirname, this.root);
     const id = uuidv7();
     const { file, filename: originalName, mimetype, encoding } = data;
     const fileName = `${id}.${mimetype.split("/")[1]}`;
-    const dir = path.join(this.rootDir, options?.subDir || "");
+    const dir = path.join(rootDir, options?.subDir || "");
 
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
+
     const toPath = path.join(dir, fileName);
     try {
       await pipeline(file, fs.createWriteStream(toPath));
@@ -41,12 +45,14 @@ class FileUpload {
 
     const stats = fs.statSync(toPath);
     const fileSizeInBytes = stats.size;
+    const destination = path.join(this.root, options?.subDir || "");
 
     return {
       originalName,
       mimeType: mimetype,
       encoding,
-      fileName: fileName,
+      fileName,
+      destination,
       path: toPath,
       size: fileSizeInBytes,
     };
@@ -65,4 +71,5 @@ class FileUpload {
   }
 }
 
-export default new FileUpload(path.join(__dirname, "uploads"));
+export const privateFileUpload = new FileUpload("uploads");
+export const publicFileUpload = new FileUpload("public");

@@ -80,14 +80,3 @@ FROM
     new_warehouse w;
 
 COMMIT;
-
---- 
-INSERT INTO
-    packaging_transactions (type, from_warehouse_id, note, transaction_date)
-VALUES
-    (
-        'IMPORT',
-        'b0c2b8ef-5c07-46ef-a5da-30abd70e225e',
-        'asdasdasd',
-        '2025-09-14'
-    );

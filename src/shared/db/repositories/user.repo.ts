@@ -6,7 +6,7 @@ import {
   QueryUsersType,
   UpdateUserByIdBodyType,
 } from "@/modules/v1/users/user.schema";
-import fileUpload, { FileUploadType } from "@/shared/upload";
+import { privateFileUpload, type FileUploadType } from "@/shared/upload";
 import Password from "@/shared/password";
 import { isDataString } from "@/shared/utils";
 import { BadRequestError } from "@/shared/error-handler";
@@ -610,7 +610,9 @@ export default class UserRepo {
     let file: FileUploadType | null = null;
     try {
       await this.fastify.transaction(async (client) => {
-        file = await fileUpload.singleUpload(data, { subDir: "avatars" });
+        file = await privateFileUpload.singleUpload(data, {
+          subDir: "avatars",
+        });
 
         const queryConfig: QueryConfig = {
           text: ``,

@@ -4,6 +4,7 @@ import fastify from "fastify";
 import addErrors from "ajv-errors";
 import addFormats from "ajv-formats";
 import fastifyCors from "@fastify/cors";
+import fastifyStatic from "@fastify/static";
 import fastifyHelmet from "@fastify/helmet";
 import fastifyCompress from "@fastify/compress";
 import fastifyMultipart from "@fastify/multipart";
@@ -37,14 +38,42 @@ export async function buildServer() {
     },
   });
 
-  const uploadsDir = path.join(__dirname, "uploads");
-  console.log("uploadsDir", uploadsDir);
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-  }
-
   // Plugins
   server.register(fastifyHelmet);
+  server.register(fastifyStatic, {
+    root: [path.join(__dirname, "public")],
+    prefix: "/static/",
+    prefixAvoidTrailingSlash: true, // Tránh trailing slash
+    maxAge: "7 days", // Cache control
+    etag: true, // Enable ETag
+    lastModified: true, // Enable Last-Modified header
+    immutable: true,
+
+    // serve: true, // If true, serves files in hidden directories
+
+    // Chỉ serve certain file types
+    acceptRanges: true, // Support range requests
+
+    // Custom decorators
+    decorateReply: false, // Không thêm reply.sendFile
+
+    // Constraints (optional)
+    constraints: {},
+
+    // Custom error handler
+    setHeaders: (res, path, stat) => {
+      // Custom headers cho mỗi file
+      if (path.endsWith(".jpg") || path.endsWith(".png")) {
+        res.setHeader("X-File-Type", "image");
+      }
+    },
+
+    // Redirect to trailing slash
+    redirect: false,
+
+    // Wildcard support
+    wildcard: true,
+  });
   server.register(fastifyMultipart, {
     // limits: {
     //   fieldNameSize: 100, // độ dài tối đa của tên field

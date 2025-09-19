@@ -1,3 +1,8 @@
+---
+
+
+
+
 CREATE OR REPLACE FUNCTION update_packaging_inventory () RETURNS TRIGGER AS $$
 BEGIN
     -- Khi status chuyển sang COMPLETED (hoàn tất)
