@@ -40,6 +40,7 @@ export async function buildServer() {
 
   // Plugins
   server.register(fastifyHelmet);
+  server.register(fastifyCompress);
   server.register(fastifyStatic, {
     root: [path.join(__dirname, "public")],
     prefix: "/static/",
@@ -95,11 +96,13 @@ export async function buildServer() {
     credentials: true,
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
   });
-  server.register(fastifyCompress, {
-    requestEncodings: ["gzip", "deflate"], // Bỏ brotli
-    threshold: 1024,
-    customTypes: /^text\/|\+json$|\+text$|\+xml$/,
-    global: true,
+
+  server.get("/test", (req, reply) => {
+    console.log("Accept-Encoding:", req.headers["accept-encoding"]);
+    return { data: "A".repeat(2000) }; // Force compression
+  });
+  server.addHook("onSend", async (request, reply, payload) => {
+    console.log("Content-Encoding:", reply.getHeader("content-encoding"));
   });
 
   await server

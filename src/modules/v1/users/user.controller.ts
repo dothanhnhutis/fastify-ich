@@ -13,7 +13,6 @@ import {
 import config from "@/shared/config";
 import { BadRequestError } from "@/shared/error-handler";
 import { QueryRolesType } from "../roles/role.schema";
-import { privateFileUpload } from "@/shared/upload";
 import { convertAvatar, isFastifyError } from "@/shared/utils";
 
 // Admin
