@@ -33,78 +33,317 @@ VALUES
 RETURNING
     *;
 
-
-
---- findByEmail without password
-SELECT
-    id,
-    email,
-    (password_hash IS NOT NULL)::boolean AS has_password,
-    username,
-    status,
-    deactived_at,
-    created_at,
-    updated_at
-FROM
-    users
-WHERE
-    email = 'example@gmail.com'
-LIMIT
-    1;
-
---- findById  without password
-SELECT
-    id,
-    email,
-    (password_hash IS NOT NULL)::boolean AS has_password,
-    username,
-    status,
-    deactived_at,
-    created_at,
-    updated_at
-FROM
-    users_without_password
-WHERE
-    id = 'a68b251c-0118-45f0-a722-c6ed1562539a'
-LIMIT
-    1;
-
---- findUserRoleById
+--- findUserWithoutPasswordByEmail
 SELECT
     u.id,
-    email,
+    u.email,
     (u.password_hash IS NOT NULL)::boolean AS has_password,
-    username,
-    status,
-    u.deactived_at,
-    u.created_at,
-    u.updated_at,
-    COUNT(ur.role_id) AS role_count
-FROM
-    users u
-    LEfT JOIN user_roles ur ON (ur.user_id = u.id)
-WHERE
-    id = 'd7d2b394-7604-4f93-9011-a5c45727dee1'
-GROUP BY
-    u.id
-LIMIT
-    1;
-
---- findUserRoleDetailById
-SELECT
-    u.id,
-    email,
-    (u.password_hash IS NOT NULL)::boolean AS has_password,
-    username,
+    u.username,
     u.status,
     u.deactived_at,
     u.created_at,
     u.updated_at,
-    COUNT(ur.role_id) FILTER (
+    COUNT(r.id) FILTER (
         WHERE
             r.id IS NOT NULL
             AND r.status = 'ACTIVE'
     )::int AS role_count,
+    json_build_object(
+        'id',
+        av.file_id,
+        'width',
+        av.width,
+        'height',
+        av.height,
+        'is_primary',
+        av.is_primary,
+        'original_name',
+        f.original_name,
+        'mime_type',
+        f.mime_type,
+        'destination',
+        f.destination,
+        'file_name',
+        f.file_name,
+        'size',
+        f.size,
+        'created_at',
+        to_char(
+            av.created_at AT TIME ZONE 'UTC',
+            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+        )
+    ) AS avatar
+FROM
+    users u
+    LEFT JOIN user_roles ur ON ur.user_id = u.id
+    LEFT JOIN roles r ON ur.role_id = r.id
+    LEFT JOIN user_avatars av ON av.user_id = u.id
+    AND av.deleted_at IS NULL
+    AND av.is_primary = true
+    LEFT JOIN files f ON f.id = av.file_id
+    AND f.deleted_at IS NULL
+WHERE
+    u.email = 'gaconght@gmail.com'
+GROUP BY
+    u.id,
+    u.email,
+    u.password_hash,
+    u.username,
+    u.status,
+    u.deactived_at,
+    u.created_at,
+    u.updated_at,
+    av.file_id,
+    av.width,
+    av.height,
+    av.is_primary,
+    av.created_at,
+    f.original_name,
+    f.mime_type,
+    f.destination,
+    f.file_name,
+    f.size
+LIMIT
+    1;
+
+--- findUserWithoutPasswordById
+SELECT
+    u.id,
+    u.email,
+    (u.password_hash IS NOT NULL)::boolean AS has_password,
+    u.username,
+    u.status,
+    u.deactived_at,
+    u.created_at,
+    u.updated_at,
+    COUNT(r.id) FILTER (
+        WHERE
+            r.id IS NOT NULL
+            AND r.status = 'ACTIVE'
+    )::int AS role_count,
+    json_build_object(
+        'id',
+        av.file_id,
+        'width',
+        av.width,
+        'height',
+        av.height,
+        'is_primary',
+        av.is_primary,
+        'original_name',
+        f.original_name,
+        'mime_type',
+        f.mime_type,
+        'destination',
+        f.destination,
+        'file_name',
+        f.file_name,
+        'size',
+        f.size,
+        'created_at',
+        to_char(
+            av.created_at AT TIME ZONE 'UTC',
+            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+        )
+    ) AS avatar
+FROM
+    users u
+    LEFT JOIN user_roles ur ON ur.user_id = u.id
+    LEFT JOIN roles r ON ur.role_id = r.id
+    LEFT JOIN user_avatars av ON av.user_id = u.id
+    AND av.deleted_at IS NULL
+    AND av.is_primary = true
+    LEFT JOIN files f ON f.id = av.file_id
+    AND f.deleted_at IS NULL
+WHERE
+    u.id = '2b6d8104-c4d1-41af-a1a5-2600f2a7a676'
+GROUP BY
+    u.id,
+    u.email,
+    u.password_hash,
+    u.username,
+    u.status,
+    u.deactived_at,
+    u.created_at,
+    u.updated_at,
+    av.file_id,
+    av.width,
+    av.height,
+    av.is_primary,
+    av.created_at,
+    f.original_name,
+    f.mime_type,
+    f.destination,
+    f.file_name,
+    f.size
+LIMIT
+    1;
+
+-- findUserById
+SELECT
+    u.*,
+    COUNT(r.id) FILTER (
+        WHERE
+            r.id IS NOT NULL
+            AND r.status = 'ACTIVE'
+    )::int AS role_count,
+    json_build_object(
+        'id',
+        av.file_id,
+        'width',
+        av.width,
+        'height',
+        av.height,
+        'is_primary',
+        av.is_primary,
+        'original_name',
+        f.original_name,
+        'mime_type',
+        f.mime_type,
+        'destination',
+        f.destination,
+        'file_name',
+        f.file_name,
+        'size',
+        f.size,
+        'created_at',
+        to_char(
+            av.created_at AT TIME ZONE 'UTC',
+            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+        )
+    ) AS avatar
+FROM
+    users u
+    LEFT JOIN user_roles ur ON ur.user_id = u.id
+    LEFT JOIN roles r ON ur.role_id = r.id
+    LEFT JOIN user_avatars av ON av.user_id = u.id
+    AND av.deleted_at IS NULL
+    AND av.is_primary = true
+    LEFT JOIN files f ON f.id = av.file_id
+    AND f.deleted_at IS NULL
+WHERE
+    u.id = '2b6d8104-c4d1-41af-a1a5-2600f2a7a676'
+GROUP BY
+    u.id,
+    u.email,
+    u.password_hash,
+    u.username,
+    u.status,
+    u.deactived_at,
+    u.created_at,
+    u.updated_at,
+    av.file_id,
+    av.width,
+    av.height,
+    av.is_primary,
+    av.created_at,
+    f.original_name,
+    f.mime_type,
+    f.destination,
+    f.file_name,
+    f.size
+LIMIT
+    1;
+
+-- findUserByEmail
+SELECT
+    u.*,
+    COUNT(r.id) FILTER (
+        WHERE
+            r.id IS NOT NULL
+            AND r.status = 'ACTIVE'
+    )::int AS role_count,
+    json_build_object(
+        'id',
+        av.file_id,
+        'width',
+        av.width,
+        'height',
+        av.height,
+        'is_primary',
+        av.is_primary,
+        'original_name',
+        f.original_name,
+        'mime_type',
+        f.mime_type,
+        'destination',
+        f.destination,
+        'file_name',
+        f.file_name,
+        'size',
+        f.size,
+        'created_at',
+        to_char(
+            av.created_at AT TIME ZONE 'UTC',
+            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+        )
+    ) AS avatar
+FROM
+    users u
+    LEFT JOIN user_roles ur ON ur.user_id = u.id
+    LEFT JOIN roles r ON ur.role_id = r.id
+    LEFT JOIN user_avatars av ON av.user_id = u.id
+    AND av.deleted_at IS NULL
+    AND av.is_primary = true
+    LEFT JOIN files f ON f.id = av.file_id
+    AND f.deleted_at IS NULL
+WHERE
+    u.email = 'gaconght@gmail.com'
+GROUP BY
+    u.id,
+    u.email,
+    u.password_hash,
+    u.username,
+    u.status,
+    u.deactived_at,
+    u.created_at,
+    u.updated_at,
+    av.file_id,
+    av.width,
+    av.height,
+    av.is_primary,
+    av.created_at,
+    f.original_name,
+    f.mime_type,
+    f.destination,
+    f.file_name,
+    f.size
+LIMIT
+    1;
+
+-- findUserDetailById
+SELECT
+    u.*,
+    COUNT(r.id) FILTER (
+        WHERE
+            r.id IS NOT NULL
+            AND r.status = 'ACTIVE'
+    )::int AS role_count,
+    json_build_object(
+        'id',
+        av.file_id,
+        'width',
+        av.width,
+        'height',
+        av.height,
+        'is_primary',
+        av.is_primary,
+        'original_name',
+        f.original_name,
+        'mime_type',
+        f.mime_type,
+        'destination',
+        f.destination,
+        'file_name',
+        f.file_name,
+        'size',
+        f.size,
+        'created_at',
+        to_char(
+            av.created_at AT TIME ZONE 'UTC',
+            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+        )
+    ) AS avatar,
     COALESCE(
         json_agg(
             json_build_object(
@@ -134,97 +373,38 @@ SELECT
     ) AS roles
 FROM
     users u
-    LEFT JOIN user_roles ur ON (ur.user_id = u.id)
-    LEFT JOIN roles r ON (ur.role_id = r.id)
+    LEFT JOIN user_roles ur ON ur.user_id = u.id
+    LEFT JOIN roles r ON ur.role_id = r.id
+    LEFT JOIN user_avatars av ON av.user_id = u.id
+    AND av.deleted_at IS NULL
+    AND av.is_primary = true
+    LEFT JOIN files f ON f.id = av.file_id
+    AND f.deleted_at IS NULL
 WHERE
-    u.id = 'd7d2b394-7604-4f93-9011-a5c45727dee1'
+    u.id = '2b6d8104-c4d1-41af-a1a5-2600f2a7a676'
 GROUP BY
-    u.id
-LIMIT
-    1;
-
---- findUserPasswordById
-SELECT
-    *
-FROM
-    users_without_password
-WHERE
-    id = 'a68b251c-0118-45f0-a722-c6ed1562539a'
-LIMIT
-    1;
-
---- findUserDetailById
-SELECT
     u.id,
     u.email,
-    (u.password_hash IS NOT NULL)::boolean AS has_password,
+    u.password_hash,
     u.username,
     u.status,
     u.deactived_at,
     u.created_at,
     u.updated_at,
-    COUNT(ur.role_id) FILTER (
-        WHERE
-            r.id IS NOT NULL
-            AND r.status = 'ACTIVE'
-    ) AS role_count,
-    COALESCE(
-        json_agg(
-            json_build_object(
-                'id',
-                r.id,
-                'name',
-                r.name,
-                'permissions',
-                r.permissions,
-                'description',
-                r.description,
-                'status',
-                r.status,
-                'deactived_at',
-                r.deactived_at,
-                'created_at',
-                r.created_at,
-                'updated_at',
-                r.updated_at
-            )
-        ) FILTER (
-            WHERE
-                r.id IS NOT NULL
-                AND r.status = 'ACTIVE'
-        ),
-        '[]'
-    ) AS roles
-FROM
-    users u
-    LEFT JOIN user_roles ur ON (ur.user_id = u.id)
-    LEFT JOIN roles r ON (ur.role_id = r.id)
-GROUP BY
-    u.id;
+    av.file_id,
+    av.width,
+    av.height,
+    av.is_primary,
+    av.created_at,
+    f.original_name,
+    f.mime_type,
+    f.destination,
+    f.file_name,
+    f.size
+LIMIT
+    1;
 
---- query
-SELECT
-    u.id,
-    u.email,
-    (u.password_hash IS NOT NULL)::boolean AS has_password,
-    u.username,
-    u.status,
-    u.deactived_at,
-    u.created_at,
-    u.updated_at,
-    COUNT(ur.role_id) FILTER (
-        WHERE
-            r.id IS NOT NULL
-            AND r.status = 'ACTIVE'
-    ) AS role_count
-FROM
-    users u
-    LEFT JOIN user_roles ur ON (ur.user_id = u.id)
-    LEFT JOIN roles r ON (ur.role_id = r.id)
-GROUP BY
-    u.id;
-
---- findRolesByUserId
+-- findRolesByUserId
 WITH
     roles AS (
         SELECT
@@ -233,7 +413,7 @@ WITH
             user_roles ur
             LEFT JOIN roles r ON (r.id = ur.role_id)
         WHERE
-            user_id = 'd7d2b394-7604-4f93-9011-a5c45727dee1'
+            user_id = '2b6d8104-c4d1-41af-a1a5-2600f2a7a676'
             AND r.status = 'ACTIVE'
             AND r.deactived_at IS NULL
     )
@@ -243,3 +423,68 @@ FROM
     roles
 WHERE
     permissions @> ARRAY['read:user:*'];
+
+-- findUsers
+SELECT
+    u.id,
+    u.email,
+    (u.password_hash IS NOT NULL)::boolean AS has_password,
+    u.username,
+    u.status,
+    u.deactived_at,
+    u.created_at,
+    u.updated_at,
+    COUNT(r.id) FILTER (
+        WHERE
+            r.id IS NOT NULL
+            AND r.status = 'ACTIVE'
+    )::int AS role_count,
+    json_build_object(
+        'id',
+        av.file_id,
+        'width',
+        av.width,
+        'height',
+        av.height,
+        'is_primary',
+        av.is_primary,
+        'original_name',
+        f.original_name,
+        'mime_type',
+        f.mime_type,
+        'destination',
+        f.destination,
+        'file_name',
+        f.file_name,
+        'size',
+        f.size,
+        'created_at',
+        av.created_at
+    ) AS avatar
+FROM
+    users u
+    LEFT JOIN user_roles ur ON ur.user_id = u.id
+    LEFT JOIN roles r ON ur.role_id = r.id
+    LEFT JOIN user_avatars av ON av.user_id = u.id
+    AND av.deleted_at IS NULL
+    AND av.is_primary = true
+    LEFT JOIN files f ON f.id = av.file_id
+    AND f.deleted_at IS NULL
+GROUP BY
+    u.id,
+    u.email,
+    u.password_hash,
+    u.username,
+    u.status,
+    u.deactived_at,
+    u.created_at,
+    u.updated_at,
+    av.file_id,
+    av.width,
+    av.height,
+    av.is_primary,
+    f.original_name,
+    f.mime_type,
+    f.destination,
+    f.file_name,
+    f.size;

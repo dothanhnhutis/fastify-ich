@@ -14,7 +14,7 @@ import config from "@/shared/config";
 import { BadRequestError } from "@/shared/error-handler";
 import { QueryRolesType } from "../roles/role.schema";
 import { privateFileUpload } from "@/shared/upload";
-import { isFastifyError } from "@/shared/utils";
+import { convertAvatar, isFastifyError } from "@/shared/utils";
 
 // Admin
 export async function queryUsersController(
@@ -22,11 +22,18 @@ export async function queryUsersController(
   reply: FastifyReply
 ) {
   const data = await req.users.findUsers(req.query);
+  const convertAvatars = data.users.map((u) => ({
+    ...u,
+    avatar: convertAvatar(u.avatar),
+  }));
 
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
     statusText: "OK",
-    data,
+    data: {
+      users: convertAvatars,
+      metadata: data.metadata,
+    },
   });
 }
 
@@ -40,7 +47,7 @@ export async function getUserByIdController(
     statusCode: StatusCodes.OK,
     statusText: "OK",
     data: {
-      user: existsUser,
+      user: { ...existsUser, avatar: convertAvatar(existsUser.avatar) },
     },
   });
 }
@@ -72,7 +79,7 @@ export async function getUserDetailByIdController(
     statusCode: StatusCodes.OK,
     statusText: "OK",
     data: {
-      user: userDetail,
+      user: { ...userDetail, avatar: convertAvatar(userDetail.avatar) },
     },
   });
 }
@@ -135,7 +142,10 @@ export async function currentUserController(
     statusCode: StatusCodes.OK,
     statusText: "OK",
     data: {
-      currentUser: req.currUser,
+      currentUser: {
+        ...req.currUser,
+        avatar: convertAvatar(req.currUser!.avatar),
+      },
     },
   });
 }

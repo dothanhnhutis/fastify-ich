@@ -6,7 +6,8 @@ export default {
   NODE_ENV: process.env.NODE_ENV || "development",
   HOST: process.env.HOST || "localhost",
   PORT: parseInt(process.env.PORT || "4000"),
-  CLIENT_URL: process.env.CLIENT_URL,
+  CLIENT_URL: process.env.CLIENT_URL || "http://localhost:3000",
+  SERVER_URL: process.env.SERVER_URL || "http://localhost:4000",
   DEBUG: process.env.DEBUG == "true",
   // Database
   DATABASE_URL: process.env.DATABASE_URL || "",

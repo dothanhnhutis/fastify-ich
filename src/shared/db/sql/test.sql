@@ -1,26 +1,63 @@
+-- 4.2
 SELECT
-    u.*,
-    CASE
-        WHEN av.file_id IS NOT NULL THEN json_build_object(
-            'id',
-            av.file_id,
-            'file_id',
-            av.file_id,
-            'is_primary',
-            av.is_primary,
-            'created_at',
-            av.created_at
-        )
-        ELSE NULL
-    END AS avatar
+    u.id,
+    u.email,
+    (u.password_hash IS NOT NULL)::boolean AS has_password,
+    u.username,
+    u.status,
+    u.deactived_at,
+    u.created_at,
+    u.updated_at,
+    COUNT(r.id) AS role_count,
+    json_build_object(
+        'id',
+        av.file_id,
+        'width',
+        av.width,
+        'height',
+        av.height,
+        'is_primary',
+        av.is_primary,
+        'original_name',
+        f.original_name,
+        'mime_type',
+        f.mime_type,
+        'destination',
+        f.destination,
+        'file_name',
+        f.file_name,
+        'size',
+        f.size
+    ) AS avatar
 FROM
     users u
+    LEFT JOIN user_roles ur ON ur.user_id = u.id
+    LEFT JOIN roles r ON ur.role_id = r.id
     LEFT JOIN user_avatars av ON av.user_id = u.id
-    AND av.is_primary = true
     AND av.deleted_at IS NULL
-    LEFT JOIN files f ON av.file_id = f.id
+    AND av.is_primary = true
+    LEFT JOIN files f ON f.id = av.file_id
+    AND f.deleted_at IS NULL
 WHERE
-    u.id = 'ef4f3873-319b-4349-9428-f2bae3877d9f'
+    u.id = '2b6d8104-c4d1-41af-a1a5-2600f2a7a676'
+GROUP BY
+    u.id,
+    u.email,
+    u.password_hash,
+    u.username,
+    u.status,
+    u.deactived_at,
+    u.created_at,
+    u.updated_at,
+    av.file_id,
+    av.width,
+    av.height,
+    av.is_primary,
+    f.original_name,
+    f.mime_type,
+    f.destination,
+    f.file_name,
+    f.size
 LIMIT
     1;
 

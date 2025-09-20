@@ -3,6 +3,7 @@ import fs from "fs";
 import { FastifyError } from "fastify";
 
 import { BadRequestError, PermissionError } from "./error-handler";
+import config from "./config";
 
 const dateStringRegex: RegExp = /^\d{4}-\d{2}-\d{2}$/;
 const timestamptzStringRegex: RegExp =
@@ -44,4 +45,20 @@ export function deleteFile(pathString: string) {
     }
     console.log("xoá file thanh công.");
   });
+}
+
+export function convertAvatar(userAvatar: UserAvatar): Avatar {
+  const url = `${config.SERVER_URL}/api/v1/${userAvatar.destination
+    .replace("uploads", "files")
+    .replace(/\\/g, "/")}/${userAvatar.file_name}`;
+
+  return {
+    id: userAvatar.id,
+    height: userAvatar.height,
+    width: userAvatar.width,
+    size: userAvatar.size,
+    fileName: userAvatar.file_name,
+    url,
+    created_at: userAvatar.created_at,
+  };
 }

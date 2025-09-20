@@ -13,80 +13,191 @@ import { BadRequestError } from "@/shared/error-handler";
 import { QueryRolesType } from "@/modules/v1/roles/role.schema";
 import { MultipartFile } from "@fastify/multipart";
 import sharp from "sharp";
-import path from "path";
 
 export default class UserRepo {
   constructor(private fastify: FastifyInstance) {}
 
-  async findUserWithoutPasswordById(id: string): Promise<User | null> {
+  async findUserWithoutPasswordById(
+    id: string
+  ): Promise<UserWithoutPassword | null> {
     const queryConfig: QueryConfig = {
       text: `
       SELECT
           u.id,
-          email,
+          u.email,
           (u.password_hash IS NOT NULL)::boolean AS has_password,
-          username,
-          status,
+          u.username,
+          u.status,
           u.deactived_at,
           u.created_at,
           u.updated_at,
-          COUNT(ur.role_id)::int AS role_count
+          COUNT(r.id) FILTER (
+              WHERE
+                  r.id IS NOT NULL
+                  AND r.status = 'ACTIVE'
+          )::int AS role_count,
+          json_build_object(
+              'id',
+              av.file_id,
+              'width',
+              av.width,
+              'height',
+              av.height,
+              'is_primary',
+              av.is_primary,
+              'original_name',
+              f.original_name,
+              'mime_type',
+              f.mime_type,
+              'destination',
+              f.destination,
+              'file_name',
+              f.file_name,
+              'size',
+              f.size,
+              'created_at',
+              to_char(
+                  av.created_at AT TIME ZONE 'UTC',
+                  'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+              )
+          ) AS avatar
       FROM
           users u
-          LEFT JOIN user_roles ur ON (ur.user_id = u.id)
+          LEFT JOIN user_roles ur ON ur.user_id = u.id
+          LEFT JOIN roles r ON ur.role_id = r.id
+          LEFT JOIN user_avatars av ON av.user_id = u.id
+          AND av.deleted_at IS NULL
+          AND av.is_primary = true
+          LEFT JOIN files f ON f.id = av.file_id
+          AND f.deleted_at IS NULL
       WHERE
-          id = $1
+          u.id = $1::text
       GROUP BY
-          u.id
+          u.id,
+          u.email,
+          u.password_hash,
+          u.username,
+          u.status,
+          u.deactived_at,
+          u.created_at,
+          u.updated_at,
+          av.file_id,
+          av.width,
+          av.height,
+          av.is_primary,
+          av.created_at,
+          f.original_name,
+          f.mime_type,
+          f.destination,
+          f.file_name,
+          f.size
       LIMIT
           1;
       `,
       values: [id],
     };
     try {
-      const { rows } = await this.fastify.query<User>(queryConfig);
+      const { rows } = await this.fastify.query<UserWithoutPassword>(
+        queryConfig
+      );
       return rows[0] ?? null;
     } catch (err: unknown) {
       this.fastify.logger.error(
         { metadata: { query: queryConfig } },
-        `UserRepo.findUserRoleById() method error: ${err}`
+        `UserRepo.findUserWithoutPasswordById() method error: ${err}`
       );
       return null;
     }
   }
 
-  async findUserWithoutPasswordByEmail(email: string): Promise<User | null> {
+  async findUserWithoutPasswordByEmail(
+    email: string
+  ): Promise<UserWithoutPassword | null> {
     const queryConfig: QueryConfig = {
       text: `
         SELECT
             u.id,
-            email,
+            u.email,
             (u.password_hash IS NOT NULL)::boolean AS has_password,
-            username,
-            status,
+            u.username,
+            u.status,
             u.deactived_at,
             u.created_at,
             u.updated_at,
-            COUNT(ur.role_id) AS role_count
+            COUNT(r.id) FILTER (
+                WHERE
+                    r.id IS NOT NULL
+                    AND r.status = 'ACTIVE'
+            )::int AS role_count,
+            json_build_object(
+                'id',
+                av.file_id,
+                'width',
+                av.width,
+                'height',
+                av.height,
+                'is_primary',
+                av.is_primary,
+                'original_name',
+                f.original_name,
+                'mime_type',
+                f.mime_type,
+                'destination',
+                f.destination,
+                'file_name',
+                f.file_name,
+                'size',
+                f.size,
+                'created_at',
+                to_char(
+                    av.created_at AT TIME ZONE 'UTC',
+                    'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                )
+            ) AS avatar
         FROM
             users u
-            LEfT JOIN user_roles ur ON (ur.user_id = u.id)
+            LEFT JOIN user_roles ur ON ur.user_id = u.id
+            LEFT JOIN roles r ON ur.role_id = r.id
+            LEFT JOIN user_avatars av ON av.user_id = u.id
+            AND av.deleted_at IS NULL
+            AND av.is_primary = true
+            LEFT JOIN files f ON f.id = av.file_id
+            AND f.deleted_at IS NULL
         WHERE
-            email = $1
+            u.email = $1::text
         GROUP BY
-            u.id
+            u.id,
+            u.email,
+            u.password_hash,
+            u.username,
+            u.status,
+            u.deactived_at,
+            u.created_at,
+            u.updated_at,
+            av.file_id,
+            av.width,
+            av.height,
+            av.is_primary,
+            av.created_at,
+            f.original_name,
+            f.mime_type,
+            f.destination,
+            f.file_name,
+            f.size
         LIMIT
             1;
       `,
       values: [email],
     };
     try {
-      const { rows } = await this.fastify.query<User>(queryConfig);
+      const { rows } = await this.fastify.query<UserWithoutPassword>(
+        queryConfig
+      );
       return rows[0] ?? null;
     } catch (err: unknown) {
       this.fastify.logger.error(
         { metadata: { query: queryConfig } },
-        `UserRepo.findUserRoleByEmail() method error: ${err}`
+        `UserRepo.findUserWithoutPasswordByEmail() method error: ${err}`
       );
       return null;
     }
@@ -96,11 +207,67 @@ export default class UserRepo {
     const queryConfig: QueryConfig = {
       text: `
       SELECT
-          *
+          u.*,
+          COUNT(r.id) FILTER (
+              WHERE
+                  r.id IS NOT NULL
+                  AND r.status = 'ACTIVE'
+          )::int AS role_count,
+          json_build_object(
+              'id',
+              av.file_id,
+              'width',
+              av.width,
+              'height',
+              av.height,
+              'is_primary',
+              av.is_primary,
+              'original_name',
+              f.original_name,
+              'mime_type',
+              f.mime_type,
+              'destination',
+              f.destination,
+              'file_name',
+              f.file_name,
+              'size',
+              f.size,
+              'created_at',
+              to_char(
+                  av.created_at AT TIME ZONE 'UTC',
+                  'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+              )
+          ) AS avatar
       FROM
-          users
+          users u
+          LEFT JOIN user_roles ur ON ur.user_id = u.id
+          LEFT JOIN roles r ON ur.role_id = r.id
+          LEFT JOIN user_avatars av ON av.user_id = u.id
+          AND av.deleted_at IS NULL
+          AND av.is_primary = true
+          LEFT JOIN files f ON f.id = av.file_id
+          AND f.deleted_at IS NULL
       WHERE
-          id = $1
+          u.id = $1::text
+      GROUP BY
+          u.id,
+          u.email,
+          u.password_hash,
+          u.username,
+          u.status,
+          u.deactived_at,
+          u.created_at,
+          u.updated_at,
+          av.file_id,
+          av.width,
+          av.height,
+          av.is_primary,
+          av.created_at,
+          f.original_name,
+          f.mime_type,
+          f.destination,
+          f.file_name,
+          f.size
       LIMIT
           1;
       `,
@@ -123,11 +290,67 @@ export default class UserRepo {
     const queryConfig: QueryConfig = {
       text: `
       SELECT
-          *
+          u.*,
+          COUNT(r.id) FILTER (
+              WHERE
+                  r.id IS NOT NULL
+                  AND r.status = 'ACTIVE'
+          )::int AS role_count,
+          json_build_object(
+              'id',
+              av.file_id,
+              'width',
+              av.width,
+              'height',
+              av.height,
+              'is_primary',
+              av.is_primary,
+              'original_name',
+              f.original_name,
+              'mime_type',
+              f.mime_type,
+              'destination',
+              f.destination,
+              'file_name',
+              f.file_name,
+              'size',
+              f.size,
+              'created_at',
+              to_char(
+                  av.created_at AT TIME ZONE 'UTC',
+                  'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+              )
+          ) AS avatar
       FROM
-          users
+          users u
+          LEFT JOIN user_roles ur ON ur.user_id = u.id
+          LEFT JOIN roles r ON ur.role_id = r.id
+          LEFT JOIN user_avatars av ON av.user_id = u.id
+          AND av.deleted_at IS NULL
+          AND av.is_primary = true
+          LEFT JOIN files f ON f.id = av.file_id
+          AND f.deleted_at IS NULL
       WHERE
-          email = $1
+          u.email = $1::text
+      GROUP BY
+          u.id,
+          u.email,
+          u.password_hash,
+          u.username,
+          u.status,
+          u.deactived_at,
+          u.created_at,
+          u.updated_at,
+          av.file_id,
+          av.width,
+          av.height,
+          av.is_primary,
+          av.created_at,
+          f.original_name,
+          f.mime_type,
+          f.destination,
+          f.file_name,
+          f.size
       LIMIT
           1;
       `,
@@ -151,18 +374,43 @@ export default class UserRepo {
       text: `
         SELECT
             u.id,
-            email,
+            u.email,
             (u.password_hash IS NOT NULL)::boolean AS has_password,
-            username,
+            u.username,
             u.status,
             u.deactived_at,
             u.created_at,
             u.updated_at,
-            COUNT(ur.role_id) FILTER (
+            COUNT(r.id) FILTER (
                 WHERE
                     r.id IS NOT NULL
                     AND r.status = 'ACTIVE'
             )::int AS role_count,
+            json_build_object(
+                'id',
+                av.file_id,
+                'width',
+                av.width,
+                'height',
+                av.height,
+                'is_primary',
+                av.is_primary,
+                'original_name',
+                f.original_name,
+                'mime_type',
+                f.mime_type,
+                'destination',
+                f.destination,
+                'file_name',
+                f.file_name,
+                'size',
+                f.size,
+                'created_at',
+                to_char(
+                    av.created_at AT TIME ZONE 'UTC',
+                    'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                )
+            ) AS avatar,
             COALESCE(
                 json_agg(
                     json_build_object(
@@ -192,12 +440,34 @@ export default class UserRepo {
             ) AS roles
         FROM
             users u
-            LEFT JOIN user_roles ur ON (ur.user_id = u.id)
-            LEFT JOIN roles r ON (ur.role_id = r.id)
+            LEFT JOIN user_roles ur ON ur.user_id = u.id
+            LEFT JOIN roles r ON ur.role_id = r.id
+            LEFT JOIN user_avatars av ON av.user_id = u.id
+            AND av.deleted_at IS NULL
+            AND av.is_primary = true
+            LEFT JOIN files f ON f.id = av.file_id
+            AND f.deleted_at IS NULL
         WHERE
-            u.id = $1
+            u.id = $1::text
         GROUP BY
-            u.id
+            u.id,
+            u.email,
+            u.password_hash,
+            u.username,
+            u.status,
+            u.deactived_at,
+            u.created_at,
+            u.updated_at,
+            av.file_id,
+            av.width,
+            av.height,
+            av.is_primary,
+            av.created_at,
+            f.original_name,
+            f.mime_type,
+            f.destination,
+            f.file_name,
+            f.size
         LIMIT
             1;
       `,
@@ -369,15 +639,45 @@ export default class UserRepo {
           u.deactived_at,
           u.created_at,
           u.updated_at,
-          COUNT(ur.role_id) FILTER (
+          COUNT(r.id) FILTER (
               WHERE
                   r.id IS NOT NULL
                   AND r.status = 'ACTIVE'
-          )::int AS role_count
+          )::int AS role_count,
+          json_build_object(
+              'id',
+              av.file_id,
+              'width',
+              av.width,
+              'height',
+              av.height,
+              'is_primary',
+              av.is_primary,
+              'original_name',
+              f.original_name,
+              'mime_type',
+              f.mime_type,
+              'destination',
+              f.destination,
+              'file_name',
+              f.file_name,
+              'size',
+              f.size,
+              'created_at',
+              to_char(
+                  av.created_at AT TIME ZONE 'UTC',
+                  'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+              )
+          ) AS avatar
       FROM
           users u
-          LEFT JOIN user_roles ur ON (ur.user_id = u.id)
-          LEFT JOIN roles r ON (ur.role_id = r.id)
+          LEFT JOIN user_roles ur ON ur.user_id = u.id
+          LEFT JOIN roles r ON ur.role_id = r.id
+          LEFT JOIN user_avatars av ON av.user_id = u.id
+          AND av.deleted_at IS NULL
+          AND av.is_primary = true
+          LEFT JOIN files f ON f.id = av.file_id
+          AND f.deleted_at IS NULL
       
       `,
     ];
@@ -386,12 +686,12 @@ export default class UserRepo {
     let idx = 1;
 
     if (query.username != undefined) {
-      where.push(`username ILIKE $${idx++}::text`);
+      where.push(`u.username ILIKE $${idx++}::text`);
       values.push(`%${query.username.trim()}%`);
     }
 
     if (query.email != undefined) {
-      where.push(`email ILIKE $${idx++}::text`);
+      where.push(`u.email ILIKE $${idx++}::text`);
       values.push(`%${query.email.trim()}%`);
     }
 
@@ -426,7 +726,10 @@ export default class UserRepo {
       queryString.push(`WHERE ${where.join(" AND ")}`);
     }
 
-    queryString.push(`GROUP BY u.id`);
+    queryString.push(`GROUP BY u.id, u.email, u.password_hash, u.username, u.status,
+          u.deactived_at, u.created_at, u.updated_at, av.file_id, av.width, av.height,
+          av.is_primary, av.created_at, f.original_name, f.mime_type, f.destination,
+          f.file_name, f.size`);
 
     try {
       return await this.fastify.transaction(async (client) => {
@@ -465,7 +768,9 @@ export default class UserRepo {
           values,
         };
 
-        const { rows: users } = await client.query<User>(queryConfig);
+        const { rows: users } = await client.query<UserWithoutPassword>(
+          queryConfig
+        );
 
         const totalPage = Math.ceil(totalItem / limit) || 0;
 
