@@ -1,5 +1,6 @@
 POST http://localhost:4000/api/v1/auth/signin HTTP/1.1
 Content-Type: application/json
+Accept-Encoding: br
 
 {
     "email": "gaconght@gmail.com",
@@ -9,5 +10,17 @@ Content-Type: application/json
 ###
 GET http://localhost:4000/api/v1/users/me HTTP/1.1
 Content-Type: application/json
-Cookie: sid=TyCZZmgfnxFRBHhB4mbyhBKiaIc-l1H8gMRNRFffXMEGahBJqgt5br6fJ4aoN1W82Q5H_TejPgItukj3JUIMU7O8BG-zzJGMxogc91AdTDx96Y9t-XZqfD2TSGA0vTJAEqVr6clZFVmJ; Expires=Mon, 20 Oct 2025 09:12:56 GMT; HttpOnly; Secure; SameSite=lax; Path=/
-Accept-Encoding: gzip
+Cookie: sid=QhZfrUsINGuvkRhU0GI4AV1SLytxsO_ns8IBOB34P5ZuSn0rC-b4l2A371UwFYYoo4zy2JacnghQ1gvcr8dYMhiH4gZEeEeOQt-TIMUei4stQghH9RbQPG7BA-gG7a4whNlOjYmVw6PJ; Expires=Tue, 21 Oct 2025 02:46:01 GMT; HttpOnly; Secure; SameSite=lax; Path=/
+Accept-Encoding: br
+
+###
+GET http://localhost:4000/api/v1/users HTTP/1.1
+Content-Type: application/json
+Cookie: sid=QhZfrUsINGuvkRhU0GI4AV1SLytxsO_ns8IBOB34P5ZuSn0rC-b4l2A371UwFYYoo4zy2JacnghQ1gvcr8dYMhiH4gZEeEeOQt-TIMUei4stQghH9RbQPG7BA-gG7a4whNlOjYmVw6PJ; Expires=Tue, 21 Oct 2025 02:46:01 GMT; HttpOnly; Secure; SameSite=lax; Path=/
+Accept-Encoding: br
+
+
+###
+GET http://localhost:4000/big HTTP/1.1
+Content-Type: application/json
+# Accept-Encoding: gzip

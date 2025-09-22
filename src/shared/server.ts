@@ -1,12 +1,11 @@
 import fs from "fs";
 import path from "path";
-import fastify from "fastify";
+import fastify, { FastifyReply, FastifyRequest } from "fastify";
 import addErrors from "ajv-errors";
 import addFormats from "ajv-formats";
 import fastifyCors from "@fastify/cors";
 import fastifyStatic from "@fastify/static";
 import fastifyHelmet from "@fastify/helmet";
-import fastifyCompress from "@fastify/compress";
 import fastifyMultipart from "@fastify/multipart";
 
 import config from "./config";
@@ -16,8 +15,27 @@ import redisPlugin from "./plugins/redis";
 import rabbitMQPlugin from "./plugins/amqp";
 import cookiePlugin from "./plugins/cookie";
 import sessionPlugin from "./plugins/session";
+import compressionPlugin from "./plugins/compression";
 import { errorHandler } from "./error-handler";
 import postgreSQLPlugin from "./plugins/postgres";
+
+import zlib from "zlib";
+
+function getEncoder(req: FastifyRequest, reply: FastifyReply) {
+  const accept = req.headers["accept-encoding"] || "";
+  if (/\bbr\b/.test(accept)) {
+    reply.header("Content-Encoding", "br");
+    return zlib.createBrotliCompress();
+  } else if (/\bgzip\b/.test(accept)) {
+    reply.header("Content-Encoding", "gzip");
+    return zlib.createGzip();
+  } else if (/\bdeflate\b/.test(accept)) {
+    reply.header("Content-Encoding", "deflate");
+    return zlib.createDeflate();
+  } else {
+    return null; // không nén
+  }
+}
 
 export async function buildServer() {
   const server = fastify({
@@ -40,7 +58,7 @@ export async function buildServer() {
 
   // Plugins
   server.register(fastifyHelmet);
-  server.register(fastifyCompress);
+  server.register(compressionPlugin);
   server.register(fastifyStatic, {
     root: [path.join(__dirname, "public")],
     prefix: "/static/",
@@ -92,18 +110,30 @@ export async function buildServer() {
     throwFileSizeLimit: true,
   });
   server.register(fastifyCors, {
-    origin: config.CLIENT_URL,
+    origin: "http://localhost:3000",
     credentials: true,
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
   });
 
-  server.get("/test", (req, reply) => {
-    console.log("Accept-Encoding:", req.headers["accept-encoding"]);
-    return { data: "A".repeat(2000) }; // Force compression
-  });
-  server.addHook("onSend", async (request, reply, payload) => {
-    console.log("Content-Encoding:", reply.getHeader("content-encoding"));
-  });
+  // server.get("/big", async (req, reply) => {
+  //   // Giả lập response lớn (chuỗi JSON dài)
+  //   const largeData = JSON.stringify({ data: "x".repeat(5_000_000) });
+
+  //   const encoder = getEncoder(req, reply);
+
+  //   reply.header("Content-Type", "application/json; charset=utf-8");
+
+  //   if (!encoder) {
+  //     // Client không hỗ trợ nén → trả thẳng
+  //     reply.send(largeData);
+  //   } else {
+  //     // 🚨 Báo cho Fastify: "Tôi sẽ tự quản lý response"
+  //     reply.hijack();
+  //     // Trả dữ liệu stream qua encoder
+  //     encoder.pipe(reply.raw);
+  //     encoder.end(largeData);
+  //   }
+  // });
 
   await server
     .register(logger)

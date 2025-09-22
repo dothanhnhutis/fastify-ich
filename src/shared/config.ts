@@ -22,7 +22,7 @@ export default {
   RABBITMQ_VHOST: process.env.RABBITMQ_VHOST || "queue",
   RABBITMQ_FRAME_MAX: parseInt(process.env.RABBITMQ_FRAME_MAX || "131072"),
   // Session
-  SESSION_KEY_NAME: process.env.RABBITMQ_VHOST || "sid",
+  SESSION_KEY_NAME: process.env.SESSION_KEY_NAME || "sid",
   SESSION_MAX_AGE: parseInt(process.env.SESSION_MAX_AGE || "2592000000"),
   SESSION_SECRET_KEY:
     process.env.SESSION_SECRET_KEY ||
