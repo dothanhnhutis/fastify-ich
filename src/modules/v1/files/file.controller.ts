@@ -3,6 +3,7 @@ import fs from "fs";
 import mime from "mime-types";
 import { FastifyReply, FastifyRequest } from "fastify";
 import { securityPath } from "@/shared/utils";
+import config from "@/shared/config";
 
 export async function viewFileController(
   request: FastifyRequest<{ Params: { "*": string } }>,
@@ -29,6 +30,9 @@ export async function viewFileController(
     reply.header("Content-Disposition", `inline; filename="${filename}"`);
     reply.header("Cache-Control", "private, max-age=3600"); // Cache 1 giờ
     reply.header("Last-Modified", stats.mtime.toUTCString());
+
+    reply.header("Access-Control-Allow-Origin", config.CLIENT_URL);
+    reply.header("Cross-Origin-Resource-Policy", "cross-origin");
 
     // Support range requests (cho video, audio, large files)
     const range = request.headers.range;
