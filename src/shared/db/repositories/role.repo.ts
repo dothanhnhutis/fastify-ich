@@ -14,7 +14,7 @@ import { QueryUsersType } from "@/modules/v1/users/user.schema";
 export default class RoleRepo {
   constructor(private fastify: FastifyInstance) {}
 
-  async query(query: QueryRolesType): Promise<QueryRoles> {
+  async findRoles(query: QueryRolesType): Promise<QueryRoles> {
     let queryString = [
       `
       SELECT
@@ -131,7 +131,7 @@ export default class RoleRepo {
     }
   }
 
-  async findById(roleId: string): Promise<Role | null> {
+  async findRoleById(roleId: string): Promise<Role | null> {
     const queryConfig: QueryConfig = {
       text: `
         SELECT
@@ -299,7 +299,7 @@ export default class RoleRepo {
     }
   }
 
-  async findDetailById(roleId: string): Promise<RoleDetail | null> {
+  async findRoleDetailById(roleId: string): Promise<RoleDetail | null> {
     const queryConfig: QueryConfig = {
       text: `
         SELECT
@@ -326,9 +326,15 @@ export default class RoleRepo {
                         'deactived_at',
                         u.deactived_at,
                         'created_at',
-                        u.created_at,
+                        to_char(
+                            u.created_at AT TIME ZONE 'UTC',
+                            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                        ),
                         'updated_at',
-                        u.updated_at
+                        to_char(
+                            u.updated_at AT TIME ZONE 'UTC',
+                            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                        )
                     )
                 ) FILTER (
                     WHERE

@@ -1,3 +1,4 @@
+import sharp from "sharp";
 import { QueryConfig } from "pg";
 import { FastifyInstance } from "fastify";
 
@@ -6,13 +7,12 @@ import {
   QueryUsersType,
   UpdateUserByIdBodyType,
 } from "@/modules/v1/users/user.schema";
-import { privateFileUpload, type FileUploadType } from "@/shared/upload";
 import Password from "@/shared/password";
-import { deleteFile, isDataString } from "@/shared/utils";
-import { BadRequestError } from "@/shared/error-handler";
-import { QueryRolesType } from "@/modules/v1/roles/role.schema";
 import { MultipartFile } from "@fastify/multipart";
-import sharp from "sharp";
+import { BadRequestError } from "@/shared/error-handler";
+import { deleteFile, isDataString } from "@/shared/utils";
+import { QueryRolesType } from "@/modules/v1/roles/role.schema";
+import { privateFileUpload, type FileUploadType } from "@/shared/upload";
 
 export default class UserRepo {
   constructor(private fastify: FastifyInstance) {}

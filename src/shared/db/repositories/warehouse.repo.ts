@@ -1,14 +1,14 @@
 import { FastifyInstance } from "fastify";
 import { QueryConfig, QueryResult } from "pg";
 
-import { BadRequestError } from "@/shared/error-handler";
+import { isDataString } from "@/shared/utils";
 import {
   CreateNewWarehouseBodyType,
   GetPackagingsByWarehouseIdQueryType,
   QueryWarehousesType,
   UpdateWarehouseByIdBodyType,
 } from "@/modules/v1/warehouses/warehouse.schema";
-import { isDataString } from "@/shared/utils";
+import { BadRequestError } from "@/shared/error-handler";
 
 export default class WarehouseRepo {
   constructor(private fastify: FastifyInstance) {}
@@ -36,12 +36,12 @@ export default class WarehouseRepo {
     let idx = 1;
 
     if (query.name != undefined) {
-      where.push(`name ILIKE $${idx++}::text`);
+      where.push(`w.name ILIKE $${idx++}::text`);
       values.push(`%${query.name.trim()}%`);
     }
 
     if (query.address != undefined) {
-      where.push(`address ILIKE $${idx++}::text`);
+      where.push(`w.address ILIKE $${idx++}::text`);
       values.push(`%${query.address.trim()}%`);
     }
 
@@ -337,9 +337,15 @@ export default class WarehouseRepo {
                         'deactived_at',
                         p.deactived_at,
                         'created_at',
-                        p.created_at,
+                        to_char(
+                            p.created_at AT TIME ZONE 'UTC',
+                            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                        ),
                         'updated_at',
-                        p.updated_at,
+                        to_char(
+                            p.updated_at AT TIME ZONE 'UTC',
+                            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                        ),
                         'quantity',
                         pi.quantity
                     )
@@ -351,14 +357,14 @@ export default class WarehouseRepo {
                 '[]'
             ) AS packagings
         FROM
-            packagings p
-            LEFT JOIN packaging_inventory pi ON (pi.packaging_id = p.id)
-            LEFT JOIN warehouses w ON (pi.warehouse_id = w.id)
+            warehouses w
+            LEFT JOIN packaging_inventory pi ON (pi.warehouse_id = w.id)
+            LEFT JOIN packagings p ON (pi.packaging_id = p.id)
         WHERE
             w.id = $1
         GROUP BY
             w.id;
-      `,
+    `,
       values: [warehouseId],
     };
     try {
@@ -493,7 +499,7 @@ export default class WarehouseRepo {
       );
     }
   }
-  //
+
   async deleteWarehouseById(id: string): Promise<Warehouse> {
     const queryConfig: QueryConfig = {
       text: `DELETE FROM warehouses WHERE id = $1 RETURNING *;`,

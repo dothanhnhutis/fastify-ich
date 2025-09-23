@@ -25,9 +25,7 @@ export async function getUsersByRoleIdController(
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
     statusText: "OK",
-    data: {
-      role,
-    },
+    data: role,
   });
 }
 
@@ -35,15 +33,13 @@ export async function getRoleDetailByIdController(
   req: FastifyRequest<{ Params: GetRoleDetailByIdParamsType }>,
   reply: FastifyReply
 ) {
-  const role = await req.roles.findDetailById(req.params.id);
+  const role = await req.roles.findRoleDetailById(req.params.id);
   if (!role) throw new BadRequestError("Vai trò không tồn tại.");
 
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
     statusText: "OK",
-    data: {
-      role,
-    },
+    data: role,
   });
 }
 
@@ -51,7 +47,7 @@ export async function getRoleByIdController(
   req: FastifyRequest<{ Params: GetRoleByIdParamsType }>,
   reply: FastifyReply
 ) {
-  const role = await req.roles.findById(req.params.id);
+  const role = await req.roles.findRoleById(req.params.id);
   if (!role) throw new BadRequestError("Vai trò không tồn tại.");
 
   reply.code(StatusCodes.OK).send({
@@ -63,13 +59,13 @@ export async function getRoleByIdController(
   });
 }
 
-export async function queryRoleController(
+export async function queryRolesController(
   req: FastifyRequest<{
     Querystring: QueryRolesType;
   }>,
   reply: FastifyReply
 ) {
-  const data = await req.roles.query(req.query);
+  const data = await req.roles.findRoles(req.query);
 
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
@@ -100,7 +96,7 @@ export async function updateRoleByIdController(
   }>,
   reply: FastifyReply
 ) {
-  const role = await req.roles.findById(req.params.id);
+  const role = await req.roles.findRoleById(req.params.id);
   if (!role) throw new BadRequestError("Vai trò không tồn tại.");
 
   await req.roles.update(role.id, req.body);
@@ -118,7 +114,7 @@ export async function deleteRoleByIdController(
   req: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply
 ) {
-  const role = await req.roles.findById(req.params.id);
+  const role = await req.roles.findRoleById(req.params.id);
   if (!role) throw new BadRequestError("Vai trò không tồn tại.");
 
   await req.roles.delete(role.id);

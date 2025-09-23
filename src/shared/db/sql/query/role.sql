@@ -19,7 +19,7 @@ VALUES
 RETURNING
     *;
 
---- query
+--- findRoles
 SELECT
     r.*,
     COUNT(ur.user_id) FILTER (
@@ -35,23 +35,7 @@ FROM
 GROUP BY
     r.id;
 
----
-SELECT
-    r.*,
-    COUNT(ur.user_id) FILTER (
-        WHERE
-            ur.user_id IS NOT NULL
-            AND u.status = 'ACTIVE'
-            AND u.deactived_at IS NULL
-    )::int AS user_count
-FROM
-    roles r
-    LEFT JOIN user_roles ur ON (ur.role_id = r.id)
-    LEFT JOIN users u ON (ur.user_id = u.id)
-GROUP BY
-    r.id;
-
---- findById
+--- findRoleById
 SELECT
     r.*,
     COUNT(ur.user_id) FILTER (
@@ -71,7 +55,7 @@ GROUP BY
 LIMIT
     1;
 
---- findDetailById
+--- findRoleDetailById
 SELECT
     r.*,
     COUNT(ur.user_id) FILTER (
@@ -96,9 +80,15 @@ SELECT
                 'deactived_at',
                 u.deactived_at,
                 'created_at',
-                u.created_at,
+                to_char(
+                    u.created_at AT TIME ZONE 'UTC',
+                    'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                ),
                 'updated_at',
-                u.updated_at
+                to_char(
+                    u.updated_at AT TIME ZONE 'UTC',
+                    'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                )
             )
         ) FILTER (
             WHERE
@@ -149,5 +139,3 @@ WHERE
     AND role_id NOT IN ('5f31c9a7-d56f-4584-9d43-ba6295ec05d7')
 RETURNING
     *;
-
----

@@ -80,3 +80,69 @@ FROM
     new_warehouse w;
 
 COMMIT;
+
+
+
+--- create packaging transaction
+
+BEGIN;
+
+WITH
+    new_packaging_transaction AS (
+        INSERT INTO
+            packaging_transactions (
+                type,
+                from_warehouse_id,
+                note,
+                transaction_date,
+                status
+            )
+        VALUES
+            (
+                'EXPORT',
+                '9c21c29c-342b-47fa-afb9-4c84eea87bec',
+                'xuất kho, kiểm tra trigger',
+                NOW(),
+                'CREATED'
+            )
+        RETURNING
+            id
+    )
+INSERT INTO
+    packaging_transaction_items (
+        packaging_transaction_id,
+        packaging_id,
+        warehouse_id,
+        quantity,
+        signed_quantity
+    )
+SELECT
+    new_packaging_transaction.id,
+    x.packaging_id,
+    x.warehouse_id,
+    x.quantity,
+    x.signed_quantity
+FROM
+    new_packaging_transaction
+    CROSS JOIN (
+        VALUES
+            (
+                '0d8c5ca8-639e-473c-b42f-d5edc51c33e6',
+                '9c21c29c-342b-47fa-afb9-4c84eea87bec',
+                100,
+                -100
+            ),
+            (
+                'fa660c2a-4772-4982-8a2e-d4c0e01c197b',
+                '9c21c29c-342b-47fa-afb9-4c84eea87bec',
+                100,
+                -100
+            )
+    ) AS x (
+        packaging_id,
+        warehouse_id,
+        quantity,
+        signed_quantity
+    );
+
+COMMIT;

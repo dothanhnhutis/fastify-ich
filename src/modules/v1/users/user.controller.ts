@@ -94,7 +94,7 @@ export async function createNewUserController(
 
   if (req.body.roleIds) {
     for (let id of req.body.roleIds) {
-      const role = await req.roles.findById(id);
+      const role = await req.roles.findRoleById(id);
       if (!role) throw new BadRequestError(`Quyền id='${id}' không tồn tại.`);
     }
   }

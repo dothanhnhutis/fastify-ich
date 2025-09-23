@@ -1,5 +1,4 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import { QueryWarehousesType } from "../warehouses/warehouse.schema";
 import {
   CreateNewPackagingBodyType,
   DeletePackagingByIdParamsType,
@@ -83,7 +82,9 @@ export async function createPackagingController(
 ) {
   if (req.body.warehouseIds) {
     for (const packagingId of req.body.warehouseIds) {
-      const existsPackaging = await req.warehouses.findById(packagingId);
+      const existsPackaging = await req.warehouses.findWarehouseById(
+        packagingId
+      );
       if (!existsPackaging)
         throw new BadRequestError(
           `Mã kho hàng id=${packagingId} không tồn tại`
@@ -123,7 +124,9 @@ export async function updatePackagingByIdController(
 
   if (req.body.warehouseIds) {
     for (const warehouseId of req.body.warehouseIds) {
-      const existsWarehouse = await req.warehouses.findById(warehouseId);
+      const existsWarehouse = await req.warehouses.findWarehouseById(
+        warehouseId
+      );
       if (!existsWarehouse)
         throw new BadRequestError(
           `Mã kho hàng id=${warehouseId} không tồn tại`

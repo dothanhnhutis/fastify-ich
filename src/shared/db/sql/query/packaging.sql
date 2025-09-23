@@ -64,10 +64,13 @@ SELECT
             pi.warehouse_id IS NOT NULL
             AND w.status = 'ACTIVE'
     )::int as warehouse_count,
-    SUM(pi.quantity) FILTER (
-        WHERE
-            pi.warehouse_id IS NOT NULL
-            AND w.status = 'ACTIVE'
+    COALESCE(
+        SUM(pi.quantity) FILTER (
+            WHERE
+                pi.warehouse_id IS NOT NULL
+                AND w.status = 'ACTIVE'
+        ),
+        0
     )::int as total_quantity,
     COALESCE(
         json_agg(
@@ -83,9 +86,15 @@ SELECT
                 'deactived_at',
                 w.deactived_at,
                 'created_at',
-                w.created_at,
+                to_char(
+                    w.created_at AT TIME ZONE 'UTC',
+                    'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                ),
                 'updated_at',
-                w.updated_at,
+                to_char(
+                    w.updated_at AT TIME ZONE 'UTC',
+                    'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                ),
                 'quantity',
                 pi.quantity
             )
@@ -101,7 +110,7 @@ FROM
     LEFT JOIN packaging_inventory pi ON (pi.packaging_id = p.id)
     LEFT JOIN warehouses w ON (pi.warehouse_id = w.id)
 WHERE
-    p.id = '565b92d2-9048-42ec-8b13-f80b472b642c'
+    p.id = '61b27b2e-541b-4bd3-aef8-eda6a81cdd3c'
 GROUP BY
     p.id;
 

@@ -11,7 +11,6 @@ import {
 } from "./warehouse.schema";
 import { StatusCodes } from "http-status-codes";
 import { BadRequestError } from "@/shared/error-handler";
-import { QueryPackagingsType } from "../packagings/packaging.schema";
 
 export async function queryWarehousesController(
   req: FastifyRequest<{ Querystring: QueryWarehousesType }>,

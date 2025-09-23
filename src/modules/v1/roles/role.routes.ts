@@ -6,7 +6,7 @@ import {
   getRoleByIdController,
   getRoleDetailByIdController,
   getUsersByRoleIdController,
-  queryRoleController,
+  queryRolesController,
   updateRoleByIdController,
 } from "./role.controller";
 import checkPermissionMiddleware from "@/shared/middleware/checkPermission";
@@ -31,7 +31,7 @@ export default async function roleRoutes(fastify: FastifyInstance) {
         checkPermissionMiddleware(["read:role:*"]),
       ],
     },
-    queryRoleController
+    queryRolesController
   );
 
   fastify.get(

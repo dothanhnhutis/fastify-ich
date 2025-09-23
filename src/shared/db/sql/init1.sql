@@ -104,12 +104,11 @@ CREATE TABLE IF NOT EXISTS packaging_inventory (
 --- create packaging_transactions table
 CREATE TABLE IF NOT EXISTS packaging_transactions (
     id TEXT NOT NULL DEFAULT gen_random_uuid ()::text,
-    code VARCHAR(20) UNIQUE NOT NULL, -- mã phiếu: IMP001, EXP001, ADJ001, TRF001
     type VARCHAR(20) NOT NULL, -- IMPORT, EXPORT, ADJUST, TRANSFER
     from_warehouse_id TEXT NOT NULL,
     to_warehouse_id TEXT,
     note VARCHAR(255) NOT NULL DEFAULT '',
-    transaction_date DATE NOT NULL,
+    transaction_date TIMESTAMPTZ NOT NULL,
     status VARCHAR(20) DEFAULT 'CREATED', -- DRAF, CREATED, COMPLETED, CANCELLED
     created_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),

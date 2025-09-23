@@ -338,10 +338,13 @@ export default class PackagingRepo {
                     pi.warehouse_id IS NOT NULL
                     AND w.status = 'ACTIVE'
             )::int as warehouse_count,
-            SUM(pi.quantity) FILTER (
-                WHERE
-                    pi.warehouse_id IS NOT NULL
-                    AND w.status = 'ACTIVE'
+            COALESCE(
+                SUM(pi.quantity) FILTER (
+                    WHERE
+                        pi.warehouse_id IS NOT NULL
+                        AND w.status = 'ACTIVE'
+                ),
+                0
             )::int as total_quantity,
             COALESCE(
                 json_agg(
@@ -357,9 +360,15 @@ export default class PackagingRepo {
                         'deactived_at',
                         w.deactived_at,
                         'created_at',
-                        w.created_at,
+                        to_char(
+                            w.created_at AT TIME ZONE 'UTC',
+                            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                        ),
                         'updated_at',
-                        w.updated_at,
+                        to_char(
+                            w.updated_at AT TIME ZONE 'UTC',
+                            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                        ),
                         'quantity',
                         pi.quantity
                     )
