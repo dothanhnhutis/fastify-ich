@@ -94,8 +94,8 @@ CREATE TABLE IF NOT EXISTS packaging_inventory (
     packaging_id TEXT NOT NULL,
     warehouse_id TEXT NOT NULL,
     quantity INTEGER NOT NULL DEFAULT 0,
-    reserved_quantity INTEGER NOT NULL DEFAULT 0,
-    available_quantity INTEGER GENERATED ALWAYS AS (quantity - reserved_quantity) STORED,
+    -- reserved_quantity INTEGER NOT NULL DEFAULT 0,
+    -- available_quantity INTEGER GENERATED ALWAYS AS (quantity - reserved_quantity) STORED,
     created_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
     CONSTRAINT packaging_inventory_pkey PRIMARY KEY (warehouse_id, packaging_id)
@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS packaging_transactions (
     to_warehouse_id TEXT,
     note VARCHAR(255) NOT NULL DEFAULT '',
     transaction_date TIMESTAMPTZ NOT NULL,
-    status VARCHAR(20) DEFAULT 'CREATED', -- DRAF, CREATED, COMPLETED, CANCELLED
+    status VARCHAR(20) DEFAULT 'DRAF', -- DRAF, CREATED, COMPLETED, CANCELLED
     created_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
     CONSTRAINT packaging_transactions_pkey PRIMARY KEY (id)
@@ -237,7 +237,54 @@ BEGIN
 END; 
 $$;
 
+--- func check_unit_pcs_ctn_validate
+CREATE OR REPLACE FUNCTION check_unit_pcs_ctn_validate () RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.unit = 'CARTON' AND (NEW.pcs_ctn IS NULL OR NEW.pcs_ctn = 0) THEN
+        RAISE EXCEPTION 'Không thể % khi unit = CARTON và pcs_ctn = null hoặc pcs_ctn = 0', TG_OP;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+--- trigger tự động cập nhật updated_at
+CREATE TRIGGER trg_updated_at_users BEFORE
+UPDATE ON users FOR EACH ROW
+EXECUTE FUNCTION set_updated_at ();
+
+CREATE TRIGGER trg_updated_at_roles BEFORE
+UPDATE ON roles FOR EACH ROW
+EXECUTE FUNCTION set_updated_at ();
+
+CREATE TRIGGER trg_updated_at_packagings BEFORE
+UPDATE ON packagings FOR EACH ROW
+EXECUTE FUNCTION set_updated_at ();
+
+CREATE TRIGGER trg_updated_at_warehouses BEFORE
+UPDATE ON warehouses FOR EACH ROW
+EXECUTE FUNCTION set_updated_at ();
+
+CREATE TRIGGER trg_updated_at_packaging_inventory BEFORE
+UPDATE ON packaging_inventory FOR EACH ROW
+EXECUTE FUNCTION set_updated_at ();
+
+CREATE TRIGGER trg_updated_at_packaging_transactions BEFORE
+UPDATE ON packaging_transactions FOR EACH ROW
+EXECUTE FUNCTION set_updated_at ();
+
+CREATE TRIGGER trg_updated_at_packaging_transaction_items BEFORE
+UPDATE ON packaging_transaction_items FOR EACH ROW
+EXECUTE FUNCTION set_updated_at ();
+
+--- trigger kiểm tra tính hợp lệ giữa unit và pcs_ctn
+CREATE TRIGGER trg_check_unit_pcs_ctn_validate BEFORE INSERT
+OR
+UPDATE ON packagings FOR EACH ROW
+EXECUTE FUNCTION check_unit_pcs_ctn_validate ();
+
+------------------------- đoan duoi xem xét lại trước khi sử dụng----------------------------------
 --- func check_quantity_before_delete
+-- bỏ
 CREATE OR REPLACE FUNCTION check_quantity_before_delete () RETURNS TRIGGER AS $$
 BEGIN 
     IF OLD.quantity > 0 THEN 
@@ -259,6 +306,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 --- func update_packaging_inventory
+-- bỏ
 CREATE OR REPLACE FUNCTION update_packaging_inventory () RETURNS TRIGGER AS $$
 BEGIN
     -- Khi status chuyển sang COMPLETED (hoàn tất)
@@ -321,18 +369,6 @@ $$ LANGUAGE plpgsql;
 -- DROP TRIGGER IF EXISTS trg_updated_at_roles ON roles;
 -- DROP TRIGGER IF EXISTS check_unit_pcs_ctn_after_update ON packagings;
 --- trigger tự động cập nhật updated_at
-CREATE TRIGGER trg_updated_at_users BEFORE
-UPDATE ON users FOR EACH ROW
-EXECUTE FUNCTION set_updated_at ();
-
-CREATE TRIGGER trg_updated_at_roles BEFORE
-UPDATE ON roles FOR EACH ROW
-EXECUTE FUNCTION set_updated_at ();
-
-CREATE TRIGGER trg_updated_at_packagings BEFORE
-UPDATE ON packagings FOR EACH ROW
-EXECUTE FUNCTION set_updated_at ();
-
 --- trigger kiểm quantity phải bằng 0 trước khi xoá
 CREATE TRIGGER trg_updated_at_packagings BEFORE DELETE ON packagings FOR EACH ROW
 EXECUTE FUNCTION check_quantity_before_delete ();

@@ -8,6 +8,8 @@ import sessionRoutes from "./sessions/session.routes";
 import warehouseRoutes from "./warehouses/warehouse.routes";
 import packagingRoutes from "./packagings/packaging.routes";
 
+import packagingTransactionRoutes from "./packaging-transactions/packaging-transaction.routes";
+
 export default async function versionRoutes(fastify: FastifyInstance) {
   fastify.get("/health", (_: FastifyRequest, reply: FastifyReply) => {
     reply.code(200).send({
@@ -23,4 +25,7 @@ export default async function versionRoutes(fastify: FastifyInstance) {
   fastify.register(sessionRoutes, { prefix: "/users/sessions" });
   fastify.register(warehouseRoutes, { prefix: "/warehouses" });
   fastify.register(packagingRoutes, { prefix: "/packagings" });
+  fastify.register(packagingTransactionRoutes, {
+    prefix: "/packaging-transactions",
+  });
 }
