@@ -143,7 +143,9 @@ export async function currentUserController(
     data: {
       currentUser: {
         ...req.currUser,
-        avatar: convertAvatar(req.currUser!.avatar),
+        avatar: req.currUser?.avatar
+          ? convertAvatar(req.currUser.avatar)
+          : null,
       },
     },
   });

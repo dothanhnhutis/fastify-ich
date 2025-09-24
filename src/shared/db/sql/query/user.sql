@@ -319,31 +319,35 @@ SELECT
             r.id IS NOT NULL
             AND r.status = 'ACTIVE'
     )::int AS role_count,
-    json_build_object(
-        'id',
-        av.file_id,
-        'width',
-        av.width,
-        'height',
-        av.height,
-        'is_primary',
-        av.is_primary,
-        'original_name',
-        f.original_name,
-        'mime_type',
-        f.mime_type,
-        'destination',
-        f.destination,
-        'file_name',
-        f.file_name,
-        'size',
-        f.size,
-        'created_at',
-        to_char(
-            av.created_at AT TIME ZONE 'UTC',
-            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
-        )
-    ) AS avatar,
+	CASE
+		WHEN av.file_id IS NOT NULL THEN 
+			json_build_object(
+	        'id',
+	        av.file_id,
+	        'width',
+	        av.width,
+	        'height',
+	        av.height,
+	        'is_primary',
+	        av.is_primary,
+	        'original_name',
+	        f.original_name,
+	        'mime_type',
+	        f.mime_type,
+	        'destination',
+	        f.destination,
+	        'file_name',
+	        f.file_name,
+	        'size',
+	        f.size,
+	        'created_at',
+	        to_char(
+	            av.created_at AT TIME ZONE 'UTC',
+	            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+	        	)
+			)
+		ELSE null
+		END AS avatar,
     COALESCE(
         json_agg(
             json_build_object(
@@ -381,7 +385,7 @@ FROM
     LEFT JOIN files f ON f.id = av.file_id
     AND f.deleted_at IS NULL
 WHERE
-    u.id = '2b6d8104-c4d1-41af-a1a5-2600f2a7a676'
+    u.id = '2d995afc-252c-4130-98a5-da73eb49e660'
 GROUP BY
     u.id,
     u.email,
