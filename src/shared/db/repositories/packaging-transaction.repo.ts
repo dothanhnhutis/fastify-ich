@@ -78,7 +78,12 @@ export default class PackagingTransactionRepo {
       data.transaction_date,
       data.status,
     ];
-    const placeholders = ["$1::text", "$2::text", "$3::text", "$4::timestamp"];
+    const placeholders = [
+      "$1::text",
+      "$2::text",
+      "$3::text",
+      "$4::timestamptz",
+    ];
 
     if (data.type == "TRANSFER") {
       columns.push("to_warehouse_id");
@@ -87,6 +92,7 @@ export default class PackagingTransactionRepo {
     }
     try {
       await this.fastify.transaction(async (client) => {
+        // Tạo packagings_transaction
         const { rows: new_packaging_transactions } =
           await client.query<PackagingTransaction>({
             text: `
@@ -97,63 +103,64 @@ export default class PackagingTransactionRepo {
             values: packagingTransactionValues,
           });
 
-        const packagingTransactionItemValues: any[] = [
-          new_packaging_transactions[0].id,
-        ];
+        console.log("check1");
 
-        const packagingTransactionItemPlaceholders: string[] = data.items.map(
-          (i, idx) => {
+        const packagingTransactionItemFromValues: any[] = [];
+
+        const packagingTransactionItemFromPlaceholders: string[] =
+          data.items.map((i, idx) => {
             const index = idx * 3;
 
-            packagingTransactionItemValues.push(
+            packagingTransactionItemFromValues.push(
               i.packaging_id,
               data.from_warehouse_id,
               i.quantity,
               i.signed_quantity
             );
-            return `($1, $${index + 2}, $${index + 3}, $${index + 4})`;
-          }
-        );
-
+            return `($${index + 1}, $${index + 2}, $${index + 3}, $${
+              index + 4
+            })`;
+          });
+        // tạo danh sách sản phẩm từ kho nguồn
         const { rows: transaction_items } =
           await client.query<PackagingTransactionItem>({
             text: `
             INSERT INTO packaging_transaction_items (packaging_transaction_id, packaging_id, warehouse_id, quantity, signed_quantity) 
-            VALUES (${packagingTransactionItemPlaceholders.join(", ")})
+            VALUES (${packagingTransactionItemFromPlaceholders.join(", ")})
             RETURNING *;
           `,
-            values: packagingTransactionItemValues,
+            values: packagingTransactionItemFromValues,
           });
 
-        if (data.status == "COMPLETED") {
-          await client.query({
-            text: `
-              UPDATE packaging_inventory pi
-              SET 
-                  quantity = pi.quantity + pti.signed_quantity
-              FROM packaging_transaction_items pti
-              WHERE pti.packaging_transaction_id = $1
-                AND pi.packaging_id = pti.packaging_id
-                AND pi.warehouse_id = pti.warehouse_id;
-            `,
-            values: [new_packaging_transactions[0].id],
-          });
+        // if (data.status == "COMPLETED") {
+        //   await client.query({
+        //     text: `
+        //       UPDATE packaging_inventory pi
+        //       SET
+        //           quantity = pi.quantity + pti.signed_quantity
+        //       FROM packaging_transaction_items pti
+        //       WHERE pti.packaging_transaction_id = $1
+        //         AND pi.packaging_id = pti.packaging_id
+        //         AND pi.warehouse_id = pti.warehouse_id;
+        //     `,
+        //     values: [new_packaging_transactions[0].id],
+        //   });
 
-          if (data.type == "TRANSFER") {
-            await client.query({
-              text: `
-              UPDATE packaging_inventory pi
-              SET 
-                  quantity = pi.quantity - pti.signed_quantity
-              FROM 
-              WHERE pti.packaging_transaction_id = $1
-                AND pi.packaging_id = pti.packaging_id
-                AND pi.warehouse_id = pti.warehouse_id;
-            `,
-              values: [],
-            });
-          }
-        }
+        //   if (data.type == "TRANSFER") {
+        //     await client.query({
+        //       text: `
+        //       UPDATE packaging_inventory pi
+        //       SET
+        //           quantity = pi.quantity - pti.signed_quantity
+        //       FROM
+        //       WHERE pti.packaging_transaction_id = $1
+        //         AND pi.packaging_id = pti.packaging_id
+        //         AND pi.warehouse_id = pti.warehouse_id;
+        //     `,
+        //       values: [],
+        //     });
+        //   }
+        // }
       });
     } catch (error: unknown) {
       throw new CustomError({

@@ -132,6 +132,7 @@ export type CreateNewPackagingTransactionBodyType =
 export type CreateNewPackagingTransactionType =
   | (Omit<Static<typeof createPackagingTransactionImportBody>, "items"> & {
       items: {
+        warehouse_id: string;
         packaging_id: string;
         quantity: number;
         signed_quantity: number;
@@ -139,6 +140,7 @@ export type CreateNewPackagingTransactionType =
     })
   | (Omit<Static<typeof createPackagingTransactionExportBody>, "items"> & {
       items: {
+        warehouse_id: string;
         packaging_id: string;
         quantity: number;
         signed_quantity: number;
@@ -146,6 +148,7 @@ export type CreateNewPackagingTransactionType =
     })
   | (Omit<Static<typeof createPackagingTransactionAdjustBody>, "items"> & {
       items: {
+        warehouse_id: string;
         packaging_id: string;
         quantity: number;
         signed_quantity: number;
@@ -153,6 +156,7 @@ export type CreateNewPackagingTransactionType =
     })
   | (Omit<Static<typeof createPackagingTransactionTransferBody>, "items"> & {
       items: {
+        warehouse_id: string;
         packaging_id: string;
         quantity: number;
         signed_quantity: number;

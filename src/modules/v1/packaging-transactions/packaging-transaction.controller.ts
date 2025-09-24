@@ -44,13 +44,6 @@ export async function createPackagingTransactionController(
         from_warehouse_id
       );
 
-    if (type == "TRANSFER") {
-      await request.packagingTransactions.findOrCreatePackagingInventory(
-        item.packaging_id,
-        request.body.to_warehouse_id
-      );
-    }
-
     if (
       (type == "EXPORT" || type == "TRANSFER") &&
       fromInventory.quantity - item.quantity < 0
@@ -62,6 +55,7 @@ export async function createPackagingTransactionController(
 
     newItems.push({
       ...item,
+      warehouse_id: from_warehouse_id,
       signed_quantity:
         type == "IMPORT"
           ? item.quantity
@@ -71,6 +65,19 @@ export async function createPackagingTransactionController(
           ? item.quantity - fromInventory.quantity
           : 0,
     });
+
+    if (type == "TRANSFER") {
+      await request.packagingTransactions.findOrCreatePackagingInventory(
+        item.packaging_id,
+        request.body.to_warehouse_id
+      );
+
+      newItems.push({
+        ...item,
+        warehouse_id: request.body.to_warehouse_id,
+        signed_quantity: item.quantity,
+      });
+    }
   }
 
   await request.packagingTransactions.createNewPackagingTransaction({
