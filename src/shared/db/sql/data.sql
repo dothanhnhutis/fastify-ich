@@ -81,10 +81,7 @@ FROM
 
 COMMIT;
 
-
-
 --- create packaging transaction
-
 BEGIN;
 
 WITH

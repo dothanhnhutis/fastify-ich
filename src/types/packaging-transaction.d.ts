@@ -17,3 +17,7 @@ type PackagingTransaction = {
   created_at: Date;
   updated_at: Date;
 };
+
+type PackagingTransactionItem = PackagingInventory & {
+  signed_quantity: number;
+};

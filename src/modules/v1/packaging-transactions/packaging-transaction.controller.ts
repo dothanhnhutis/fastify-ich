@@ -1,5 +1,8 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import { CreateNewPackagingTransactionBodyType } from "./packaging-transaction.schema";
+import {
+  CreateNewPackagingTransactionBodyType,
+  CreateNewPackagingTransactionType,
+} from "./packaging-transaction.schema";
 import { BadRequestError } from "@/shared/error-handler";
 import { StatusCodes } from "http-status-codes";
 
@@ -16,12 +19,18 @@ export async function createPackagingTransactionController(
     throw new BadRequestError("Mã kho hàng không tồn tại.");
 
   if (type == "TRANSFER") {
+    if (from_warehouse_id == request.body.to_warehouse_id)
+      throw new BadRequestError(
+        "Mã kho đích không được trùng với mã kho nguồn."
+      );
     const existsToWarehouse = await request.warehouses.findWarehouseById(
       request.body.to_warehouse_id
     );
     if (!existsToWarehouse)
       throw new BadRequestError("Mã kho hàng đích không tồn tại.");
   }
+
+  const newItems: CreateNewPackagingTransactionType["items"] = [];
 
   for (const item of items) {
     const existsPackaging = await request.packagings.findPackagingById(
@@ -50,11 +59,24 @@ export async function createPackagingTransactionController(
         `Số lượng không hợp lệ tại packaging_id='${item.packaging_id}'.`
       );
     }
+
+    newItems.push({
+      ...item,
+      signed_quantity:
+        type == "IMPORT"
+          ? item.quantity
+          : type == "EXPORT" || type == "TRANSFER"
+          ? -item.quantity
+          : type == "ADJUST"
+          ? item.quantity - fromInventory.quantity
+          : 0,
+    });
   }
 
-  await request.packagingTransactions.createNewPackagingTransaction(
-    request.body
-  );
+  await request.packagingTransactions.createNewPackagingTransaction({
+    ...request.body,
+    items: newItems,
+  });
 
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,

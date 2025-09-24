@@ -28,6 +28,21 @@ services:
     networks:
       - mynet
 
+  pgadmin:
+    container_name: pgadmin_container
+    image: dpage/pgadmin4
+    restart: always
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=dothanhnhutis@gmail.com
+      - PGADMIN_DEFAULT_PASSWORD=admin123
+    ports:
+      - 8080:80
+    volumes:
+      - ./docker_volumes/pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - mynet
   rabbitmq:
     container_name: rabbitmq_container
     image: rabbitmq:4.1.0-management-alpine

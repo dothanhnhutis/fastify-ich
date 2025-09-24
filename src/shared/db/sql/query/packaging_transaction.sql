@@ -1,17 +1,11 @@
 WITH
     ins AS (
         INSERT INTO
-            packaging_inventory (
-                packaging_id,
-                warehouse_id,
-                quantity,
-                reserved_quantity
-            )
+            packaging_inventory (packaging_id, warehouse_id, quantity,)
         VALUES
             (
                 '383b9359-f1c9-41ca-bfbe-7cfdb2054440',
                 '30693f77-c6c2-4087-be7a-b76a9e9141ae',
-                0,
                 0
             )
         ON CONFLICT (packaging_id, warehouse_id) DO NOTHING
