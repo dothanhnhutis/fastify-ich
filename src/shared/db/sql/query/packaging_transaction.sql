@@ -1,84 +1,86 @@
-WITH
-    ins AS (
-        INSERT INTO
-            packaging_inventory (packaging_id, warehouse_id, quantity,)
-        VALUES
-            (
-                '383b9359-f1c9-41ca-bfbe-7cfdb2054440',
-                '30693f77-c6c2-4087-be7a-b76a9e9141ae',
-                0
-            )
-        ON CONFLICT (packaging_id, warehouse_id) DO NOTHING
-        RETURNING
-            *
-    )
+-- findPackagingTransactionById
 SELECT
-    *
-FROM
-    ins
-UNION ALL
+	pt.*,
+	CASE 
+		WHEN fw.id IS NOT NULL THEN 
+			COALESCE(
+				json_build_object(
+					'id', fw.id,
+					'name', fw.name,
+					'address', fw.address
+				)
+			)
+		ELSE NULL
+		END
+		AS from_warehouse,
+	CASE 
+		WHEN tw.id IS NOT NULL THEN 
+			COALESCE(
+				json_build_object(
+					'id', tw.id,
+					'name', tw.name,
+					'address', tw.address
+				)
+			)
+		ELSE NULL
+		END
+		AS to_warehouse,
+	COUNT(pti.packaging_id) as item_count
+FROM packaging_transactions pt
+	LEFT JOIN warehouses fw ON pt.from_warehouse_id = fw.id
+	LEFT JOIN warehouses tw ON pt.to_warehouse_id = tw.id
+	LEFT JOIN packaging_transaction_items pti ON pti.packaging_transaction_id = pt.id
+WHERE 
+	pt.id = '996aaa9c-f374-46d0-9308-3aae5da4dab9'
+GROUP BY 
+	pt.id,
+	fw.id,
+	fw.name,
+	fw.address,
+	tw.id,
+	tw.name,
+	tw.address,
+	pti.packaging_id;
+
+-- findPackagingTransactionItemsByPTId
 SELECT
-    *
-FROM
-    packaging_inventory
-WHERE
-    packaging_id = '383b9359-f1c9-41ca-bfbe-7cfdb2054440'
-    AND warehouse_id = '30693f77-c6c2-4087-be7a-b76a9e9141ae'
-LIMIT
-    1;
+	pt.*,
+	COALESCE(
+		json_agg(
+			json_build_object(
+				'packaging_id', pti.packaging_id,
+				'warehouse_id', pti.warehouse_id,
+				'quantity', pti.quantity,
+				'signed_quantity', pti.signed_quantity,
+				'created_at', to_char(pti.created_at  AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+				'updated_at', to_char(pti.updated_at  AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+			)
+		),'[]'
+	) AS items
+FROM packaging_transactions pt
+	LEFT JOIN packaging_transaction_items pti ON pti.packaging_transaction_id = pt.id
+WHERE 
+	pt.id = '996aaa9c-f374-46d0-9308-3aae5da4dab9'
+GROUP BY 
+	pt.id;
 
--- Create New packaging Transaction
-BEGIN;
-
-WITH
-    new_packaging_transaction as (
-        INSERT INTO
-            packaging_transactions (
-                type,
-                from_warehouse_id,
-                note,
-                transaction_date,
-                status
-            )
-        VALUES
-            (
-                'IMPORT',
-                '178e0c52-0639-4d8a-877f-6ab5beebc7d4',
-                'nhap hang',
-                '2025-09-19T04:13:59Z',
-                'CREATED'
-            )
-        RETURNING
-            id
-    )
-INSERT INTO
-    packaging_transaction_items (
-        packaging_transaction_id,
-        packaging_id,
-        warehouse_id,
-        quantity,
-        signed_quantity
-    )
-SELECT
-    *
-FROM
-COMMIT;
-
-INSERT INTO
-    packaging_transactions (
-        type,
-        from_warehouse_id,
-        note,
-        transaction_date,
-        status
-    )
-VALUES
-    (
-        'IMPORT',
-        '178e0c52-0639-4d8a-877f-6ab5beebc7d4',
-        'nhap hang',
-        '2025-09-19T04:13:59Z',
-        'CREATED'
-    )
-RETURNING
-    id;
+--
+SELECT 
+    pti.packaging_id,
+    p.name AS packaging_name,
+    pti.warehouse_id,
+    fw.name AS from_warehouse_name,
+    tw.name AS to_warehouse_name,
+    pti.quantity,
+    pti.created_at,
+    pti.updated_at
+FROM packaging_transaction_items pti
+JOIN packagings p 
+    ON p.id = pti.packaging_id
+JOIN packaging_transactions pt 
+    ON pt.id = pti.packaging_transaction_id
+LEFT JOIN warehouses fw 
+    ON fw.id = pt.from_warehouse_id
+LEFT JOIN warehouses tw 
+    ON tw.id = pt.to_warehouse_id
+WHERE pti.packaging_transaction_id = '996aaa9c-f374-46d0-9308-3aae5da4dab9'

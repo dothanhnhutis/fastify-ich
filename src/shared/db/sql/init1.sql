@@ -45,8 +45,8 @@ CREATE TABLE IF NOT EXISTS users (
 --- create roles table
 CREATE TABLE IF NOT EXISTS roles (
     id TEXT NOT NULL DEFAULT gen_random_uuid ()::text,
-    name TEXT NOT NULL,
-    permissions TEXT[] NOT NULL DEFAULT ARRAY[]::text[],
+    name VARCHAR(255) NOT NULL,
+    permissions VARCHAR(150) [] NOT NULL DEFAULT ARRAY[]::text[],
     description TEXT NOT NULL DEFAULT '',
     status VARCHAR(10) NOT NULL DEFAULT 'ACTIVE',
     deactived_at TIMESTAMPTZ(3),
@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS packagings (
     id TEXT NOT NULL DEFAULT gen_random_uuid ()::text,
     name VARCHAR(255) NOT NULL,
     min_stock_level INTEGER,
-    unit VARCHAR(20) NOT NULL,
+    unit VARCHAR(20) NOT NULL, -- PIECE | CARTON
     pcs_ctn INTEGER,
     status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
     deactived_at TIMESTAMPTZ(3),
@@ -108,11 +108,17 @@ CREATE TABLE IF NOT EXISTS packaging_transactions (
     from_warehouse_id TEXT NOT NULL,
     to_warehouse_id TEXT,
     note VARCHAR(255) NOT NULL DEFAULT '',
-    transaction_date TIMESTAMPTZ NOT NULL,
-    status VARCHAR(20) DEFAULT 'DRAF', -- DRAF, CREATED, COMPLETED, CANCELLED
+    transaction_date TIMESTAMPTZ(3) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'DRAF', -- DRAF, CREATED, COMPLETED, CANCELLED
     created_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
     CONSTRAINT packaging_transactions_pkey PRIMARY KEY (id)
+    -- CHECK đảm bảo logic type <-> to_warehouse_id
+    -- CONSTRAINT chk_transfer_to_warehouse
+    --     CHECK (
+    --         (type = 'TRANSFER' AND to_warehouse_id IS NOT NULL)
+    --         OR (type <> 'TRANSFER' AND to_warehouse_id IS NULL)
+    --     )
 );
 
 --- create packaging_transactions_items table 
@@ -147,7 +153,7 @@ CREATE TABLE IF NOT EXISTS user_avatars (
 CREATE TABLE IF NOT EXISTS files (
     id TEXT NOT NULL DEFAULT gen_random_uuid ()::text,
     original_name TEXT NOT NULL,
-    mime_type TEXT NOT NULL,
+    mime_type VARCHAR(255) NOT NULL,
     destination TEXT NOT NULL,
     file_name TEXT NOT NULL,
     path TEXT NOT NULL,
@@ -164,10 +170,11 @@ CREATE TABLE IF NOT EXISTS files (
 CREATE TABLE IF NOT EXISTS file_categories (
     id TEXT NOT NULL DEFAULT gen_random_uuid ()::text,
     name TEXT NOT NULL,
-    description TEXT,
-    allowed_mime_types TEXT[], -- Array các mime type được phép
+    description TEXT NOT NULL DEFAULT '',
+    allowed_mime_types VARCHAR(255) [], -- Array các mime type được phép
     max_file_size BIGINT, -- Kích thước tối đa (bytes)
     created_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
     CONSTRAINT file_categories_pkey PRIMARY KEY (id),
     CONSTRAINT file_categories_name_unique UNIQUE (name)
 );
@@ -199,7 +206,7 @@ WHERE
 
 --- AddForeignKey user_roles
 ALTER TABLE user_roles
-ADD CONSTRAINT user_roles_user_id_fkey FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE ON UPDATE CASCADE;
+ADD CONSTRAINT user_roles_user_id_users_id_fkey FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE user_roles
 ADD CONSTRAINT user_roles_role_id_fkey FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE CASCADE ON UPDATE CASCADE;
@@ -229,6 +236,32 @@ ADD CONSTRAINT user_avatars_file_fkey FOREIGN KEY (file_id) REFERENCES files (id
 ALTER TABLE files
 ADD CONSTRAINT files_category_id_fkey FOREIGN KEY (category_id) REFERENCES file_categories (id);
 
+-- check đảm bảo logic unit <-> pcs_ctn
+ALTER TABLE packagings
+ADD CONSTRAINT chk_unit_to_pcs_ctn CHECK (
+    (
+        unit = 'CARTON'
+        AND pcs_ctn IS NOT NULL
+    )
+    OR (
+        unit <> 'CARTON'
+        AND pcs_ctn IS NULL
+    )
+);
+
+-- check đảm bảo logic type <-> to_warehouse_id
+ALTER TABLE packaging_transactions
+ADD CONSTRAINT chk_transfer_to_warehouse CHECK (
+    (
+        type = 'TRANSFER'
+        AND to_warehouse_id IS NOT NULL
+    )
+    OR (
+        type <> 'TRANSFER'
+        AND to_warehouse_id IS NULL
+    )
+);
+
 --- func set_updated_at
 CREATE OR REPLACE FUNCTION set_updated_at () RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
@@ -237,11 +270,23 @@ BEGIN
 END; 
 $$;
 
---- func check_unit_pcs_ctn_validate
-CREATE OR REPLACE FUNCTION check_unit_pcs_ctn_validate () RETURNS TRIGGER AS $$
+--- func đảm bảo logic unit <-> pcs_ctn
+-- nếu unit != CARTON thì auto set pcs_ctn = NULL
+CREATE OR REPLACE FUNCTION enforce_pcs_ctn_null () RETURNS TRIGGER AS $$
 BEGIN
-    IF NEW.unit = 'CARTON' AND (NEW.pcs_ctn IS NULL OR NEW.pcs_ctn = 0) THEN
-        RAISE EXCEPTION 'Không thể % khi unit = CARTON và pcs_ctn = null hoặc pcs_ctn = 0', TG_OP;
+    IF NEW.unit <> 'CARTON' THEN
+        NEW.pcs_ctn := NULL;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- func đảm bảo logic type <-> to_warehouse_id
+-- nếu type != TRANSFER thì auto set to_warehouse_id = NULL
+CREATE OR REPLACE FUNCTION enforce_to_warehouse_null () RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.type <> 'TRANSFER' THEN
+        NEW.to_warehouse_id := NULL;
     END IF;
     RETURN NEW;
 END;
@@ -276,11 +321,17 @@ CREATE TRIGGER trg_updated_at_packaging_transaction_items BEFORE
 UPDATE ON packaging_transaction_items FOR EACH ROW
 EXECUTE FUNCTION set_updated_at ();
 
---- trigger kiểm tra tính hợp lệ giữa unit và pcs_ctn
-CREATE TRIGGER trg_check_unit_pcs_ctn_validate BEFORE INSERT
+-- trigger nếu type != CARTON thì auto set pcs_ctn = NULL
+CREATE TRIGGER trg_set_pcs_ctn_null BEFORE INSERT
 OR
-UPDATE ON packagings FOR EACH ROW
-EXECUTE FUNCTION check_unit_pcs_ctn_validate ();
+UPDATE ON packaging_transactions FOR EACH ROW
+EXECUTE FUNCTION enforce_pcs_ctn_null ();
+
+-- trigger nếu type != TRANSFER thì auto set to_warehouse_id = NULL
+CREATE TRIGGER trg_set_to_warehouse_null BEFORE INSERT
+OR
+UPDATE ON packaging_transactions FOR EACH ROW
+EXECUTE FUNCTION enforce_to_warehouse_null ();
 
 ------------------------- đoan duoi xem xét lại trước khi sử dụng----------------------------------
 --- func check_quantity_before_delete

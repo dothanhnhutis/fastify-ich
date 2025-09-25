@@ -1,10 +1,11 @@
+import { StatusCodes } from "http-status-codes";
 import { FastifyReply, FastifyRequest } from "fastify";
+
 import {
   CreateNewPackagingTransactionBodyType,
   CreateNewPackagingTransactionType,
 } from "./packaging-transaction.schema";
 import { BadRequestError } from "@/shared/error-handler";
-import { StatusCodes } from "http-status-codes";
 
 export async function createPackagingTransactionController(
   request: FastifyRequest<{ Body: CreateNewPackagingTransactionBodyType }>,
