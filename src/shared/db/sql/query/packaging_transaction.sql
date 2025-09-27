@@ -44,43 +44,50 @@ GROUP BY
 
 -- findPackagingTransactionItemsByPTId
 SELECT
-	pt.*,
-	COALESCE(
-		json_agg(
+	pti.packaging_id,
+	pk.name,
+	pti.quantity,
+	json_build_object(
+		'id', fw.id,
+		'name', fw.name,
+		'address', fw.address,
+		'quantity', MAX(pti.signed_quantity) FILTER (WHERE warehouse_id = fw.id)
+	) AS from_warehouse,
+	CASE 
+		WHEN tw.id IS NOT NULL 
+		THEN
 			json_build_object(
-				'packaging_id', pti.packaging_id,
-				'warehouse_id', pti.warehouse_id,
-				'quantity', pti.quantity,
-				'signed_quantity', pti.signed_quantity,
-				'created_at', to_char(pti.created_at  AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
-				'updated_at', to_char(pti.updated_at  AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+				'id', tw.id,
+				'name', tw.name,
+				'address', tw.address,
+				'quantity', MAX(pti.signed_quantity) FILTER (WHERE warehouse_id = tw.id)
 			)
-		),'[]'
-	) AS items
-FROM packaging_transactions pt
-	LEFT JOIN packaging_transaction_items pti ON pti.packaging_transaction_id = pt.id
-WHERE 
-	pt.id = '996aaa9c-f374-46d0-9308-3aae5da4dab9'
-GROUP BY 
-	pt.id;
-
---
-SELECT 
-    pti.packaging_id,
-    p.name AS packaging_name,
-    pti.warehouse_id,
-    fw.name AS from_warehouse_name,
-    tw.name AS to_warehouse_name,
-    pti.quantity,
-    pti.created_at,
-    pti.updated_at
-FROM packaging_transaction_items pti
-JOIN packagings p 
-    ON p.id = pti.packaging_id
-JOIN packaging_transactions pt 
-    ON pt.id = pti.packaging_transaction_id
-LEFT JOIN warehouses fw 
-    ON fw.id = pt.from_warehouse_id
-LEFT JOIN warehouses tw 
-    ON tw.id = pt.to_warehouse_id
-WHERE pti.packaging_transaction_id = '996aaa9c-f374-46d0-9308-3aae5da4dab9'
+		ELSE null
+		END
+		AS to_warehouse,
+	pti.created_at,
+	pti.updated_at
+FROM 
+	packaging_transaction_items pti
+	LEFT JOIN packagings pk on pk.id = pti.packaging_id
+	LEFT JOIN packaging_transactions pt on pti.packaging_transaction_id = pt.id
+	LEFT JOIN warehouses fw on pt.from_warehouse_id = fw.id
+	LEFT JOIN warehouses tw on pt.to_warehouse_id = tw.id
+WHERE
+	pti.packaging_transaction_id = '76f07767-71da-4627-bbf5-7c323fb1f83c'
+GROUP BY
+	pti.packaging_transaction_id,
+	pti.packaging_id,
+	pti.quantity,
+	pti.created_at,
+	pti.updated_at,
+	pt.type,
+	pt.from_warehouse_id,
+	pt.to_warehouse_id,
+	pk.name,
+	fw.id,
+	fw.name,
+	fw.address,
+	tw.id,
+	tw.name,
+	tw.address;
