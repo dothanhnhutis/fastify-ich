@@ -1,108 +1,91 @@
 import { FastifyInstance } from "fastify";
-import {
-  createNewUserController,
-  currentUserController,
-  getUserByIdController,
-  getUserDetailByIdController,
-  getRolesByUserIdController,
-  logoutUserController,
-  queryUsersController,
-  updateUserByIdController,
-  updateAvatarController,
-} from "./user.controller";
+import { SuperUserController, UserController } from "./user.controller";
 import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
 import checkPermissionMiddleware from "@/shared/middleware/checkPermission";
-import {
-  createNewUserSchema,
-  getUserByIdSchema,
-  getUserDetailByIdSchema,
-  getRolesByUserIdSchema,
-  queryUsersSchema,
-  updateUserByIdSchema,
-} from "./user.schema";
+import { userSchema } from "./user.schema";
 
 export default async function userRoutes(fastify: FastifyInstance) {
   // Admin
   fastify.get(
     "/",
     {
-      schema: queryUsersSchema,
+      schema: userSchema["query"],
       preHandler: [
         requiredAuthMiddleware,
         checkPermissionMiddleware(["read:user:*"]),
       ],
     },
-    queryUsersController
+    SuperUserController.query
   );
 
   fastify.get(
     "/:id",
     {
-      schema: getUserByIdSchema,
+      schema: userSchema["getById"],
       preHandler: [
         requiredAuthMiddleware,
         checkPermissionMiddleware(["read:user:id"]),
       ],
     },
-    getUserByIdController
+    SuperUserController.getById
   );
 
   fastify.get(
     "/:id/roles",
     {
-      schema: getRolesByUserIdSchema,
+      schema: userSchema["getRolesById"],
       preHandler: [
         requiredAuthMiddleware,
         checkPermissionMiddleware(["read:user:*"]),
       ],
     },
-    getRolesByUserIdController
+    SuperUserController.getRolesById
   );
 
   fastify.get(
     "/:id/detail",
     {
-      schema: getUserDetailByIdSchema,
+      schema: userSchema["getDetailById"],
       preHandler: [
         requiredAuthMiddleware,
         checkPermissionMiddleware(["read:user:*"]),
       ],
     },
-    getUserDetailByIdController
+    SuperUserController.getDetailById
   );
 
   fastify.post(
     "/",
     {
-      schema: createNewUserSchema,
+      schema: userSchema["create"],
       preHandler: [
         requiredAuthMiddleware,
         checkPermissionMiddleware(["create:user"]),
       ],
     },
-    createNewUserController
+    SuperUserController.create
   );
 
   fastify.patch(
     "/:id",
     {
-      schema: updateUserByIdSchema,
+      schema: userSchema["updateById"],
       preHandler: [
         requiredAuthMiddleware,
         checkPermissionMiddleware(["update:user"]),
       ],
     },
-    updateUserByIdController
+    SuperUserController.updateById
   );
 
   // Base
   fastify.get(
     "/me",
     { preHandler: [requiredAuthMiddleware] },
-    currentUserController
+    UserController.me
   );
 
-  fastify.patch("/avatar", updateAvatarController);
+  fastify.patch("/avatar", UserController.updateAvatar);
 
-  fastify.delete("/logout", logoutUserController);
+  fastify.delete("/logout", UserController.logout);
 }

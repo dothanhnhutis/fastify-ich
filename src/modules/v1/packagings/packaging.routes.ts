@@ -1,14 +1,6 @@
 import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
 import { FastifyInstance } from "fastify";
-import {
-  createPackagingController,
-  deletePackagingByIdController,
-  getPackagingByIdController,
-  getPackagingDetailByIdController,
-  getWarehousesByPackagingIdController,
-  queryPackagingsController,
-  updatePackagingByIdController,
-} from "./packaging.controller";
+import { PackagingController } from "./packaging.controller";
 import {
   createNewPackagingSchema,
   deletePackagingByIdSchema,
@@ -28,7 +20,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         // checkPermissionMiddleware(["read:packaging:*"]),
       ],
     },
-    getWarehousesByPackagingIdController
+    PackagingController.getWarehousesById
   );
 
   fastify.get(
@@ -40,7 +32,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         // checkPermissionMiddleware(["read:packaging:*"]),
       ],
     },
-    getPackagingDetailByIdController
+    PackagingController.getDetailById
   );
 
   fastify.get(
@@ -52,7 +44,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         // checkPermissionMiddleware(["read:packaging:id"]),
       ],
     },
-    getPackagingByIdController
+    PackagingController.getById
   );
 
   fastify.get(
@@ -64,7 +56,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         // checkPermissionMiddleware(["read:packaging:*"]),
       ],
     },
-    queryPackagingsController
+    PackagingController.query
   );
 
   fastify.post(
@@ -76,7 +68,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         // checkPermissionMiddleware(["create:packaging"]),
       ],
     },
-    createPackagingController
+    PackagingController.create
   );
 
   fastify.patch(
@@ -88,7 +80,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         // checkPermissionMiddleware(["update:packaging"]),
       ],
     },
-    updatePackagingByIdController
+    PackagingController.updateById
   );
 
   // fastify.delete(

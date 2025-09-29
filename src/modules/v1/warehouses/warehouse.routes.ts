@@ -1,14 +1,6 @@
 import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
 import { FastifyInstance } from "fastify";
-import {
-  createNewWarehouseController,
-  deleteWarehouseByIdController,
-  getWarehousesByPackagingIdController,
-  getWarehouseByIdController,
-  queryWarehousesController,
-  updateWarehouseByIdController,
-  getWarehouseDetailByIdController,
-} from "./warehouse.controller";
+import { WarehouseController } from "./warehouse.controller";
 import {
   createNewWarehouseSchema,
   deleteWarehouseByIdSchema,
@@ -28,7 +20,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         // checkPermissionMiddleware(["read:warehouse:*"]),
       ],
     },
-    queryWarehousesController
+    WarehouseController.query
   );
 
   fastify.get(
@@ -40,7 +32,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         // checkPermissionMiddleware(["read:warehouse:*"]),
       ],
     },
-    getWarehouseDetailByIdController
+    WarehouseController.getDetailById
   );
 
   fastify.get(
@@ -52,7 +44,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         // checkPermissionMiddleware(["read:warehouse:*"]),
       ],
     },
-    getWarehousesByPackagingIdController
+    WarehouseController.getPackagingsById
   );
 
   fastify.get(
@@ -64,7 +56,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         // checkPermissionMiddleware(["read:warehouse:id"]),
       ],
     },
-    getWarehouseByIdController
+    WarehouseController.getById
   );
 
   fastify.post(
@@ -76,7 +68,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         // checkPermissionMiddleware(["read:warehouse"]),
       ],
     },
-    createNewWarehouseController
+    WarehouseController.create
   );
 
   fastify.patch(
@@ -88,7 +80,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         // checkPermissionMiddleware(["update:warehouse"]),
       ],
     },
-    updateWarehouseByIdController
+    WarehouseController.updateById
   );
 
   // fastify.delete(

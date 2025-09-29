@@ -2,16 +2,12 @@ import sharp from "sharp";
 import { QueryConfig } from "pg";
 import { FastifyInstance } from "fastify";
 
-import {
-  CreateNewUserBodyType,
-  QueryUsersType,
-  UpdateUserByIdBodyType,
-} from "@/modules/v1/users/user.schema";
+import { UserRequsetType } from "@/modules/v1/users/user.schema";
 import Password from "@/shared/password";
 import { MultipartFile } from "@fastify/multipart";
 import { BadRequestError } from "@/shared/error-handler";
 import { deleteFile, isDataString } from "@/shared/utils";
-import { QueryRolesType } from "@/modules/v1/roles/role.schema";
+import { RoleRequestType } from "@/modules/v1/roles/role.schema";
 import { privateFileUpload, type FileUploadType } from "@/shared/upload";
 
 export default class UserRepo {
@@ -514,7 +510,7 @@ export default class UserRepo {
 
   async findRolesByUserId(
     userId: string,
-    query?: QueryRolesType
+    query?: RoleRequestType["Query"]["Querystring"]
   ): Promise<QueryRoles> {
     const newTable = `
       WITH
@@ -652,7 +648,9 @@ export default class UserRepo {
     }
   }
 
-  async findUsers(query: QueryUsersType): Promise<QueryUsers> {
+  async findUsers(
+    query: UserRequsetType["Query"]["Querystring"]
+  ): Promise<QueryUsers> {
     let queryString = [
       `
       SELECT
@@ -816,7 +814,9 @@ export default class UserRepo {
     }
   }
 
-  async createNewUser(data: CreateNewUserBodyType): Promise<UserPassword> {
+  async createNewUser(
+    data: UserRequsetType["Create"]["Body"]
+  ): Promise<UserPassword> {
     const password = data.password ?? Password.generate();
     const password_hash = await Password.hash(password);
 
@@ -869,7 +869,7 @@ export default class UserRepo {
 
   async updateUserById(
     userId: string,
-    data: UpdateUserByIdBodyType
+    data: UserRequsetType["UpdateById"]["Body"]
   ): Promise<void> {
     if (Object.keys(data).length == 0) return;
     try {

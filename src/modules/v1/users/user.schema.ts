@@ -1,8 +1,7 @@
-import { FastifySchema } from "fastify";
 import { Type, Static } from "@sinclair/typebox";
-import { queryStringRolesSchema } from "../roles/role.schema";
+import { queryStringRolesSchema, RoleRequestType } from "../roles/role.schema";
 
-const createNewUserBodySchema = Type.Object({
+const createBodySchema = Type.Object({
   username: Type.String({
     minLength: 1,
     errorMessage: {
@@ -49,7 +48,7 @@ const createNewUserBodySchema = Type.Object({
   ),
 });
 
-const updateUserByIdBodySchema = Type.Partial(
+const updateByIdBodySchema = Type.Partial(
   Type.Object({
     status: Type.String({
       enum: ["ACTIVE", "INACTIVE"],
@@ -93,7 +92,7 @@ const sortEnum = [
   "updated_at.desc",
 ];
 
-export const queryStringUsersSchema = Type.Partial(
+export const queryStringSchema = Type.Partial(
   Type.Object({
     username: Type.String({
       errorMessage: {
@@ -160,43 +159,59 @@ export const queryStringUsersSchema = Type.Partial(
   })
 );
 
-const paramsIdSchema = Type.Object({
+const userIdParamSchema = Type.Object({
   id: Type.String(),
 });
 
-export const getUserByIdSchema: FastifySchema = {
-  params: paramsIdSchema,
+export const userSchema = {
+  query: {
+    querystring: queryStringSchema,
+  },
+  getById: {
+    params: userIdParamSchema,
+  },
+  getRolesById: {
+    params: userIdParamSchema,
+    querystring: queryStringRolesSchema,
+  },
+  getDetailById: {
+    params: userIdParamSchema,
+  },
+  create: {
+    body: createBodySchema,
+  },
+  updateById: {
+    params: userIdParamSchema,
+    body: updateByIdBodySchema,
+  },
 };
 
-export const getRolesByUserIdSchema: FastifySchema = {
-  params: paramsIdSchema,
-  querystring: queryStringRolesSchema,
+export type UserRequsetType = {
+  Query: {
+    Querystring: Static<typeof queryStringSchema>;
+  };
+  GetById: { Params: Static<typeof userIdParamSchema> };
+  GetRolesById: {
+    Params: Static<typeof userIdParamSchema>;
+    Querystring: Static<typeof queryStringRolesSchema>;
+  };
+  GetDetailById: { Params: Static<typeof userIdParamSchema> };
+  Create: {
+    Body: Static<typeof createBodySchema>;
+  };
+  UpdateById: {
+    Params: Static<typeof userIdParamSchema>;
+    Body: Static<typeof updateByIdBodySchema>;
+  };
 };
 
-export const getUserDetailByIdSchema: FastifySchema = {
-  params: paramsIdSchema,
-};
+// export type GetUserRolesByUserIdParamsType = Static<typeof paramsIdSchema>;
+// export type GetUserByIdParamsType = GetUserRolesByUserIdParamsType;
+// export type GetUserDetailByIdParamsType = GetUserRolesByUserIdParamsType;
 
-export const createNewUserSchema: FastifySchema = {
-  body: createNewUserBodySchema,
-};
+// export type CreateNewUserBodyType = Static<typeof createNewUserBodySchema>;
 
-export const updateUserByIdSchema: FastifySchema = {
-  params: paramsIdSchema,
-  body: updateUserByIdBodySchema,
-};
+// export type UpdateUserByIdParamsType = GetUserRolesByUserIdParamsType;
+// export type UpdateUserByIdBodyType = Static<typeof updateUserByIdBodySchema>;
 
-export const queryUsersSchema: FastifySchema = {
-  querystring: queryStringUsersSchema,
-};
-
-export type GetUserRolesByUserIdParamsType = Static<typeof paramsIdSchema>;
-export type GetUserByIdParamsType = GetUserRolesByUserIdParamsType;
-export type GetUserDetailByIdParamsType = GetUserRolesByUserIdParamsType;
-
-export type CreateNewUserBodyType = Static<typeof createNewUserBodySchema>;
-
-export type UpdateUserByIdParamsType = GetUserRolesByUserIdParamsType;
-export type UpdateUserByIdBodyType = Static<typeof updateUserByIdBodySchema>;
-
-export type QueryUsersType = Static<typeof queryStringUsersSchema>;
+// export type QueryUsersType = Static<typeof queryStringUsersSchema>;

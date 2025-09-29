@@ -1,6 +1,14 @@
 import { FastifySchema } from "fastify";
 import { Static, Type } from "@sinclair/typebox";
 
+const packagingTransactionParamsSchema = Type.Object({
+  id: Type.String({
+    errorMessage: {
+      type: "Mã phiếu kho phải là chuỗi.",
+    },
+  }),
+});
+
 const createPackagingTransactionBaseBody = Type.Object({
   from_warehouse_id: Type.String({
     minLength: 1,
@@ -119,46 +127,77 @@ const createPackagingTransactionBody = Type.Unsafe({
   discriminator: { propertyName: "type" },
 });
 
-export const createNewPackagingTransactionSchema: FastifySchema = {
-  body: createPackagingTransactionBody,
+export class packagingTransactionSchema {
+  static create = {
+    body: createPackagingTransactionBody,
+  };
+
+  static getById = {
+    params: packagingTransactionParamsSchema,
+  };
+
+  static getDetailById = {
+    params: packagingTransactionParamsSchema,
+  };
+}
+
+export type PackagingTransactionRequestType = {
+  Create: {
+    Body:
+      | Static<typeof createPackagingTransactionImportBody>
+      | Static<typeof createPackagingTransactionExportBody>
+      | Static<typeof createPackagingTransactionAdjustBody>
+      | Static<typeof createPackagingTransactionTransferBody>;
+  };
+  GetById: {
+    Params: Static<typeof packagingTransactionParamsSchema>;
+  };
+
+  GetItemsById: {
+    Params: Static<typeof packagingTransactionParamsSchema>;
+    Query: any;
+  };
+  GetDetailById: {
+    Params: Static<typeof packagingTransactionParamsSchema>;
+  };
+  UpdateById: {
+    Params: Static<typeof packagingTransactionParamsSchema>;
+    Body: any;
+  };
 };
 
-export type CreateNewPackagingTransactionBodyType =
-  | Static<typeof createPackagingTransactionImportBody>
-  | Static<typeof createPackagingTransactionExportBody>
-  | Static<typeof createPackagingTransactionAdjustBody>
-  | Static<typeof createPackagingTransactionTransferBody>;
-
-export type CreateNewPackagingTransactionType =
-  | (Omit<Static<typeof createPackagingTransactionImportBody>, "items"> & {
-      items: {
-        warehouse_id: string;
-        packaging_id: string;
-        quantity: number;
-        signed_quantity: number;
-      }[];
-    })
-  | (Omit<Static<typeof createPackagingTransactionExportBody>, "items"> & {
-      items: {
-        warehouse_id: string;
-        packaging_id: string;
-        quantity: number;
-        signed_quantity: number;
-      }[];
-    })
-  | (Omit<Static<typeof createPackagingTransactionAdjustBody>, "items"> & {
-      items: {
-        warehouse_id: string;
-        packaging_id: string;
-        quantity: number;
-        signed_quantity: number;
-      }[];
-    })
-  | (Omit<Static<typeof createPackagingTransactionTransferBody>, "items"> & {
-      items: {
-        warehouse_id: string;
-        packaging_id: string;
-        quantity: number;
-        signed_quantity: number;
-      }[];
-    });
+export type PackagingTransactionDBType = {
+  create:
+    | (Omit<Static<typeof createPackagingTransactionImportBody>, "items"> & {
+        items: {
+          warehouse_id: string;
+          packaging_id: string;
+          quantity: number;
+          signed_quantity: number;
+        }[];
+      })
+    | (Omit<Static<typeof createPackagingTransactionExportBody>, "items"> & {
+        items: {
+          warehouse_id: string;
+          packaging_id: string;
+          quantity: number;
+          signed_quantity: number;
+        }[];
+      })
+    | (Omit<Static<typeof createPackagingTransactionAdjustBody>, "items"> & {
+        items: {
+          warehouse_id: string;
+          packaging_id: string;
+          quantity: number;
+          signed_quantity: number;
+        }[];
+      })
+    | (Omit<Static<typeof createPackagingTransactionTransferBody>, "items"> & {
+        items: {
+          warehouse_id: string;
+          packaging_id: string;
+          quantity: number;
+          signed_quantity: number;
+        }[];
+      });
+};

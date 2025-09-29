@@ -1,8 +1,5 @@
 import { FastifyInstance } from "fastify";
-import {
-  deleteSessionsByIdController,
-  getSessionsController,
-} from "./session.controller";
+import { SessionController } from "./session.controller";
 import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
 import { deleteSessionByIdSchema } from "./session.schema";
 
@@ -12,7 +9,7 @@ export default async function sessionRoutes(fastify: FastifyInstance) {
     {
       preHandler: [requiredAuthMiddleware],
     },
-    getSessionsController
+    SessionController.getAll
   );
 
   fastify.delete(
@@ -21,6 +18,6 @@ export default async function sessionRoutes(fastify: FastifyInstance) {
       schema: deleteSessionByIdSchema,
       preHandler: [requiredAuthMiddleware],
     },
-    deleteSessionsByIdController
+    SessionController.deleteById
   );
 }

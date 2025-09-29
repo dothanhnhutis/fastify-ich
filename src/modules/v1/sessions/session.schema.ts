@@ -1,11 +1,11 @@
-import { Static, Type } from "@sinclair/typebox";
 import { FastifySchema } from "fastify";
+import { Static, Type } from "@sinclair/typebox";
 
 const deleteSessionByIdParamsSchema = Type.Object({
   id: Type.String(),
 });
 
-export const deleteSessionByIdSchema: FastifySchema = {
+export const deleteSessionByIdSchema = {
   params: deleteSessionByIdParamsSchema,
 };
 

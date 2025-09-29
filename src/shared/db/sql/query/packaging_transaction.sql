@@ -91,3 +91,59 @@ GROUP BY
 	tw.id,
 	tw.name,
 	tw.address;
+
+-- findPackagingTransactionDetailById
+SELECT
+    pt.*,
+    CASE 
+        WHEN fw.id IS NOT NULL THEN 
+            json_build_object('id', fw.id, 'name', fw.name, 'address', fw.address)
+        ELSE NULL
+    END AS from_warehouse,
+    CASE 
+        WHEN tw.id IS NOT NULL THEN 
+            json_build_object('id', tw.id, 'name', tw.name, 'address', tw.address)
+        ELSE NULL
+    END AS to_warehouse,
+    COALESCE(
+        json_agg(item_json),
+        '[]'
+    ) AS items
+FROM packaging_transactions pt
+LEFT JOIN warehouses fw ON pt.from_warehouse_id = fw.id
+LEFT JOIN warehouses tw ON pt.to_warehouse_id = tw.id
+--- LATERAL subquery để gom item và tính MAX trước
+LEFT JOIN LATERAL (
+    SELECT
+        json_build_object(
+            'packaging_id', pti.packaging_id,
+            'name', pk.name,
+            'quantity', pti.quantity,
+            'from_warehouse', json_build_object(
+                'id', fw.id,
+                'name', fw.name,
+                'address', fw.address,
+                'quantity', MAX(pti.signed_quantity) FILTER (WHERE pti.warehouse_id = fw.id)
+            ),
+            'to_warehouse', CASE 
+                WHEN tw.id IS NOT NULL THEN
+                    json_build_object(
+                        'id', tw.id,
+                        'name', tw.name,
+                        'address', tw.address,
+                        'quantity', MAX(pti.signed_quantity) FILTER (WHERE pti.warehouse_id = tw.id)
+                    )
+                ELSE NULL
+            END,
+            'created_at', MAX(pti.created_at),
+            'updated_at', MAX(pti.updated_at)
+        ) AS item_json
+    FROM packaging_transaction_items pti
+    LEFT JOIN packagings pk ON pk.id = pti.packaging_id
+    WHERE pti.packaging_transaction_id = pt.id
+    GROUP BY pti.packaging_id, pk.name, pti.quantity
+) item_sub ON TRUE
+WHERE pt.id = 'd42f5daf-9eb4-402d-ae53-88943a600573'
+GROUP BY pt.id, fw.id, fw.name, fw.address, tw.id, tw.name, tw.address;
+
+

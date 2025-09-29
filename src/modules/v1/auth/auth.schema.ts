@@ -35,8 +35,14 @@ const signInBodySchema = Type.Object(
   }
 );
 
-export const signInSchema: FastifySchema = {
-  body: signInBodySchema,
+export const authSchema = {
+  signin: {
+    body: signInBodySchema,
+  },
 };
 
-export type SignInBodyType = Static<typeof signInBodySchema>;
+export type AuthRequestType = {
+  SignIn: {
+    Body: Static<typeof signInBodySchema>;
+  };
+};

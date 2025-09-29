@@ -1,12 +1,207 @@
-import { QueryConfig } from "pg";
+import { QueryConfig, QueryResult } from "pg";
 import { FastifyInstance } from "fastify";
 import { StatusCodes } from "http-status-codes";
 
-import { CustomError } from "@/shared/error-handler";
-import { CreateNewPackagingTransactionType } from "@/modules/v1/packaging-transactions/packaging-transaction.schema";
+import { BadRequestError, CustomError } from "@/shared/error-handler";
+import { PackagingTransactionDBType } from "@/modules/v1/packaging-transactions/packaging-transaction.schema";
 
 export default class PackagingTransactionRepo {
   constructor(private fastify: FastifyInstance) {}
+
+  async findById(id: string) {
+    const queryConfig: QueryConfig = {
+      text: `
+            SELECT
+              pt.*,
+              CASE 
+                WHEN fw.id IS NOT NULL THEN 
+                  COALESCE(
+                    json_build_object(
+                      'id', fw.id,
+                      'name', fw.name,
+                      'address', fw.address
+                    )
+                  )
+                ELSE NULL
+                END
+                AS from_warehouse,
+              CASE 
+                WHEN tw.id IS NOT NULL THEN 
+                  COALESCE(
+                    json_build_object(
+                      'id', tw.id,
+                      'name', tw.name,
+                      'address', tw.address
+                    )
+                  )
+                ELSE NULL
+                END
+                AS to_warehouse,
+              COUNT(pti.packaging_id) as item_count
+            FROM packaging_transactions pt
+              LEFT JOIN warehouses fw ON pt.from_warehouse_id = fw.id
+              LEFT JOIN warehouses tw ON pt.to_warehouse_id = tw.id
+              LEFT JOIN packaging_transaction_items pti ON pti.packaging_transaction_id = pt.id
+            WHERE 
+              pt.id = $1
+            GROUP BY 
+              pt.id,
+              fw.id,
+              fw.name,
+              fw.address,
+              tw.id,
+              tw.name,
+              tw.address,
+              pti.packaging_id;
+          `,
+      values: [id],
+    };
+
+    try {
+      const { rows }: QueryResult<PackagingTransaction> =
+        await this.fastify.query<PackagingTransaction>(queryConfig);
+      return rows[0] ?? null;
+    } catch (error: any) {
+      throw new BadRequestError(
+        `PackagingTransactionRepo.findById() method error: ${error}`
+      );
+    }
+  }
+
+  async findDetailById(id: string) {
+    const queryConfig: QueryConfig = {
+      text: `
+          SELECT
+              pt.*,
+              CASE 
+                  WHEN fw.id IS NOT NULL THEN 
+                      json_build_object('id', fw.id, 'name', fw.name, 'address', fw.address)
+                  ELSE NULL
+              END AS from_warehouse,
+              CASE 
+                  WHEN tw.id IS NOT NULL THEN 
+                      json_build_object('id', tw.id, 'name', tw.name, 'address', tw.address)
+                  ELSE NULL
+              END AS to_warehouse,
+              COALESCE(
+                  json_agg(item_json),
+                  '[]'
+              ) AS items
+          FROM packaging_transactions pt
+          LEFT JOIN warehouses fw ON pt.from_warehouse_id = fw.id
+          LEFT JOIN warehouses tw ON pt.to_warehouse_id = tw.id
+          LEFT JOIN LATERAL (
+              SELECT
+                  json_build_object(
+                      'packaging_id', pti.packaging_id,
+                      'name', pk.name,
+                      'quantity', pti.quantity,
+                      'from_warehouse', json_build_object(
+                          'id', fw.id,
+                          'name', fw.name,
+                          'address', fw.address,
+                          'quantity', MAX(pti.signed_quantity) FILTER (WHERE pti.warehouse_id = fw.id)
+                      ),
+                      'to_warehouse', CASE 
+                          WHEN tw.id IS NOT NULL THEN
+                              json_build_object(
+                                  'id', tw.id,
+                                  'name', tw.name,
+                                  'address', tw.address,
+                                  'quantity', MAX(pti.signed_quantity) FILTER (WHERE pti.warehouse_id = tw.id)
+                              )
+                          ELSE NULL
+                      END,
+                      'created_at', MAX(pti.created_at),
+                      'updated_at', MAX(pti.updated_at)
+                  ) AS item_json
+              FROM packaging_transaction_items pti
+              LEFT JOIN packagings pk ON pk.id = pti.packaging_id
+              WHERE pti.packaging_transaction_id = pt.id
+              GROUP BY pti.packaging_id, pk.name, pti.quantity
+          ) item_sub ON TRUE
+          WHERE pt.id = $1
+          GROUP BY pt.id, fw.id, fw.name, fw.address, tw.id, tw.name, tw.address;
+          `,
+      values: [id],
+    };
+
+    try {
+      const { rows }: QueryResult<PackagingTransaction> =
+        await this.fastify.query<PackagingTransaction>(queryConfig);
+      return rows[0] ?? null;
+    } catch (error: any) {
+      throw new BadRequestError(
+        `PackagingTransactionRepo.findDetailById() method error: ${error}`
+      );
+    }
+  }
+
+  async findItemsById(id: string, query?: any) {
+    const queryConfig: QueryConfig = {
+      text: `
+      SELECT
+        pti.packaging_id,
+        pk.name,
+        pti.quantity,
+        json_build_object(
+          'id', fw.id,
+          'name', fw.name,
+          'address', fw.address,
+          'quantity', MAX(pti.signed_quantity) FILTER (WHERE warehouse_id = fw.id)
+        ) AS from_warehouse,
+        CASE 
+          WHEN tw.id IS NOT NULL 
+          THEN
+            json_build_object(
+              'id', tw.id,
+              'name', tw.name,
+              'address', tw.address,
+              'quantity', MAX(pti.signed_quantity) FILTER (WHERE warehouse_id = tw.id)
+            )
+          ELSE null
+          END
+          AS to_warehouse,
+        pti.created_at,
+        pti.updated_at
+      FROM 
+        packaging_transaction_items pti
+        LEFT JOIN packagings pk on pk.id = pti.packaging_id
+        LEFT JOIN packaging_transactions pt on pti.packaging_transaction_id = pt.id
+        LEFT JOIN warehouses fw on pt.from_warehouse_id = fw.id
+        LEFT JOIN warehouses tw on pt.to_warehouse_id = tw.id
+      WHERE
+        pti.packaging_transaction_id = $1
+      GROUP BY
+        pti.packaging_transaction_id,
+        pti.packaging_id,
+        pti.quantity,
+        pti.created_at,
+        pti.updated_at,
+        pt.type,
+        pt.from_warehouse_id,
+        pt.to_warehouse_id,
+        pk.name,
+        fw.id,
+        fw.name,
+        fw.address,
+        tw.id,
+        tw.name,
+        tw.address;
+          `,
+      values: [id],
+    };
+
+    try {
+      const { rows }: QueryResult<PackagingTransaction> =
+        await this.fastify.query<PackagingTransaction>(queryConfig);
+      return rows;
+    } catch (error: any) {
+      throw new BadRequestError(
+        `PackagingTransactionRepo.findItemsById() method error: ${error}`
+      );
+    }
+  }
 
   async findOrCreatePackagingInventory(
     packaging_id: string,
@@ -63,7 +258,7 @@ export default class PackagingTransactionRepo {
     }
   }
 
-  async createNewPackagingTransaction(data: CreateNewPackagingTransactionType) {
+  async create(data: PackagingTransactionDBType["create"]) {
     const columns = [
       "type",
       "from_warehouse_id",
@@ -158,4 +353,6 @@ export default class PackagingTransactionRepo {
       });
     }
   }
+
+  async updateById(id: string, data: any) {}
 }
