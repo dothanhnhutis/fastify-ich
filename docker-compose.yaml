@@ -13,18 +13,18 @@ services:
 
   postgres:
     container_name: postgres_container
-    image: postgres
+    image: postgres:18.0-alpine3.22
     restart: always
     environment:
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=secret
       - POSTGRES_DB=pgdb
-      - PGDATA=/var/lib/postgresql/data/pgdata
+      - PGDATA=/var/lib/postgresql/18/docker
     ports:
       - 5432:5432
     volumes:
       - ./src/shared/db/data:/data
-      - ./docker_volumes/postgres:/var/lib/postgresql/data
+      - ./docker_volumes/postgres:/var/lib/postgresql
     networks:
       - mynet
 

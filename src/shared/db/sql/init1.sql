@@ -31,7 +31,7 @@ SET
 ---------------------------------
 --- create users table
 CREATE TABLE IF NOT EXISTS users (
-    id TEXT NOT NULL DEFAULT gen_random_uuid ()::text,
+    id TEXT NOT NULL DEFAULT uuidv7()::text,
     email VARCHAR(150) NOT NULL,
     password_hash TEXT NOT NULL,
     username VARCHAR(100) NOT NULL,
@@ -44,9 +44,9 @@ CREATE TABLE IF NOT EXISTS users (
 
 --- create roles table
 CREATE TABLE IF NOT EXISTS roles (
-    id TEXT NOT NULL DEFAULT gen_random_uuid ()::text,
+    id TEXT NOT NULL DEFAULT uuidv7()::text,
     name VARCHAR(255) NOT NULL,
-    permissions VARCHAR(150) [] NOT NULL DEFAULT ARRAY[]::text[],
+    permissions VARCHAR(150)[] NOT NULL DEFAULT ARRAY[]::text[],
     description TEXT NOT NULL DEFAULT '',
     status VARCHAR(10) NOT NULL DEFAULT 'ACTIVE',
     deactived_at TIMESTAMPTZ(3),
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS user_roles (
 
 --- create warehouses table
 CREATE TABLE IF NOT EXISTS warehouses (
-    id TEXT NOT NULL DEFAULT gen_random_uuid ()::text,
+    id TEXT NOT NULL DEFAULT uuidv7()::text,
     name VARCHAR(255) NOT NULL,
     address TEXT NOT NULL DEFAULT '',
     status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS warehouses (
 
 --- create packagings table
 CREATE TABLE IF NOT EXISTS packagings (
-    id TEXT NOT NULL DEFAULT gen_random_uuid ()::text,
+    id TEXT NOT NULL DEFAULT uuidv7()::text,
     name VARCHAR(255) NOT NULL,
     min_stock_level INTEGER,
     unit VARCHAR(20) NOT NULL, -- PIECE | CARTON
@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS packaging_inventory (
 
 --- create packaging_transactions table
 CREATE TABLE IF NOT EXISTS packaging_transactions (
-    id TEXT NOT NULL DEFAULT gen_random_uuid ()::text,
+    id TEXT NOT NULL DEFAULT uuidv7()::text,
     type VARCHAR(20) NOT NULL, -- IMPORT, EXPORT, ADJUST, TRANSFER
     from_warehouse_id TEXT NOT NULL,
     to_warehouse_id TEXT,
@@ -151,7 +151,7 @@ CREATE TABLE IF NOT EXISTS user_avatars (
 
 --- create files table
 CREATE TABLE IF NOT EXISTS files (
-    id TEXT NOT NULL DEFAULT gen_random_uuid ()::text,
+    id TEXT NOT NULL DEFAULT uuidv7()::text,
     original_name TEXT NOT NULL,
     mime_type VARCHAR(255) NOT NULL,
     destination TEXT NOT NULL,
@@ -168,7 +168,7 @@ CREATE TABLE IF NOT EXISTS files (
 
 -- Bảng phân loại file (tùy chọn)
 CREATE TABLE IF NOT EXISTS file_categories (
-    id TEXT NOT NULL DEFAULT gen_random_uuid ()::text,
+    id TEXT NOT NULL DEFAULT uuidv7()::text,
     name TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
     allowed_mime_types VARCHAR(255) [], -- Array các mime type được phép
@@ -324,7 +324,7 @@ EXECUTE FUNCTION set_updated_at ();
 -- trigger nếu type != CARTON thì auto set pcs_ctn = NULL
 CREATE TRIGGER trg_set_pcs_ctn_null BEFORE INSERT
 OR
-UPDATE ON packaging_transactions FOR EACH ROW
+UPDATE ON packagings FOR EACH ROW
 EXECUTE FUNCTION enforce_pcs_ctn_null ();
 
 -- trigger nếu type != TRANSFER thì auto set to_warehouse_id = NULL
