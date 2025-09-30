@@ -101,12 +101,12 @@ export class PackagingTransactionController {
     request: FastifyRequest<{
       Params: { id: string };
       Body: {
-        type: string;
+        type?: string;
         from_warehouse_id: string;
         to_warehouse_id: string;
         note: string;
         transaction_date: string;
-        status: "";
+        status?: string;
       };
     }>,
     reply: FastifyReply
@@ -116,6 +116,19 @@ export class PackagingTransactionController {
     );
 
     if (!transaction) throw new BadRequestError("Phiếu không tồn tại.");
+
+    const updateData: PackagingTransaction = {
+      ...transaction,
+    };
+
+    if (
+      transaction.status == "COMPLETED" &&
+      request.body.status == transaction.status &&
+      Object.keys(request.body).length > 1
+    )
+      throw new BadRequestError(
+        "Không thê cập nhât nội dung phiếu đã hoàn thành."
+      );
   }
 
   static async getById(

@@ -8,4 +8,16 @@ export default function imageRoutes(fastify: FastifyInstance) {
     // { preHandler: [requiredAuthMiddleware] },
     FileController.view
   );
+
+  fastify.post(
+    "/uploads",
+    { preHandler: [requiredAuthMiddleware] },
+    FileController.mutipleUpload
+  );
+
+  fastify.post(
+    "/upload",
+    { preHandler: [requiredAuthMiddleware] },
+    FileController.singleUpload
+  );
 }

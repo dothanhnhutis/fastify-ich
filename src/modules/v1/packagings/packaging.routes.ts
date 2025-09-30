@@ -1,20 +1,13 @@
 import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
 import { FastifyInstance } from "fastify";
 import { PackagingController } from "./packaging.controller";
-import {
-  createNewPackagingSchema,
-  deletePackagingByIdSchema,
-  getPackagingByIdSchema,
-  getWarehousesByPackagingIdSchema,
-  queryPackagingsSchema,
-  updatePackagingByIdSchema,
-} from "./packaging.schema";
+import { packagingSchema } from "./packaging.schema";
 
 export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/:id/warehouses",
     {
-      schema: getWarehousesByPackagingIdSchema,
+      schema: packagingSchema.getWarehousesById,
       preHandler: [
         requiredAuthMiddleware,
         // checkPermissionMiddleware(["read:packaging:*"]),
@@ -26,7 +19,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/:id/detail",
     {
-      schema: getPackagingByIdSchema,
+      schema: packagingSchema.getDetailById,
       preHandler: [
         requiredAuthMiddleware,
         // checkPermissionMiddleware(["read:packaging:*"]),
@@ -38,7 +31,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/:id",
     {
-      schema: getPackagingByIdSchema,
+      schema: packagingSchema.getById,
       preHandler: [
         requiredAuthMiddleware,
         // checkPermissionMiddleware(["read:packaging:id"]),
@@ -50,7 +43,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/",
     {
-      schema: queryPackagingsSchema,
+      schema: packagingSchema.query,
       preHandler: [
         requiredAuthMiddleware,
         // checkPermissionMiddleware(["read:packaging:*"]),
@@ -62,7 +55,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/",
     {
-      schema: createNewPackagingSchema,
+      schema: packagingSchema.create,
       preHandler: [
         requiredAuthMiddleware,
         // checkPermissionMiddleware(["create:packaging"]),
@@ -74,7 +67,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.patch(
     "/:id",
     {
-      schema: updatePackagingByIdSchema,
+      schema: packagingSchema.updateById,
       preHandler: [
         requiredAuthMiddleware,
         // checkPermissionMiddleware(["update:packaging"]),

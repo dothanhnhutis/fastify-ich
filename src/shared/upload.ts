@@ -30,7 +30,10 @@ class FileUpload {
     const id = uuidv7();
     const { file, filename: originalName, mimetype, encoding } = data;
     const fileName = `${id}.${mimetype.split("/")[1]}`;
-    const dir = path.join(rootDir, options?.subDir || "");
+    const dir = path.join(
+      rootDir,
+      ...(options?.subDir?.split(/(\\|\/)/) || "")
+    );
 
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
@@ -64,7 +67,6 @@ class FileUpload {
   ): Promise<FileUploadType[]> {
     const files: FileUploadType[] = [];
     for await (const part of parts) {
-      // part = 1 file trong form-data
       files.push(await this.singleUpload(part, options));
     }
     return files;

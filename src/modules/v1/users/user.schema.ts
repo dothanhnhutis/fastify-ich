@@ -1,5 +1,5 @@
 import { Type, Static } from "@sinclair/typebox";
-import { queryStringRolesSchema, RoleRequestType } from "../roles/role.schema";
+import { queryStringRolesSchema } from "../roles/role.schema";
 
 const createBodySchema = Type.Object({
   username: Type.String({
@@ -92,7 +92,7 @@ const sortEnum = [
   "updated_at.desc",
 ];
 
-export const queryStringSchema = Type.Partial(
+export const queryStringUsersSchema = Type.Partial(
   Type.Object({
     username: Type.String({
       errorMessage: {
@@ -165,7 +165,7 @@ const userIdParamSchema = Type.Object({
 
 export const userSchema = {
   query: {
-    querystring: queryStringSchema,
+    querystring: queryStringUsersSchema,
   },
   getById: {
     params: userIdParamSchema,
@@ -188,7 +188,7 @@ export const userSchema = {
 
 export type UserRequsetType = {
   Query: {
-    Querystring: Static<typeof queryStringSchema>;
+    Querystring: Static<typeof queryStringUsersSchema>;
   };
   GetById: { Params: Static<typeof userIdParamSchema> };
   GetRolesById: {
@@ -204,14 +204,3 @@ export type UserRequsetType = {
     Body: Static<typeof updateByIdBodySchema>;
   };
 };
-
-// export type GetUserRolesByUserIdParamsType = Static<typeof paramsIdSchema>;
-// export type GetUserByIdParamsType = GetUserRolesByUserIdParamsType;
-// export type GetUserDetailByIdParamsType = GetUserRolesByUserIdParamsType;
-
-// export type CreateNewUserBodyType = Static<typeof createNewUserBodySchema>;
-
-// export type UpdateUserByIdParamsType = GetUserRolesByUserIdParamsType;
-// export type UpdateUserByIdBodyType = Static<typeof updateUserByIdBodySchema>;
-
-// export type QueryUsersType = Static<typeof queryStringUsersSchema>;

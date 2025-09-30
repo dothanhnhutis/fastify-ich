@@ -1,7 +1,6 @@
-import { FastifySchema } from "fastify";
 import { Type, Static } from "@sinclair/typebox";
 
-const warehouseParamsSchema = Type.Object({
+const warehouseIdParamsSchema = Type.Object({
   id: Type.String(),
 });
 
@@ -238,53 +237,48 @@ const updateWarehouseByIdBodySchema = Type.Partial(
   })
 );
 
-export const getWarehouseByIdSchema: FastifySchema = {
-  params: warehouseParamsSchema,
+export const warehouseSchema = {
+  query: {
+    querystring: queryStringWarehouseSchema,
+  },
+  getById: {
+    params: warehouseIdParamsSchema,
+  },
+  getPackagingsById: {
+    querystring: queryStringPackagingByWarehouseIdSchema,
+    params: warehouseIdParamsSchema,
+  },
+  getDetailById: {
+    params: warehouseIdParamsSchema,
+  },
+  create: {
+    body: createNewWarehouseBodySchema,
+  },
+  updateById: {
+    params: warehouseIdParamsSchema,
+    body: updateWarehouseByIdBodySchema,
+  },
 };
 
-export const getPackagingsByWarehouseIdSchema: FastifySchema = {
-  params: warehouseParamsSchema,
-  querystring: queryStringPackagingByWarehouseIdSchema,
+export type WarehouseRequestType = {
+  Query: {
+    Querystring: Static<typeof queryStringWarehouseSchema>;
+  };
+  GetById: {
+    Params: Static<typeof warehouseIdParamsSchema>;
+  };
+  GetPackagingsById: {
+    Params: Static<typeof warehouseIdParamsSchema>;
+    Querystring: Static<typeof queryStringPackagingByWarehouseIdSchema>;
+  };
+  GetDetailById: {
+    Params: Static<typeof warehouseIdParamsSchema>;
+  };
+  Create: {
+    Body: Static<typeof createNewWarehouseBodySchema>;
+  };
+  UpdateById: {
+    Params: Static<typeof warehouseIdParamsSchema>;
+    Body: Static<typeof updateWarehouseByIdBodySchema>;
+  };
 };
-
-export const createNewWarehouseSchema: FastifySchema = {
-  body: createNewWarehouseBodySchema,
-};
-
-export const updateWarehouseByIdSchema: FastifySchema = {
-  params: warehouseParamsSchema,
-  body: updateWarehouseByIdBodySchema,
-};
-
-export const deleteWarehouseByIdSchema: FastifySchema = {
-  params: warehouseParamsSchema,
-};
-
-export const queryWarehousesSchema: FastifySchema = {
-  querystring: queryStringWarehouseSchema,
-};
-
-export type GetPackagingsByWarehouseIdParamsType = Static<
-  typeof warehouseParamsSchema
->;
-export type GetPackagingsByWarehouseIdQueryType = Static<
-  typeof queryStringPackagingByWarehouseIdSchema
->;
-
-export type GetWarehouseByIdParamsType = Static<typeof warehouseParamsSchema>;
-export type CreateNewWarehouseBodyType = Static<
-  typeof createNewWarehouseBodySchema
->;
-
-export type UpdateWarehouseByIdParamsType = Static<
-  typeof warehouseParamsSchema
->;
-export type UpdateWarehouseByIdBodyType = Static<
-  typeof updateWarehouseByIdBodySchema
->;
-
-export type DeleteWarehouseByIdParamsType = Static<
-  typeof warehouseParamsSchema
->;
-
-export type QueryWarehousesType = Static<typeof queryStringWarehouseSchema>;

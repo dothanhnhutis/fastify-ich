@@ -1,20 +1,13 @@
 import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
 import { FastifyInstance } from "fastify";
 import { WarehouseController } from "./warehouse.controller";
-import {
-  createNewWarehouseSchema,
-  deleteWarehouseByIdSchema,
-  getPackagingsByWarehouseIdSchema,
-  getWarehouseByIdSchema,
-  queryWarehousesSchema,
-  updateWarehouseByIdSchema,
-} from "./warehouse.schema";
+import { warehouseSchema } from "./warehouse.schema";
 
 export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/",
     {
-      schema: queryWarehousesSchema,
+      schema: warehouseSchema["query"],
       preHandler: [
         requiredAuthMiddleware,
         // checkPermissionMiddleware(["read:warehouse:*"]),
@@ -26,7 +19,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/:id/detail",
     {
-      schema: getWarehouseByIdSchema,
+      schema: warehouseSchema["getDetailById"],
       preHandler: [
         requiredAuthMiddleware,
         // checkPermissionMiddleware(["read:warehouse:*"]),
@@ -38,7 +31,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/:id/packagings",
     {
-      schema: getPackagingsByWarehouseIdSchema,
+      schema: warehouseSchema["getPackagingsById"],
       preHandler: [
         requiredAuthMiddleware,
         // checkPermissionMiddleware(["read:warehouse:*"]),
@@ -50,7 +43,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/:id",
     {
-      schema: getWarehouseByIdSchema,
+      schema: warehouseSchema["getById"],
       preHandler: [
         requiredAuthMiddleware,
         // checkPermissionMiddleware(["read:warehouse:id"]),
@@ -62,7 +55,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/",
     {
-      schema: createNewWarehouseSchema,
+      schema: warehouseSchema["create"],
       preHandler: [
         requiredAuthMiddleware,
         // checkPermissionMiddleware(["read:warehouse"]),
@@ -74,7 +67,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.patch(
     "/:id",
     {
-      schema: updateWarehouseByIdSchema,
+      schema: warehouseSchema["updateById"],
       preHandler: [
         requiredAuthMiddleware,
         // checkPermissionMiddleware(["update:warehouse"]),

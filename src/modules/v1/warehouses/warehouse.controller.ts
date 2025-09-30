@@ -1,20 +1,11 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import {
-  CreateNewWarehouseBodyType,
-  DeleteWarehouseByIdParamsType,
-  GetPackagingsByWarehouseIdParamsType,
-  GetPackagingsByWarehouseIdQueryType,
-  GetWarehouseByIdParamsType,
-  QueryWarehousesType,
-  UpdateWarehouseByIdBodyType,
-  UpdateWarehouseByIdParamsType,
-} from "./warehouse.schema";
+import { WarehouseRequestType } from "./warehouse.schema";
 import { StatusCodes } from "http-status-codes";
 import { BadRequestError } from "@/shared/error-handler";
 
 export class WarehouseController {
   static async query(
-    req: FastifyRequest<{ Querystring: QueryWarehousesType }>,
+    req: FastifyRequest<WarehouseRequestType["Query"]>,
     reply: FastifyReply
   ) {
     const data = await req.warehouses.findWarehouses(req.query);
@@ -27,7 +18,7 @@ export class WarehouseController {
   }
 
   static async getById(
-    req: FastifyRequest<{ Params: GetWarehouseByIdParamsType }>,
+    req: FastifyRequest<WarehouseRequestType["GetById"]>,
     reply: FastifyReply
   ) {
     const warehouse = await req.warehouses.findWarehouseById(req.params.id);
@@ -42,10 +33,7 @@ export class WarehouseController {
   }
 
   static async getPackagingsById(
-    req: FastifyRequest<{
-      Params: GetPackagingsByWarehouseIdParamsType;
-      Querystring: GetPackagingsByWarehouseIdQueryType;
-    }>,
+    req: FastifyRequest<WarehouseRequestType["GetPackagingsById"]>,
     reply: FastifyReply
   ) {
     const warehouse = await req.warehouses.findWarehouseById(req.params.id);
@@ -62,7 +50,7 @@ export class WarehouseController {
   }
 
   static async getDetailById(
-    req: FastifyRequest<{ Params: GetWarehouseByIdParamsType }>,
+    req: FastifyRequest<WarehouseRequestType["GetDetailById"]>,
     reply: FastifyReply
   ) {
     const detail = await req.warehouses.findWarehouseDetailById(req.params.id);
@@ -75,7 +63,7 @@ export class WarehouseController {
   }
 
   static async create(
-    req: FastifyRequest<{ Body: CreateNewWarehouseBodyType }>,
+    req: FastifyRequest<WarehouseRequestType["Create"]>,
     reply: FastifyReply
   ) {
     if (req.body.packagingIds) {
@@ -101,10 +89,7 @@ export class WarehouseController {
   }
 
   static async updateById(
-    req: FastifyRequest<{
-      Params: UpdateWarehouseByIdParamsType;
-      Body: UpdateWarehouseByIdBodyType;
-    }>,
+    req: FastifyRequest<WarehouseRequestType["UpdateById"]>,
     reply: FastifyReply
   ) {
     const warehouse = await req.warehouses.findWarehouseById(req.params.id);
@@ -133,21 +118,21 @@ export class WarehouseController {
     });
   }
 
-  static async deleteById(
-    req: FastifyRequest<{ Params: DeleteWarehouseByIdParamsType }>,
-    reply: FastifyReply
-  ) {
-    const warehouse = await req.warehouses.findWarehouseById(req.params.id);
-    if (!warehouse) throw new BadRequestError("Nhà kho không tồn tại.");
+  // static async deleteById(
+  //   req: FastifyRequest<WarehouseRequestType[""]>,
+  //   reply: FastifyReply
+  // ) {
+  //   const warehouse = await req.warehouses.findWarehouseById(req.params.id);
+  //   if (!warehouse) throw new BadRequestError("Nhà kho không tồn tại.");
 
-    await req.warehouses.findWarehouseDetailById(warehouse.id);
+  //   await req.warehouses.findWarehouseDetailById(warehouse.id);
 
-    reply.code(StatusCodes.OK).send({
-      statusCode: StatusCodes.OK,
-      statusText: "OK",
-      data: {
-        message: "Xoá nhà kho thành công.",
-      },
-    });
-  }
+  //   reply.code(StatusCodes.OK).send({
+  //     statusCode: StatusCodes.OK,
+  //     statusText: "OK",
+  //     data: {
+  //       message: "Xoá nhà kho thành công.",
+  //     },
+  //   });
+  // }
 }

@@ -1,5 +1,4 @@
 import { Static, Type } from "@sinclair/typebox";
-import { FastifySchema } from "fastify";
 
 const packagingParamsSchema = Type.Object({
   id: Type.String({
@@ -353,51 +352,50 @@ const updatePackagingByIdBodySchema = Type.Partial(
   })
 );
 
-export const getWarehousesByPackagingIdSchema: FastifySchema = {
-  params: packagingParamsSchema,
-  querystring: queryStringWarehousesByPackagingIdSchema,
+export const packagingSchema = {
+  query: {
+    querystring: queryStringPackagingsSchema,
+  },
+  getById: {
+    params: packagingParamsSchema,
+  },
+  getWarehousesById: {
+    params: packagingParamsSchema,
+    querystring: queryStringWarehousesByPackagingIdSchema,
+  },
+  getDetailById: {
+    params: packagingParamsSchema,
+  },
+  create: {
+    body: createNewPackagingBodySchema,
+  },
+  updateById: {
+    params: packagingParamsSchema,
+    body: updatePackagingByIdBodySchema,
+  },
 };
 
-export const queryPackagingsSchema: FastifySchema = {
-  querystring: queryStringPackagingsSchema,
+export type PackagingRequestType = {
+  Query: {
+    Querystring: Static<typeof queryStringPackagingsSchema>;
+  };
+  GetById: {
+    Params: Static<typeof packagingParamsSchema>;
+  };
+  GetWarehousesById: {
+    Params: Static<typeof packagingParamsSchema>;
+    Querystring: Static<typeof queryStringWarehousesByPackagingIdSchema>;
+  };
+  GetDetailById: {
+    Params: Static<typeof packagingParamsSchema>;
+  };
+  Create: {
+    Body:
+      | Static<typeof createPackagingPieceBodySchema>
+      | Static<typeof createPackagingCartonBodySchema>;
+  };
+  UpdateById: {
+    Params: Static<typeof packagingParamsSchema>;
+    Body: Static<typeof updatePackagingByIdBodySchema>;
+  };
 };
-
-export const getPackagingByIdSchema: FastifySchema = {
-  params: packagingParamsSchema,
-};
-
-export const createNewPackagingSchema: FastifySchema = {
-  body: createNewPackagingBodySchema,
-};
-
-export const updatePackagingByIdSchema: FastifySchema = {
-  params: packagingParamsSchema,
-  body: updatePackagingByIdBodySchema,
-};
-
-export const deletePackagingByIdSchema: FastifySchema = getPackagingByIdSchema;
-
-export type GetWarehousesByPackagingIdParamsType = Static<
-  typeof packagingParamsSchema
->;
-export type GetWarehousesByPackagingIdQueryType = Static<
-  typeof queryStringWarehousesByPackagingIdSchema
->;
-
-export type QueryPackagingsType = Static<typeof queryStringPackagingsSchema>;
-export type GetPackagingByIdType = Static<typeof packagingParamsSchema>;
-
-export type CreateNewPackagingBodyType =
-  | Static<typeof createPackagingPieceBodySchema>
-  | Static<typeof createPackagingCartonBodySchema>;
-
-export type UpdatePackagingByIdParamsType = Static<
-  typeof packagingParamsSchema
->;
-export type UpdatePackagingByIdBodyType = Static<
-  typeof updatePackagingByIdBodySchema
->;
-
-export type DeletePackagingByIdParamsType = Static<
-  typeof packagingParamsSchema
->;

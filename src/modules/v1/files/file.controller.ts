@@ -4,6 +4,7 @@ import mime from "mime-types";
 import { FastifyReply, FastifyRequest } from "fastify";
 import { securityPath } from "@/shared/utils";
 import config from "@/shared/config";
+import { pipeline } from "stream/promises";
 
 export class FileController {
   static async view(
@@ -92,5 +93,32 @@ export class FileController {
       // return reply.code(500).send({ error: "Internal server error" });
       throw error;
     }
+  }
+
+  static async singleUpload(request: FastifyRequest, reply: FastifyReply) {
+    if (!request.isMultipart()) {
+      return reply
+        .code(400)
+        .send({ error: "Request must be multipart/form-data" });
+    }
+    try {
+      const parts = request.files();
+      for await (const part of parts) {
+        console.log(part.filename);
+        await part.toBuffer();
+        // await pipeline(part.file, fs.createWriteStream(part.filename));
+      }
+    } catch (error) {
+      console.log(error);
+    }
+    reply.code(200).send({
+      message: "ok",
+    });
+  }
+
+  static async mutipleUpload(request: FastifyRequest, reply: FastifyReply) {
+    reply.code(200).send({
+      message: "ok",
+    });
   }
 }

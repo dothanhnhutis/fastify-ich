@@ -82,6 +82,8 @@ export class RoleController {
   ) {
     const role = await req.roles.findRoleById(req.params.id);
     if (!role) throw new BadRequestError("Vai trò không tồn tại.");
+    if (!role.canUpdate)
+      throw new BadRequestError("Vai trò không được chỉnh sửa.");
 
     await req.roles.update(role.id, req.body);
 
@@ -100,7 +102,7 @@ export class RoleController {
   ) {
     const role = await req.roles.findRoleById(req.params.id);
     if (!role) throw new BadRequestError("Vai trò không tồn tại.");
-
+    if (!role.canDelete) throw new BadRequestError("Vai trò không được xoá.");
     await req.roles.delete(role.id);
 
     reply.code(StatusCodes.OK).send({

@@ -1,19 +1,9 @@
-import { FastifySchema } from "fastify";
 import { Type, Static } from "@sinclair/typebox";
-import { queryStringSchema, userSchema } from "../users/user.schema";
+import { queryStringUsersSchema } from "../users/user.schema";
 
-const paramsIdSchema = Type.Object({
+const roleIdParamSchema = Type.Object({
   id: Type.String(),
 });
-
-export const getUsersByRoleIdSchema: FastifySchema = {
-  params: paramsIdSchema,
-  querystring: userSchema["query"]["querystring"],
-};
-
-export const getRoleDetailByIdSchema: FastifySchema = {
-  params: paramsIdSchema,
-};
 
 const createNewRoleBodySchema = Type.Object({
   name: Type.String({
@@ -177,24 +167,24 @@ export const roleSchema = {
     querystring: queryStringRolesSchema,
   },
   getById: {
-    params: paramsIdSchema,
+    params: roleIdParamSchema,
   },
   getUsersById: {
-    querystring: queryStringSchema,
-    params: paramsIdSchema,
+    querystring: queryStringUsersSchema,
+    params: roleIdParamSchema,
   },
   getDetailById: {
-    params: paramsIdSchema,
+    params: roleIdParamSchema,
   },
   create: {
     body: createNewRoleBodySchema,
   },
   updateById: {
-    params: paramsIdSchema,
+    params: roleIdParamSchema,
     body: updateRoleByIdBodySchema,
   },
   deleteById: {
-    params: paramsIdSchema,
+    params: roleIdParamSchema,
   },
 };
 
@@ -203,23 +193,23 @@ export type RoleRequestType = {
     Querystring: Static<typeof queryStringRolesSchema>;
   };
   GetById: {
-    Params: Static<typeof paramsIdSchema>;
+    Params: Static<typeof roleIdParamSchema>;
   };
   GetUsersById: {
-    Querystring: Static<typeof queryStringSchema>;
-    Params: Static<typeof paramsIdSchema>;
+    Querystring: Static<typeof queryStringUsersSchema>;
+    Params: Static<typeof roleIdParamSchema>;
   };
   GetDetailById: {
-    Params: Static<typeof paramsIdSchema>;
+    Params: Static<typeof roleIdParamSchema>;
   };
   Create: {
     Body: Static<typeof createNewRoleBodySchema>;
   };
   UpdateById: {
-    Params: Static<typeof paramsIdSchema>;
+    Params: Static<typeof roleIdParamSchema>;
     Body: Static<typeof updateRoleByIdBodySchema>;
   };
   DeletaById: {
-    Params: Static<typeof paramsIdSchema>;
+    Params: Static<typeof roleIdParamSchema>;
   };
 };

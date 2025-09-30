@@ -2,19 +2,14 @@ import { FastifyInstance } from "fastify";
 import { QueryConfig, QueryResult } from "pg";
 
 import { isDataString } from "@/shared/utils";
-import {
-  CreateNewWarehouseBodyType,
-  GetPackagingsByWarehouseIdQueryType,
-  QueryWarehousesType,
-  UpdateWarehouseByIdBodyType,
-} from "@/modules/v1/warehouses/warehouse.schema";
+import { WarehouseRequestType } from "@/modules/v1/warehouses/warehouse.schema";
 import { BadRequestError } from "@/shared/error-handler";
 
 export default class WarehouseRepo {
   constructor(private fastify: FastifyInstance) {}
 
   async findWarehouses(
-    query: QueryWarehousesType
+    query: WarehouseRequestType["Query"]["Querystring"]
   ): Promise<{ warehouses: Warehouse[]; metadata: Metadata }> {
     let queryString = [
       `
@@ -173,7 +168,7 @@ export default class WarehouseRepo {
 
   async findPackagingsByWarehouseId(
     warehouseId: string,
-    query?: GetPackagingsByWarehouseIdQueryType
+    query?: WarehouseRequestType["GetPackagingsById"]["Querystring"]
   ): Promise<QueryPackagingsByWarehouseId> {
     const newTable = `
        WITH 
@@ -379,7 +374,7 @@ export default class WarehouseRepo {
   }
 
   async createNewWarehouse(
-    data: CreateNewWarehouseBodyType
+    data: WarehouseRequestType["Create"]["Body"]
   ): Promise<Warehouse> {
     const queryConfig: QueryConfig = {
       text: `INSERT INTO warehouses (name, address) VALUES ($1::text, $2::text) RETURNING *;`,
@@ -419,7 +414,7 @@ export default class WarehouseRepo {
 
   async updateWarehouseById(
     warehouseId: string,
-    data: UpdateWarehouseByIdBodyType
+    data: WarehouseRequestType["UpdateById"]["Body"]
   ): Promise<void> {
     if (Object.keys(data).length == 0) return;
 

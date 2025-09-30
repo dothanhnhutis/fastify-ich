@@ -2,7 +2,7 @@ import { StatusCodes } from "http-status-codes";
 import { FastifyReply, FastifyRequest } from "fastify";
 import config from "@/shared/config";
 import { BadRequestError } from "@/shared/error-handler";
-import { DeleteSessionByIdParamsType } from "./session.schema";
+import { SessionRequestType } from "./session.schema";
 
 export class SessionController {
   static async getAll(req: FastifyRequest, reply: FastifyReply) {
@@ -19,7 +19,7 @@ export class SessionController {
   }
 
   static async deleteById(
-    req: FastifyRequest<{ Params: DeleteSessionByIdParamsType }>,
+    req: FastifyRequest<SessionRequestType["DeleteById"]>,
     reply: FastifyReply
   ) {
     const { id } = req.params;

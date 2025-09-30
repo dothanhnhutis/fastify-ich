@@ -1,20 +1,11 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import {
-  CreateNewPackagingBodyType,
-  DeletePackagingByIdParamsType,
-  GetPackagingByIdType,
-  GetWarehousesByPackagingIdParamsType,
-  GetWarehousesByPackagingIdQueryType,
-  QueryPackagingsType,
-  UpdatePackagingByIdBodyType,
-  UpdatePackagingByIdParamsType,
-} from "./packaging.schema";
+import { PackagingRequestType } from "./packaging.schema";
 import { BadRequestError } from "@/shared/error-handler";
 import { StatusCodes } from "http-status-codes";
 
 export class PackagingController {
   static async query(
-    req: FastifyRequest<{ Querystring: QueryPackagingsType }>,
+    req: FastifyRequest<PackagingRequestType["Query"]>,
     reply: FastifyReply
   ) {
     const data = await req.packagings.findPackagings(req.query);
@@ -27,7 +18,7 @@ export class PackagingController {
   }
 
   static async getById(
-    req: FastifyRequest<{ Params: GetPackagingByIdType }>,
+    req: FastifyRequest<PackagingRequestType["GetById"]>,
     reply: FastifyReply
   ) {
     const packaging = await req.packagings.findPackagingById(req.params.id);
@@ -42,7 +33,7 @@ export class PackagingController {
   }
 
   static async getDetailById(
-    req: FastifyRequest<{ Params: GetPackagingByIdType }>,
+    req: FastifyRequest<PackagingRequestType["GetDetailById"]>,
     reply: FastifyReply
   ) {
     const packaging = await req.packagings.findPackagingDetailById(
@@ -59,10 +50,7 @@ export class PackagingController {
   }
 
   static async getWarehousesById(
-    req: FastifyRequest<{
-      Params: GetWarehousesByPackagingIdParamsType;
-      Querystring: GetWarehousesByPackagingIdQueryType;
-    }>,
+    req: FastifyRequest<PackagingRequestType["GetWarehousesById"]>,
     reply: FastifyReply
   ) {
     console.log(req.query);
@@ -80,7 +68,7 @@ export class PackagingController {
   }
 
   static async create(
-    req: FastifyRequest<{ Body: CreateNewPackagingBodyType }>,
+    req: FastifyRequest<PackagingRequestType["Create"]>,
     reply: FastifyReply
   ) {
     if (req.body.warehouseIds) {
@@ -108,10 +96,7 @@ export class PackagingController {
   }
 
   static async updateById(
-    req: FastifyRequest<{
-      Params: UpdatePackagingByIdParamsType;
-      Body: UpdatePackagingByIdBodyType;
-    }>,
+    req: FastifyRequest<PackagingRequestType["UpdateById"]>,
     reply: FastifyReply
   ) {
     const packaging = await req.packagings.findPackagingById(req.params.id);
@@ -151,19 +136,19 @@ export class PackagingController {
     });
   }
 
-  static async deleteById(
-    req: FastifyRequest<{ Params: DeletePackagingByIdParamsType }>,
-    reply: FastifyReply
-  ) {
-    const packaging = await req.packagings.findPackagingById(req.params.id);
-    if (!packaging) throw new BadRequestError("Bao bì không tồn tại.");
-    await req.packagings.deletePackagingById(packaging.id);
-    reply.code(StatusCodes.OK).send({
-      statusCode: StatusCodes.OK,
-      statusText: "OK",
-      data: {
-        message: "Xoá bao bì thành công.",
-      },
-    });
-  }
+  // static async deleteById(
+  //   req: FastifyRequest<{ Params: DeletePackagingByIdParamsType }>,
+  //   reply: FastifyReply
+  // ) {
+  //   const packaging = await req.packagings.findPackagingById(req.params.id);
+  //   if (!packaging) throw new BadRequestError("Bao bì không tồn tại.");
+  //   await req.packagings.deletePackagingById(packaging.id);
+  //   reply.code(StatusCodes.OK).send({
+  //     statusCode: StatusCodes.OK,
+  //     statusText: "OK",
+  //     data: {
+  //       message: "Xoá bao bì thành công.",
+  //     },
+  //   });
+  // }
 }

@@ -16,7 +16,7 @@ WITH
     ),
     inserted_role AS (
         INSERT INTO
-            roles (name, permissions, description)
+            roles (name, permissions, description, canDelete, canUpdate)
         VALUES
             (
                 'Super Admin',
@@ -32,7 +32,9 @@ WITH
                     'update:role',
                     'delete:role'
                 ],
-                'Vai tro manh nhat trong he thong'
+                'Vai tro manh nhat trong he thong',
+                false,
+                false
             )
         RETURNING
             id

@@ -2,19 +2,16 @@ import { FastifyInstance } from "fastify";
 import { QueryConfig, QueryResult } from "pg";
 import { StatusCodes } from "http-status-codes";
 
-import {
-  CreateNewRoleBodyType,
-  QueryRolesType,
-  UpdateRoleByIdBodyType,
-} from "@/modules/v1/roles/role.schema";
+import { RoleRequestType } from "@/modules/v1/roles/role.schema";
 import { isDataString } from "@/shared/utils";
 import { BadRequestError, CustomError } from "@/shared/error-handler";
-import { QueryUsersType } from "@/modules/v1/users/user.schema";
 
 export default class RoleRepo {
   constructor(private fastify: FastifyInstance) {}
 
-  async findRoles(query: QueryRolesType): Promise<QueryRoles> {
+  async findRoles(
+    query: RoleRequestType["Query"]["Querystring"]
+  ): Promise<QueryRoles> {
     let queryString = [
       `
       SELECT
@@ -169,7 +166,7 @@ export default class RoleRepo {
 
   async findUsersByRoleId(
     roleId: string,
-    query?: QueryUsersType
+    query?: RoleRequestType["GetUsersById"]["Querystring"]
   ): Promise<QueryUsersByRoleId> {
     const newTable = `
       WITH
@@ -367,7 +364,7 @@ export default class RoleRepo {
     }
   }
 
-  async create(data: CreateNewRoleBodyType): Promise<Role> {
+  async create(data: RoleRequestType["Create"]["Body"]): Promise<Role> {
     const columns = ["name", "description", "permissions"];
     const values = [data.name, data.description, data.permissions];
     const placeholders = ["$1::text", "$2::text", "$3::text[]"];
@@ -400,7 +397,10 @@ export default class RoleRepo {
     }
   }
 
-  async update(id: string, data: UpdateRoleByIdBodyType): Promise<void> {
+  async update(
+    id: string,
+    data: RoleRequestType["UpdateById"]["Body"]
+  ): Promise<void> {
     const sets: string[] = [];
     const values: any[] = [];
     let idx = 1;

@@ -15,7 +15,7 @@ export class SuperUserController {
     const data = await request.users.findUsers(request.query);
     const convertAvatars = data.users.map((u) => ({
       ...u,
-      avatar: convertAvatar(u.avatar),
+      avatar: u.avatar ? convertAvatar(u.avatar) : null,
     }));
 
     reply.code(StatusCodes.OK).send({
@@ -40,7 +40,10 @@ export class SuperUserController {
       statusCode: StatusCodes.OK,
       statusText: "OK",
       data: {
-        user: { ...existsUser, avatar: convertAvatar(existsUser.avatar) },
+        user: {
+          ...existsUser,
+          avatar: existsUser.avatar ? convertAvatar(existsUser.avatar) : null,
+        },
       },
     });
   }
@@ -76,7 +79,10 @@ export class SuperUserController {
       statusCode: StatusCodes.OK,
       statusText: "OK",
       data: {
-        user: { ...userDetail, avatar: convertAvatar(userDetail.avatar) },
+        user: {
+          ...userDetail,
+          avatar: userDetail.avatar ? convertAvatar(userDetail.avatar) : null,
+        },
       },
     });
   }
@@ -187,12 +193,14 @@ export class UserController {
           },
         });
       }
+
       const allowedTypes = [
         "image/jpeg",
         "image/png",
         "image/gif",
         "image/webp",
       ];
+
       if (!allowedTypes.includes(data.mimetype)) {
         return reply.code(400).send({
           error: "Invalid file type",

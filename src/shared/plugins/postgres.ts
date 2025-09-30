@@ -11,11 +11,11 @@ import { FastifyInstance } from "fastify";
 import PostgeSQL, { QueryOptions } from "../db";
 import { CustomError } from "../error-handler";
 import { StatusCodes } from "http-status-codes";
-import UserRepo from "../db/repositories/user.repo";
-import RoleRepo from "../db/repositories/role.repo";
-import WarehouseRepo from "../db/repositories/warehouse.repo";
-import PackagingRepo from "../db/repositories/packaging.repo";
-import PackagingTransactionRepo from "../db/repositories/packaging-transaction.repo";
+import UserRepo from "@/db/user.repo";
+import RoleRepo from "@/db/role.repo";
+import WarehouseRepo from "@/db/warehouse.repo";
+import PackagingRepo from "@/db/packaging.repo";
+import PackagingTransactionRepo from "@/db/packaging-transaction.repo";
 
 declare module "fastify" {
   interface FastifyInstance {
