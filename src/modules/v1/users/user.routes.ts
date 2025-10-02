@@ -3,6 +3,7 @@ import { SuperUserController, UserController } from "./user.controller";
 import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
 import checkPermissionMiddleware from "@/shared/middleware/checkPermission";
 import { userSchema } from "./user.schema";
+import { signleFileUpload } from "@/shared/middleware/validateFileUpload";
 
 export default async function userRoutes(fastify: FastifyInstance) {
   // Admin
@@ -85,7 +86,24 @@ export default async function userRoutes(fastify: FastifyInstance) {
     UserController.me
   );
 
-  fastify.patch("/avatar", UserController.updateAvatar);
+  fastify.patch(
+    "/avatar",
+    {
+      preHandler: [
+        signleFileUpload({
+          fieldName: "avatar",
+          maxFileSize: 2 * 1024 * 1024,
+          allowedMimeTypes: [
+            "image/jpeg",
+            "image/png",
+            "image/gif",
+            "image/webp",
+          ],
+        }),
+      ],
+    },
+    UserController.uploadAvatar
+  );
 
   fastify.delete("/logout", UserController.logout);
 }

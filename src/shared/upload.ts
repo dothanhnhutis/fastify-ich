@@ -3,6 +3,7 @@ import path from "path";
 import { v7 as uuidv7 } from "uuid";
 import { pipeline } from "stream/promises";
 import { MultipartFile } from "@fastify/multipart";
+import { FastifyRequest } from "fastify";
 
 export type FileUploadType = {
   originalName: string;

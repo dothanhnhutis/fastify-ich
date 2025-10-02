@@ -5,6 +5,7 @@ import { UserRequsetType } from "./user.schema";
 import config from "@/shared/config";
 import { BadRequestError } from "@/shared/error-handler";
 import { convertAvatar, isFastifyError } from "@/shared/utils";
+import { privateFileUpload } from "@/shared/upload";
 
 // Admin
 export class SuperUserController {
@@ -167,102 +168,17 @@ export class UserController {
       });
   }
 
-  static async updateAvatar(request: FastifyRequest, reply: FastifyReply) {
-    try {
-      if (!request.isMultipart()) {
-        return reply
-          .code(400)
-          .send({ error: "Request must be multipart/form-data" });
-      }
+  static async uploadAvatar(request: FastifyRequest, reply: FastifyReply) {
+    const file = await request.file();
 
-      const data = await request.file({
-        limits: {
-          fieldNameSize: 50,
-          fileSize: 2 * 1024 * 1024,
-          files: 1,
-          fields: 0,
-        },
-      });
+    // await request.users.updateAvatarById(request.currUser!.id, file!);
 
-      if (!data || data.fieldname != "avatar") {
-        return reply.code(StatusCodes.BAD_REQUEST).send({
-          statusCode: StatusCodes.BAD_REQUEST,
-          statusText: "BAD_REQUEST",
-          data: {
-            message: "Không có tập tin nào được tải lên.",
-          },
-        });
-      }
-
-      const allowedTypes = [
-        "image/jpeg",
-        "image/png",
-        "image/gif",
-        "image/webp",
-      ];
-
-      if (!allowedTypes.includes(data.mimetype)) {
-        return reply.code(400).send({
-          error: "Invalid file type",
-          message: "Only JPEG, PNG, GIF, and WebP images are allowed",
-        });
-      }
-
-      await request.users.updateAvatarById(request.currUser!.id, data);
-
-      return reply.send({
-        statusCode: StatusCodes.OK,
-        statusText: "OK",
-        data: {
-          message: "Cập nhật avatar thành công.",
-        },
-      });
-    } catch (error: unknown) {
-      if (isFastifyError(error)) {
-        switch (error.code) {
-          case "FST_REQ_FILE_TOO_LARGE":
-            reply.code(StatusCodes.REQUEST_TOO_LONG).send({
-              statusCode: StatusCodes.BAD_REQUEST,
-              statusText: "BAD_REQUEST",
-              data: {
-                message: "Kích thước file quá lớn.",
-              },
-            });
-            break;
-          // case "FST_PARTS_LIMIT":
-          //   reply.code(StatusCodes.BAD_REQUEST).send({
-          //     statusCode: StatusCodes.BAD_REQUEST,
-          //     statusText: "BAD_REQUEST",
-          //     data: {
-          //       message: "FST_PARTS_LIMIT",
-          //     },
-          //   });
-          //   break;
-
-          case "FST_FIELDS_LIMIT":
-            reply.code(StatusCodes.BAD_REQUEST).send({
-              statusCode: StatusCodes.BAD_REQUEST,
-              statusText: "BAD_REQUEST",
-              data: {
-                message: "Quá nhiều field không phải field file",
-              },
-            });
-            break;
-          case "FST_FILES_LIMIT":
-            reply.code(StatusCodes.BAD_REQUEST).send({
-              statusCode: StatusCodes.BAD_REQUEST,
-              statusText: "BAD_REQUEST",
-              data: {
-                message: "Quá nhiều file tải lên.",
-              },
-            });
-            break;
-
-          default:
-            break;
-        }
-      }
-      throw error;
-    }
+    return reply.send({
+      statusCode: StatusCodes.OK,
+      statusText: "OK",
+      data: {
+        message: "Cập nhật avatar thành công.",
+      },
+    });
   }
 }

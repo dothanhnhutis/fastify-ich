@@ -141,14 +141,15 @@ CREATE TABLE IF NOT EXISTS packaging_transaction_items (
 
 ---create user_avatars table
 CREATE TABLE IF NOT EXISTS user_avatars (
+    id TEXT NOT NULL DEFAULT uuidv7()::text,
     user_id TEXT NOT NULL,
     file_id TEXT NOT NULL,
     width INTEGER NOT NULL,
     height INTEGER NOT NULL,
-    is_primary BOOLEAN NOT NULL DEFAULT false,
+    -- is_primary BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ(3),
-    CONSTRAINT user_avatars_pkey PRIMARY KEY (user_id, file_id)
+    CONSTRAINT user_avatars_pkey PRIMARY KEY (id)
 );
 
 --- create files table
@@ -160,51 +161,48 @@ CREATE TABLE IF NOT EXISTS files (
     file_name TEXT NOT NULL,
     path TEXT NOT NULL,
     size BIGINT NOT NULL,
-    category_id TEXT,
+    -- category_id TEXT,
     owner_id TEXT NOT NULL,
     created_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMPTZ(3),
+    -- deleted_at TIMESTAMPTZ(3),
     CONSTRAINT files_pkey PRIMARY KEY (id)
 );
 
 -- Bảng phân loại file (tùy chọn)
-CREATE TABLE IF NOT EXISTS file_categories (
-    id TEXT NOT NULL DEFAULT uuidv7()::text,
-    name TEXT NOT NULL,
-    description TEXT NOT NULL DEFAULT '',
-    allowed_mime_types VARCHAR(255) [], -- Array các mime type được phép
-    max_file_size BIGINT, -- Kích thước tối đa (bytes)
-    created_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
-    CONSTRAINT file_categories_pkey PRIMARY KEY (id),
-    CONSTRAINT file_categories_name_unique UNIQUE (name)
-);
+-- CREATE TABLE IF NOT EXISTS file_categories (
+--     id TEXT NOT NULL DEFAULT uuidv7()::text,
+--     name TEXT NOT NULL,
+--     description TEXT NOT NULL DEFAULT '',
+--     allowed_mime_types VARCHAR(255) [], -- Array các mime type được phép
+--     max_file_size BIGINT, -- Kích thước tối đa (bytes)
+--     created_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
+--     updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
+--     CONSTRAINT file_categories_pkey PRIMARY KEY (id),
+--     CONSTRAINT file_categories_name_unique UNIQUE (name)
+-- );
 
 -- Indexes cho performance
 CREATE INDEX IF NOT EXISTS idx_files_owner_id ON files (owner_id);
-
 CREATE INDEX IF NOT EXISTS idx_files_created_at ON files (created_at);
-
 CREATE INDEX IF NOT EXISTS idx_files_mime_type ON files (mime_type);
 
-CREATE INDEX IF NOT EXISTS idx_files_deleted_at ON files (deleted_at)
-WHERE
-    deleted_at IS NULL;
+-- CREATE INDEX IF NOT EXISTS idx_files_deleted_at ON files (deleted_at)
+-- WHERE
+--     deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_user_avatars_user_id ON user_avatars (user_id);
-
 CREATE INDEX IF NOT EXISTS idx_user_avatars_deleted_at ON user_avatars (deleted_at)
 WHERE
     deleted_at IS NULL;
+-- CREATE UNIQUE INDEX IF NOT EXISTS idx_user_avatars_primary_unique ON user_avatars (user_id)
+-- WHERE
+--     is_primary = true
+--     AND deleted_at IS NULL;
 
 --- create unique index
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_unique ON users (email);
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_user_avatars_primary_unique ON user_avatars (user_id)
-WHERE
-    is_primary = true
-    AND deleted_at IS NULL;
 
 --- AddForeignKey user_roles
 ALTER TABLE user_roles
@@ -235,8 +233,8 @@ ALTER TABLE user_avatars
 ADD CONSTRAINT user_avatars_file_fkey FOREIGN KEY (file_id) REFERENCES files (id) ON DELETE CASCADE;
 
 -- AddForgeignKey files 
-ALTER TABLE files
-ADD CONSTRAINT files_category_id_fkey FOREIGN KEY (category_id) REFERENCES file_categories (id);
+-- ALTER TABLE files
+-- ADD CONSTRAINT files_category_id_fkey FOREIGN KEY (category_id) REFERENCES file_categories (id);
 
 -- check đảm bảo logic unit <-> pcs_ctn
 ALTER TABLE packagings
