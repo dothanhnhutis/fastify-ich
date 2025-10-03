@@ -190,4 +190,16 @@ export class UserController {
       },
     });
   }
+
+  static async deleteAvatar(request: FastifyRequest, reply: FastifyReply) {
+    await request.users.deleteAvatarById(request.currUser!.id);
+
+    return reply.send({
+      statusCode: StatusCodes.OK,
+      statusText: "OK",
+      data: {
+        message: "Xoá avatar thành công.",
+      },
+    });
+  }
 }

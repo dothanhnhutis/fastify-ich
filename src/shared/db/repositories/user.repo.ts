@@ -969,7 +969,7 @@ export default class UserRepo {
           text: `
             UPDATE user_avatars
             SET deleted_at = $1::timestamptz(3), is_primary = false
-            WHERE user_id = $2::text
+            WHERE user_id = $2::text AND is_primary = true
           `,
           values: [new Date(), userId],
         });
@@ -988,6 +988,23 @@ export default class UserRepo {
       deleteFile(file.path);
       throw new BadRequestError(
         `UserRepo.updateAvatarById() method error: ${error}`
+      );
+    }
+  }
+
+  async deleteAvatarById(userId: string) {
+    try {
+      await this.fastify.query({
+        text: `
+            UPDATE user_avatars
+            SET deleted_at = $1::timestamptz(3), is_primary = false
+            WHERE user_id = $2::text AND is_primary = true
+          `,
+        values: [new Date(), userId],
+      });
+    } catch (error) {
+      throw new BadRequestError(
+        `UserRepo.deleteAvatarById() method error: ${error}`
       );
     }
   }

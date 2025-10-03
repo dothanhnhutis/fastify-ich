@@ -139,6 +139,18 @@ CREATE TABLE IF NOT EXISTS packaging_transaction_items (
     )
 );
 
+---create packaging_images table
+CREATE TABLE IF NOT EXISTS packaging_images (
+    packaging_id TEXT NOT NULL,
+    file_id TEXT NOT NULL,
+    width INTEGER NOT NULL,
+    height INTEGER NOT NULL,
+    is_primary BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ(3),
+    CONSTRAINT packaging_images_pkey PRIMARY KEY (packaging_id,file_id)
+);
+
 ---create user_avatars table
 CREATE TABLE IF NOT EXISTS user_avatars (
     user_id TEXT NOT NULL,
@@ -190,6 +202,15 @@ CREATE INDEX IF NOT EXISTS idx_files_mime_type ON files (mime_type);
 -- WHERE
 --     deleted_at IS NULL;
 
+CREATE INDEX IF NOT EXISTS idx_packaging_images_packaging_id ON packaging_images (packaging_id);
+CREATE INDEX IF NOT EXISTS idx_packaging_images_deleted_at ON packaging_images (deleted_at)
+WHERE
+    deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_packaging_images_primary_unique ON packaging_images (packaging_id)
+WHERE
+    is_primary = true
+    AND deleted_at IS NULL;
+
 CREATE INDEX IF NOT EXISTS idx_user_avatars_user_id ON user_avatars (user_id);
 CREATE INDEX IF NOT EXISTS idx_user_avatars_deleted_at ON user_avatars (deleted_at)
 WHERE
@@ -229,7 +250,10 @@ ADD CONSTRAINT packaging_transaction_items_warehouse_id_fkey FOREIGN KEY (wareho
 
 -- AddForgeignKey user_avatars 
 ALTER TABLE user_avatars
-ADD CONSTRAINT user_avatars_file_fkey FOREIGN KEY (file_id) REFERENCES files (id) ON DELETE CASCADE;
+ADD CONSTRAINT user_avatars_file_id_files_id_fkey FOREIGN KEY (file_id) REFERENCES files (id) ON DELETE CASCADE;
+
+ALTER TABLE packaging_images
+ADD CONSTRAINT packaging_images_file_id_files_id_fkey FOREIGN KEY (file_id) REFERENCES files (id) ON DELETE CASCADE;
 
 -- AddForgeignKey files 
 -- ALTER TABLE files

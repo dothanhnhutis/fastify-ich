@@ -2,18 +2,17 @@ import { FastifyInstance } from "fastify";
 import { QueryConfig, QueryResult } from "pg";
 
 import { BadRequestError } from "@/shared/error-handler";
-import {
-  CreateNewPackagingBodyType,
-  GetWarehousesByPackagingIdQueryType,
-  QueryPackagingsType,
-  UpdatePackagingByIdBodyType,
-} from "@/modules/v1/packagings/packaging.schema";
-import { isDataString } from "@/shared/utils";
+import { PackagingRequestType } from "@/modules/v1/packagings/packaging.schema";
+import { deleteFile, isDataString } from "@/shared/utils";
+import { FileUploadType } from "@/shared/middleware/multer";
+import sharp from "sharp";
 
 export default class PackagingRepo {
   constructor(private fastify: FastifyInstance) {}
 
-  async findPackagings(query: QueryPackagingsType): Promise<QueryPackagings> {
+  async findPackagings(
+    query: PackagingRequestType["Query"]["Querystring"]
+  ): Promise<QueryPackagings> {
     let queryString = [
       `
       SELECT
@@ -190,7 +189,7 @@ export default class PackagingRepo {
 
   async findWarehousesByPackagingId(
     packagingId: string,
-    query?: GetWarehousesByPackagingIdQueryType
+    query?: PackagingRequestType["GetWarehousesById"]["Querystring"]
   ): Promise<QueryWarehousesByPackagingId> {
     const newTable = `
       WITH 
@@ -402,7 +401,7 @@ export default class PackagingRepo {
     }
   }
 
-  async createNewPackaging(data: CreateNewPackagingBodyType) {
+  async createNewPackaging(data: PackagingRequestType["Create"]["Body"]) {
     const columns: string[] = ["name", "unit"];
     const values: any[] = [data.name, data.unit];
     const placeholders: string[] = ["$1::text", "$2::text"];
@@ -453,7 +452,7 @@ export default class PackagingRepo {
 
   async updatePackagingById(
     packagingId: string,
-    data: UpdatePackagingByIdBodyType
+    data: PackagingRequestType["UpdateById"]["Body"]
   ): Promise<void> {
     if (Object.keys(data).length == 0) return;
 
@@ -537,6 +536,55 @@ export default class PackagingRepo {
     } catch (error: unknown) {
       throw new BadRequestError(
         `PackagingRepo.updatePackagingById() method error: ${error}`
+      );
+    }
+  }
+
+  async updateImageById(id: string, file: FileUploadType, userId: string) {
+    try {
+      await this.fastify.transaction(async (client) => {
+        // thêm file mới
+        const queryConfig: QueryConfig = {
+          text: `
+            INSERT INTO files (original_name, mime_type, destination, file_name, path, size, owner_id) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;      
+          `,
+          values: [
+            file.originalname,
+            file.mimetype,
+            file.destination,
+            file.filename,
+            file.path,
+            file.size,
+            userId,
+          ],
+        };
+        const { rows: files } = await client.query<FileUpload>(queryConfig);
+
+        // xoá mềm avatar cũ
+        await client.query({
+          text: `
+            UPDATE packaging_images
+            SET deleted_at = $1::timestamptz(3), is_primary = false
+            WHERE packaging_id = $2::text AND is_primary = true
+          `,
+          values: [new Date(), id],
+        });
+
+        // thêm avatar
+        const metadata = await sharp(files[0].path).metadata();
+        await client.query({
+          text: `
+            INSERT INTO packaging_images (packaging_id, file_id, width, height, is_primary)
+            VALUES ($1, $2, $3, $4, $5) RETURNING *;
+          `,
+          values: [id, files[0].id, metadata.width, metadata.height, true],
+        });
+      });
+    } catch (error) {
+      deleteFile(file.path);
+      throw new BadRequestError(
+        `UserRepo.updateImageById() method error: ${error}`
       );
     }
   }

@@ -2,6 +2,7 @@ import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
 import { FastifyInstance } from "fastify";
 import { PackagingController } from "./packaging.controller";
 import { packagingSchema } from "./packaging.schema";
+import { multerMiddleware } from "@/shared/middleware/multer";
 
 export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
@@ -62,6 +63,33 @@ export default async function userRoutes(fastify: FastifyInstance) {
       ],
     },
     PackagingController.create
+  );
+
+  fastify.patch(
+    "/:id/image",
+    {
+      schema: packagingSchema.updateImageById,
+      preHandler: [
+        requiredAuthMiddleware,
+        // checkPermissionMiddleware(["update:packaging"]),
+        multerMiddleware([
+          {
+            name: "image",
+            fileSize: 2 * 1024 * 1024,
+            type: "file",
+            uploadDir: "/uploads/images",
+            allowedMimeTypes: [
+              "image/jpeg",
+              "image/png",
+              "image/gif",
+              "image/webp",
+            ],
+            maxCount: 1,
+          },
+        ]),
+      ],
+    },
+    PackagingController.uploadPackagingImage
   );
 
   fastify.patch(

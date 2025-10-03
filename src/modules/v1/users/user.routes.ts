@@ -111,5 +111,13 @@ export default async function userRoutes(fastify: FastifyInstance) {
     UserController.uploadAvatar
   );
 
+  fastify.delete(
+    "/avatar",
+    {
+      preHandler: [requiredAuthMiddleware],
+    },
+    UserController.deleteAvatar
+  );
+
   fastify.delete("/logout", UserController.logout);
 }

@@ -373,6 +373,9 @@ export const packagingSchema = {
     params: packagingParamsSchema,
     body: updatePackagingByIdBodySchema,
   },
+  updateImageById: {
+    params: packagingParamsSchema,
+  },
 };
 
 export type PackagingRequestType = {
@@ -397,5 +400,8 @@ export type PackagingRequestType = {
   UpdateById: {
     Params: Static<typeof packagingParamsSchema>;
     Body: Static<typeof updatePackagingByIdBodySchema>;
+  };
+  UpdateImageById: {
+    Params: Static<typeof packagingParamsSchema>;
   };
 };

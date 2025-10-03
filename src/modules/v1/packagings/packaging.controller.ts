@@ -136,6 +136,42 @@ export class PackagingController {
     });
   }
 
+  static async uploadPackagingImage(
+    request: FastifyRequest<PackagingRequestType["UpdateImageById"]>,
+    reply: FastifyReply
+  ) {
+    const packaging = await request.packagings.findPackagingById(
+      request.params.id
+    );
+    if (!packaging) throw new BadRequestError("Bao bì không tồn tại.");
+
+    if (
+      !request.multerField ||
+      !request.multerField["image"] ||
+      !Array.isArray(request.multerField["image"])
+    ) {
+      throw new BadRequestError("Không có file nào tải lên.");
+    }
+    console.log("file");
+
+    const file = request.multerField["image"][0];
+    console.log("1");
+
+    await request.packagings.updateImageById(
+      packaging.id,
+      file,
+      request.currUser!.id
+    );
+
+    return reply.send({
+      statusCode: StatusCodes.OK,
+      statusText: "OK",
+      data: {
+        message: "Cập nhật hinh bao bì thành công.",
+      },
+    });
+  }
+
   // static async deleteById(
   //   req: FastifyRequest<{ Params: DeletePackagingByIdParamsType }>,
   //   reply: FastifyReply
