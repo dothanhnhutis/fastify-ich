@@ -169,9 +169,18 @@ export class UserController {
   }
 
   static async uploadAvatar(request: FastifyRequest, reply: FastifyReply) {
-    const file = await request.file();
+    if (
+      !request.multerField ||
+      !request.multerField["avatar"] ||
+      !Array.isArray(request.multerField["avatar"])
+    ) {
+      throw new BadRequestError("Không có file nào tải lên.");
+    }
 
-    // await request.users.updateAvatarById(request.currUser!.id, file!);
+    const file = request.multerField["avatar"][0];
+    console.log(file);
+
+    await request.users.updateAvatarById(request.currUser!.id, file);
 
     return reply.send({
       statusCode: StatusCodes.OK,

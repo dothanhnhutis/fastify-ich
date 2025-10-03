@@ -93,15 +93,17 @@ export async function buildServer() {
     wildcard: true,
   });
   server.register(fastifyMultipart, {
-    // limits: {
-    //   fieldNameSize: 100, // độ dài tối đa của tên field
-    //   fieldSize: 100000, // kích thước tối đa của giá trị field (non-file)
-    //   fields: 10, // số field không phải file tối đa
-    //   fileSize: 5 * 1024 * 1024, // 5 MB cho mỗi file
-    //   files: 5, // số file tối đa
-    //   headerPairs: 2000, // header key=>value pairs
-    //   parts: 10, // tổng parts = fields + files
-    // },
+    // cấu hình global tối đa
+    // ở middleware có cấu hình thấp hơn
+    limits: {
+      fieldNameSize: 100, // độ dài tối đa của tên field
+      fieldSize: 2 * 1024 * 1024, // kích thước tối đa của giá trị field (non-file)
+      fields: 100, // số field không phải file tối đa
+      fileSize: 10 * 1024 * 1024, // 5 MB cho mỗi file
+      files: 15, // số file tối đa
+      headerPairs: 2000, // header key=>value pairs
+      parts: 1000, // tổng parts = fields + files
+    },
 
     // Nếu attachFieldsToBody true thì các field + file được gắn vào req.body
     attachFieldsToBody: false, // true: khi muốn chuyển toàn bộ file upload và req.body và file không quá lớn.

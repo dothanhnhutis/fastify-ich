@@ -23,3 +23,6 @@ Accept-Encoding: br
 GET http://localhost:4000/test1 HTTP/1.1
 Content-Type: application/json
 Accept-Encoding: gzip
+###
+PATCH http://localhost:4000/api/v1/users/avatar
+Content-Type: multipart/form-data; boundary=<calculated when request is sent>

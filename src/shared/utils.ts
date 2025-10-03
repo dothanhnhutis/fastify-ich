@@ -48,7 +48,7 @@ export function deleteFile(pathString: string) {
 }
 
 export function convertAvatar(userAvatar: UserAvatar): Avatar {
-  const url = `${config.SERVER_URL}/api/v1/${userAvatar.destination
+  const url = `${config.SERVER_URL}/api/v1${userAvatar.destination
     .replace("uploads", "files")
     .replace(/\\/g, "/")}/${userAvatar.file_name}`;
 

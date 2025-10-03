@@ -3,7 +3,7 @@ import { SuperUserController, UserController } from "./user.controller";
 import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
 import checkPermissionMiddleware from "@/shared/middleware/checkPermission";
 import { userSchema } from "./user.schema";
-import { signleFileUpload } from "@/shared/middleware/validateFileUpload";
+import { multerMiddleware } from "@/shared/middleware/multer";
 
 export default async function userRoutes(fastify: FastifyInstance) {
   // Admin
@@ -90,16 +90,22 @@ export default async function userRoutes(fastify: FastifyInstance) {
     "/avatar",
     {
       preHandler: [
-        signleFileUpload({
-          fieldName: "avatar",
-          maxFileSize: 2 * 1024 * 1024,
-          allowedMimeTypes: [
-            "image/jpeg",
-            "image/png",
-            "image/gif",
-            "image/webp",
-          ],
-        }),
+        requiredAuthMiddleware,
+        multerMiddleware([
+          {
+            type: "file",
+            name: "avatar",
+            fileSize: 1 * 1024 * 1024,
+            maxCount: 1,
+            uploadDir: "/uploads/avatars",
+            allowedMimeTypes: [
+              "image/jpeg",
+              "image/png",
+              "image/gif",
+              "image/webp",
+            ],
+          },
+        ]),
       ],
     },
     UserController.uploadAvatar

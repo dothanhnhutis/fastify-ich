@@ -9,5 +9,5 @@ type FileUpload = {
   created_at: Date;
   updated_at: Date;
   deleted_at: Date;
-  category_id: string | null;
+  // category_id: string | null;
 };

@@ -70,7 +70,7 @@ export default class UserRepo {
           AND av.deleted_at IS NULL
           AND av.is_primary = true
           LEFT JOIN files f ON f.id = av.file_id
-          AND f.deleted_at IS NULL
+          AND av.deleted_at IS NULL
       WHERE
           u.id = $1::text
       GROUP BY
@@ -168,7 +168,7 @@ export default class UserRepo {
             AND av.deleted_at IS NULL
             AND av.is_primary = true
             LEFT JOIN files f ON f.id = av.file_id
-            AND f.deleted_at IS NULL
+            AND av.deleted_at IS NULL
         WHERE
             u.email = $1::text
         GROUP BY
@@ -257,7 +257,7 @@ export default class UserRepo {
           AND av.deleted_at IS NULL
           AND av.is_primary = true
           LEFT JOIN files f ON f.id = av.file_id
-          AND f.deleted_at IS NULL
+          AND av.deleted_at IS NULL
       WHERE
           u.id = $1::text
       GROUP BY
@@ -345,7 +345,7 @@ export default class UserRepo {
           AND av.deleted_at IS NULL
           AND av.is_primary = true
           LEFT JOIN files f ON f.id = av.file_id
-          AND f.deleted_at IS NULL
+          AND av.deleted_at IS NULL
       WHERE
           u.email = $1::text
       GROUP BY
@@ -467,7 +467,7 @@ export default class UserRepo {
             AND av.deleted_at IS NULL
             AND av.is_primary = true
             LEFT JOIN files f ON f.id = av.file_id
-            AND f.deleted_at IS NULL
+            AND av.deleted_at IS NULL
         WHERE
             u.id = $1::text
         GROUP BY
@@ -705,7 +705,7 @@ export default class UserRepo {
           AND av.deleted_at IS NULL
           AND av.is_primary = true
           LEFT JOIN files f ON f.id = av.file_id
-          AND f.deleted_at IS NULL
+          AND av.deleted_at IS NULL
       
       `,
     ];
@@ -943,32 +943,39 @@ export default class UserRepo {
     }
   }
 
-  async updateAvatarById(userId: string, data: MultipartFile) {
-    let file: FileUploadType = await privateFileUpload.singleUpload(data, {
-      subDir: "avatars",
-    });
+  async updateAvatarById(userId: string, file: FileUploadType) {
     try {
       await this.fastify.transaction(async (client) => {
+        // thêm file mới
         const queryConfig: QueryConfig = {
           text: `
             INSERT INTO files (original_name, mime_type, destination, file_name, path, size, owner_id) 
             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;      
           `,
           values: [
-            file.fileName,
-            file.mimeType,
+            file.originalname,
+            file.mimetype,
             file.destination,
-            file.fileName,
+            file.filename,
             file.path,
             file.size,
             userId,
           ],
         };
-
         const { rows: files } = await client.query<FileUpload>(queryConfig);
 
-        const metadata = await sharp(files[0].path).metadata();
+        // xoá mềm avatar cũ
+        await client.query({
+          text: `
+            UPDATE user_avatars
+            SET deleted_at = $1::timestamptz(3), is_primary = false
+            WHERE user_id = $2::text
+          `,
+          values: [new Date(), userId],
+        });
 
+        // thêm avatar
+        const metadata = await sharp(files[0].path).metadata();
         await client.query({
           text: `
             INSERT INTO user_avatars (user_id, file_id, width, height, is_primary)

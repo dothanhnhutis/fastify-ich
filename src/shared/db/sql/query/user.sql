@@ -81,7 +81,7 @@ FROM
     AND av.deleted_at IS NULL
     AND av.is_primary = true
     LEFT JOIN files f ON f.id = av.file_id
-    AND f.deleted_at IS NULL
+    AND av.deleted_at IS NULL
 WHERE
     u.email = 'gaconght@gmail.com'
 GROUP BY
@@ -154,7 +154,7 @@ FROM
     AND av.deleted_at IS NULL
     AND av.is_primary = true
     LEFT JOIN files f ON f.id = av.file_id
-    AND f.deleted_at IS NULL
+    AND av.deleted_at IS NULL
 WHERE
     u.id = '2b6d8104-c4d1-41af-a1a5-2600f2a7a676'
 GROUP BY
@@ -220,7 +220,7 @@ FROM
     AND av.deleted_at IS NULL
     AND av.is_primary = true
     LEFT JOIN files f ON f.id = av.file_id
-    AND f.deleted_at IS NULL
+    AND av.deleted_at IS NULL
 WHERE
     u.id = '2b6d8104-c4d1-41af-a1a5-2600f2a7a676'
 GROUP BY
@@ -286,7 +286,7 @@ FROM
     AND av.deleted_at IS NULL
     AND av.is_primary = true
     LEFT JOIN files f ON f.id = av.file_id
-    AND f.deleted_at IS NULL
+    AND av.deleted_at IS NULL
 WHERE
     u.email = 'gaconght@gmail.com'
 GROUP BY
@@ -383,7 +383,7 @@ FROM
     AND av.deleted_at IS NULL
     AND av.is_primary = true
     LEFT JOIN files f ON f.id = av.file_id
-    AND f.deleted_at IS NULL
+    AND av.deleted_at IS NULL
 WHERE
     u.id = '2d995afc-252c-4130-98a5-da73eb49e660'
 GROUP BY
@@ -473,7 +473,7 @@ FROM
     AND av.deleted_at IS NULL
     AND av.is_primary = true
     LEFT JOIN files f ON f.id = av.file_id
-    AND f.deleted_at IS NULL
+    AND av.deleted_at IS NULL
 GROUP BY
     u.id,
     u.email,

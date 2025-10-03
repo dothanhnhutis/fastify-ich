@@ -3,13 +3,12 @@ import path from "path";
 import { v7 as uuidv7 } from "uuid";
 import { pipeline } from "stream/promises";
 import { MultipartFile } from "@fastify/multipart";
-import { FastifyRequest } from "fastify";
 
 export type FileUploadType = {
-  originalName: string;
-  mimeType: string;
+  originalname: string;
+  mimetype: string;
   encoding: string;
-  fileName: string;
+  filename: string;
   path: string;
   size: number;
   destination: string;
@@ -29,8 +28,8 @@ class FileUpload {
   ): Promise<FileUploadType> {
     const rootDir = path.join(__dirname, this.root);
     const id = uuidv7();
-    const { file, filename: originalName, mimetype, encoding } = data;
-    const fileName = `${id}.${mimetype.split("/")[1]}`;
+    const { file, filename: originalname, mimetype, encoding } = data;
+    const filename = `${id}.${mimetype.split("/")[1]}`;
     const dir = path.join(
       rootDir,
       ...(options?.subDir?.split(/(\\|\/)/) || "")
@@ -40,7 +39,7 @@ class FileUpload {
       fs.mkdirSync(dir, { recursive: true });
     }
 
-    const toPath = path.join(dir, fileName);
+    const toPath = path.join(dir, filename);
     try {
       await pipeline(file, fs.createWriteStream(toPath));
     } catch (err) {
@@ -52,10 +51,10 @@ class FileUpload {
     const destination = path.join(this.root, options?.subDir || "");
 
     return {
-      originalName,
-      mimeType: mimetype,
+      originalname,
+      mimetype,
       encoding,
-      fileName,
+      filename,
       destination,
       path: toPath,
       size: fileSizeInBytes,

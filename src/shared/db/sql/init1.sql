@@ -141,15 +141,14 @@ CREATE TABLE IF NOT EXISTS packaging_transaction_items (
 
 ---create user_avatars table
 CREATE TABLE IF NOT EXISTS user_avatars (
-    id TEXT NOT NULL DEFAULT uuidv7()::text,
     user_id TEXT NOT NULL,
     file_id TEXT NOT NULL,
     width INTEGER NOT NULL,
     height INTEGER NOT NULL,
-    -- is_primary BOOLEAN NOT NULL DEFAULT false,
+    is_primary BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ(3),
-    CONSTRAINT user_avatars_pkey PRIMARY KEY (id)
+    CONSTRAINT user_avatars_pkey PRIMARY KEY (user_id,file_id)
 );
 
 --- create files table
@@ -195,10 +194,10 @@ CREATE INDEX IF NOT EXISTS idx_user_avatars_user_id ON user_avatars (user_id);
 CREATE INDEX IF NOT EXISTS idx_user_avatars_deleted_at ON user_avatars (deleted_at)
 WHERE
     deleted_at IS NULL;
--- CREATE UNIQUE INDEX IF NOT EXISTS idx_user_avatars_primary_unique ON user_avatars (user_id)
--- WHERE
---     is_primary = true
---     AND deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_avatars_primary_unique ON user_avatars (user_id)
+WHERE
+    is_primary = true
+    AND deleted_at IS NULL;
 
 --- create unique index
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_unique ON users (email);
