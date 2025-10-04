@@ -16,6 +16,7 @@ type Packaging = {
   pcs_ctn: number | null;
   status: string;
   deactived_at: Date | null;
+  image: Image;
   warehouse_count: number;
   total_quantity: number;
   created_at: Date;

@@ -4,7 +4,7 @@ import { v7 as uuidv7 } from "uuid";
 import { pipeline } from "stream/promises";
 import { MultipartFile } from "@fastify/multipart";
 
-export type FileUploadType = {
+type FileStoreType = {
   originalname: string;
   mimetype: string;
   encoding: string;
@@ -14,7 +14,7 @@ export type FileUploadType = {
   destination: string;
 };
 
-class FileUpload {
+class FileStore {
   constructor(private root: string) {
     const rootDir = path.join(__dirname, this.root);
     if (!fs.existsSync(rootDir)) {
@@ -25,7 +25,7 @@ class FileUpload {
   async singleUpload(
     data: MultipartFile,
     options?: { subDir?: string }
-  ): Promise<FileUploadType> {
+  ): Promise<FileStoreType> {
     const rootDir = path.join(__dirname, this.root);
     const id = uuidv7();
     const { file, filename: originalname, mimetype, encoding } = data;
@@ -64,8 +64,8 @@ class FileUpload {
   async multipleUpload(
     parts: AsyncIterableIterator<MultipartFile>,
     options?: { subDir?: string }
-  ): Promise<FileUploadType[]> {
-    const files: FileUploadType[] = [];
+  ): Promise<FileStoreType[]> {
+    const files: FileStoreType[] = [];
     for await (const part of parts) {
       files.push(await this.singleUpload(part, options));
     }
@@ -73,5 +73,5 @@ class FileUpload {
   }
 }
 
-export const privateFileUpload = new FileUpload("uploads");
-export const publicFileUpload = new FileUpload("public");
+export const privateFileUpload = new FileStore("uploads");
+export const publicFileUpload = new FileStore("public");

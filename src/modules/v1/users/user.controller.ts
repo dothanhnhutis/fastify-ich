@@ -4,7 +4,7 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import { UserRequsetType } from "./user.schema";
 import config from "@/shared/config";
 import { BadRequestError } from "@/shared/error-handler";
-import { convertAvatar, isFastifyError } from "@/shared/utils";
+import { convertImage, isFastifyError } from "@/shared/utils";
 import { privateFileUpload } from "@/shared/upload";
 
 // Admin
@@ -16,7 +16,7 @@ export class SuperUserController {
     const data = await request.users.findUsers(request.query);
     const convertAvatars = data.users.map((u) => ({
       ...u,
-      avatar: u.avatar ? convertAvatar(u.avatar) : null,
+      avatar: u.avatar ? convertImage(u.avatar) : null,
     }));
 
     reply.code(StatusCodes.OK).send({
@@ -43,7 +43,7 @@ export class SuperUserController {
       data: {
         user: {
           ...existsUser,
-          avatar: existsUser.avatar ? convertAvatar(existsUser.avatar) : null,
+          avatar: existsUser.avatar ? convertImage(existsUser.avatar) : null,
         },
       },
     });
@@ -82,7 +82,7 @@ export class SuperUserController {
       data: {
         user: {
           ...userDetail,
-          avatar: userDetail.avatar ? convertAvatar(userDetail.avatar) : null,
+          avatar: userDetail.avatar ? convertImage(userDetail.avatar) : null,
         },
       },
     });
@@ -144,7 +144,7 @@ export class UserController {
         currentUser: {
           ...request.currUser,
           avatar: request.currUser?.avatar
-            ? convertAvatar(request.currUser.avatar)
+            ? convertImage(request.currUser.avatar)
             : null,
         },
       },

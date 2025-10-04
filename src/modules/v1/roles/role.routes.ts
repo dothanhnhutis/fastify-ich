@@ -34,6 +34,7 @@ export default async function roleRoutes(fastify: FastifyInstance) {
     "/:id/users",
     {
       schema: roleSchema["getUsersById"],
+      // exposeHeadRoute: false,
       preHandler: [
         requiredAuthMiddleware,
         checkPermissionMiddleware(["read:role:*"]),

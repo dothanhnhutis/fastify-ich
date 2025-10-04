@@ -1,5 +1,87 @@
 import { Type, Static } from "@sinclair/typebox";
-import { queryStringUsersSchema } from "../users/user.schema";
+
+// copy sortUserEnum from user.schema.ts
+const sortUserEnum = [
+  "username.asc",
+  "username.desc",
+  "email.asc",
+  "email.desc",
+  "status.asc",
+  "status.desc",
+  "deactived_at.asc",
+  "deactived_at.desc",
+  "created_at.asc",
+  "created_at.desc",
+  "updated_at.asc",
+  "updated_at.desc",
+];
+// copy queryStringUsersSchema from user.schema.ts
+const queryStringUsersSchema = Type.Partial(
+  Type.Object({
+    username: Type.String({
+      errorMessage: {
+        type: "Tên người dùng phải là chuỗi.",
+      },
+    }),
+    email: Type.String({
+      format: "email",
+      errorMessage: {
+        type: "Email phải là chuỗi.",
+        format: "Email không đúng định dạng.",
+      },
+    }),
+    status: Type.String({
+      enum: ["ACTIVE", "INACTIVE"],
+      errorMessage: {
+        type: "Trạng thái phải là chuỗi.",
+        enum: `Trạng thái phải là một trong 'ACTIVE', 'INACTIVE'.}`,
+      },
+    }),
+    created_from: Type.String({
+      pattern:
+        "^(?:\\d{4}-\\d{2}-\\d{2}|(?:\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})))$",
+      errorMessage: {
+        type: "created_from phải là chuỗi.",
+        pattern:
+          "created_from phải có định dạng YYYY-MM-DD hoặc date-time RFC3339.",
+      },
+    }),
+    created_to: Type.String({
+      pattern:
+        "^(?:\\d{4}-\\d{2}-\\d{2}|(?:\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})))$",
+      errorMessage: {
+        type: "created_to phải là chuỗi.",
+        pattern:
+          "created_to phải có định dạng YYYY-MM-DD hoặc date-time RFC3339.",
+      },
+    }),
+    sort: Type.Array(
+      Type.String({
+        enum: sortUserEnum,
+        errorMessage: {
+          type: "sort phải là chuỗi.",
+          enum: `sort phải là một trong: ${sortUserEnum.join(", ")}`,
+        },
+      })
+    ),
+    limit: Type.Integer({
+      minimum: 1,
+      maximum: 50,
+      errorMessage: {
+        type: "limit phải là số nguyên.",
+        minimum: "limit quá nhỏ (min >= 1).",
+        maximum: "limit quá lớn (max <= 50).",
+      },
+    }),
+    page: Type.Integer({
+      minimum: 1,
+      errorMessage: {
+        type: "limit phải là số nguyên.",
+        minimum: "limit quá nhỏ (min >= 1).",
+      },
+    }),
+  })
+);
 
 const roleIdParamSchema = Type.Object({
   id: Type.String(),

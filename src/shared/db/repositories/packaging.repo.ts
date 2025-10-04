@@ -4,7 +4,7 @@ import { QueryConfig, QueryResult } from "pg";
 import { BadRequestError } from "@/shared/error-handler";
 import { PackagingRequestType } from "@/modules/v1/packagings/packaging.schema";
 import { deleteFile, isDataString } from "@/shared/utils";
-import { FileUploadType } from "@/shared/middleware/multer";
+import { MulterFile } from "@/shared/middleware/multer";
 import sharp from "sharp";
 
 export default class PackagingRepo {
@@ -17,6 +17,36 @@ export default class PackagingRepo {
       `
       SELECT
           p.*,
+          CASE
+              WHEN pim.file_id IS NOT NULL THEN
+                  json_build_object(
+                      'id',
+                      pim.file_id,
+                      'width',
+                      pim.width,
+                      'height',
+                      pim.height,
+                      'is_primary',
+                      pim.is_primary,
+                      'original_name',
+                      f.original_name,
+                      'mime_type',
+                      f.mime_type,
+                      'destination',
+                      f.destination,
+                      'file_name',
+                      f.file_name,
+                      'size',
+                      f.size,
+                      'created_at',
+                      to_char(
+                          pim.created_at AT TIME ZONE 'UTC',
+                          'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                          )
+                   )
+            ELSE null
+          END 
+          AS image,
           COUNT(pi.warehouse_id) FILTER (
               WHERE
                   pi.warehouse_id IS NOT NULL
@@ -33,6 +63,10 @@ export default class PackagingRepo {
           packagings p
           LEFT JOIN packaging_inventory pi ON (pi.packaging_id = p.id)
           LEFT JOIN warehouses w ON (pi.warehouse_id = w.id)
+          LEFT JOIN packaging_images pim ON pim.packaging_id = p.id
+              AND pim.deleted_at IS NULL AND pim.is_primary = true
+          LEFT JOIN files f ON f.id = pim.file_id
+              AND pim.deleted_at IS NULL
       `,
     ];
     const values: any[] = [];
@@ -85,7 +119,10 @@ export default class PackagingRepo {
       queryString.push(`WHERE ${where.join(" AND ")}`);
     }
 
-    queryString.push("GROUP BY p.id");
+    queryString.push(`GROUP BY p.id, p.name, p.min_stock_level, p.unit, p.pcs_ctn, p.status,
+	                p.deactived_at, p.created_at, p.updated_at, pim.file_id, pim.width, pim.height,
+                  pim.is_primary, pim.created_at, f.original_name, f.mime_type, f.destination, f.file_name,
+                  f.size`);
 
     try {
       return await this.fastify.transaction(async (client) => {
@@ -152,6 +189,36 @@ export default class PackagingRepo {
       text: `
         SELECT
             p.*,
+            CASE
+                WHEN pim.file_id IS NOT NULL THEN
+                    json_build_object(
+                        'id',
+                        pim.file_id,
+                        'width',
+                        pim.width,
+                        'height',
+                        pim.height,
+                        'is_primary',
+                        pim.is_primary,
+                        'original_name',
+                        f.original_name,
+                        'mime_type',
+                        f.mime_type,
+                        'destination',
+                        f.destination,
+                        'file_name',
+                        f.file_name,
+                        'size',
+                        f.size,
+                        'created_at',
+                        to_char(
+                            pim.created_at AT TIME ZONE 'UTC',
+                            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                            )
+                    )
+                    ELSE null
+                END 
+                    AS image,
             COUNT(pi.warehouse_id) FILTER (
                 WHERE
                     pi.warehouse_id IS NOT NULL
@@ -168,10 +235,32 @@ export default class PackagingRepo {
             packagings p
             LEFT JOIN packaging_inventory pi ON (pi.packaging_id = p.id)
             LEFT JOIN warehouses w ON (pi.warehouse_id = w.id)
+            LEFT JOIN packaging_images pim ON pim.packaging_id = p.id
+                AND pim.deleted_at IS NULL AND pim.is_primary = true
+            LEFT JOIN files f ON f.id = pim.file_id
+                AND pim.deleted_at IS NULL
         WHERE
             p.id = $1
         GROUP BY
-            p.id;
+            p.id,
+            p.name,
+            p.min_stock_level,
+            p.unit,
+            p.pcs_ctn,
+            p.status,
+            p.deactived_at,
+            p.created_at,
+            p.updated_at,
+            pim.file_id,
+            pim.width,
+            pim.height,
+            pim.is_primary,
+            pim.created_at,
+            f.original_name,
+            f.mime_type,
+            f.destination,
+            f.file_name,
+            f.size;
       `,
       values: [packagingId],
     };
@@ -332,6 +421,36 @@ export default class PackagingRepo {
       text: `
         SELECT
             p.*,
+            CASE
+                WHEN pim.file_id IS NOT NULL THEN
+                    json_build_object(
+                        'id',
+                        pim.file_id,
+                        'width',
+                        pim.width,
+                        'height',
+                        pim.height,
+                        'is_primary',
+                        pim.is_primary,
+                        'original_name',
+                        f.original_name,
+                        'mime_type',
+                        f.mime_type,
+                        'destination',
+                        f.destination,
+                        'file_name',
+                        f.file_name,
+                        'size',
+                        f.size,
+                        'created_at',
+                        to_char(
+                            pim.created_at AT TIME ZONE 'UTC',
+                            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                            )
+                    )
+                ELSE null
+            END 
+            AS image,
             COUNT(pi.warehouse_id) FILTER (
                 WHERE
                     pi.warehouse_id IS NOT NULL
@@ -382,10 +501,32 @@ export default class PackagingRepo {
             packagings p
             LEFT JOIN packaging_inventory pi ON (pi.packaging_id = p.id)
             LEFT JOIN warehouses w ON (pi.warehouse_id = w.id)
+            LEFT JOIN packaging_images pim ON pim.packaging_id = p.id
+                AND pim.deleted_at IS NULL AND pim.is_primary = true
+            LEFT JOIN files f ON f.id = pim.file_id
+                AND pim.deleted_at IS NULL
         WHERE
             p.id = $1
         GROUP BY
-            p.id;
+            p.id,
+            p.name,
+            p.min_stock_level,
+            p.unit,
+            p.pcs_ctn,
+            p.status,
+            p.deactived_at,
+            p.created_at,
+            p.updated_at,
+            pim.file_id,
+            pim.width,
+            pim.height,
+            pim.is_primary,
+            pim.created_at,
+            f.original_name,
+            f.mime_type,
+            f.destination,
+            f.file_name,
+            f.size;
       `,
       values: [packagingId],
     };
@@ -540,7 +681,7 @@ export default class PackagingRepo {
     }
   }
 
-  async updateImageById(id: string, file: FileUploadType, userId: string) {
+  async updateImageById(id: string, file: MulterFile, userId: string) {
     try {
       await this.fastify.transaction(async (client) => {
         // thêm file mới

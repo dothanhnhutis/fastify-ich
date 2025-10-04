@@ -48,31 +48,35 @@ SELECT
             r.id IS NOT NULL
             AND r.status = 'ACTIVE'
     )::int AS role_count,
-    json_build_object(
-        'id',
-        av.file_id,
-        'width',
-        av.width,
-        'height',
-        av.height,
-        'is_primary',
-        av.is_primary,
-        'original_name',
-        f.original_name,
-        'mime_type',
-        f.mime_type,
-        'destination',
-        f.destination,
-        'file_name',
-        f.file_name,
-        'size',
-        f.size,
-        'created_at',
-        to_char(
-            av.created_at AT TIME ZONE 'UTC',
-            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
-        )
-    ) AS avatar
+    CASE
+        WHEN av.file_id IS NOT NULL THEN
+            json_build_object(
+                'id',
+                av.file_id,
+                'width',
+                av.width,
+                'height',
+                av.height,
+                'is_primary',
+                av.is_primary,
+                'original_name',
+                f.original_name,
+                'mime_type',
+                f.mime_type,
+                'destination',
+                f.destination,
+                'file_name',
+                f.file_name,
+                'size',
+                f.size,
+                'created_at',
+                to_char(
+                    av.created_at AT TIME ZONE 'UTC',
+                    'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                )
+            ) 
+        ELSE NULL
+    END AS avatar
 FROM
     users u
     LEFT JOIN user_roles ur ON ur.user_id = u.id
@@ -121,31 +125,35 @@ SELECT
             r.id IS NOT NULL
             AND r.status = 'ACTIVE'
     )::int AS role_count,
-    json_build_object(
-        'id',
-        av.file_id,
-        'width',
-        av.width,
-        'height',
-        av.height,
-        'is_primary',
-        av.is_primary,
-        'original_name',
-        f.original_name,
-        'mime_type',
-        f.mime_type,
-        'destination',
-        f.destination,
-        'file_name',
-        f.file_name,
-        'size',
-        f.size,
-        'created_at',
-        to_char(
-            av.created_at AT TIME ZONE 'UTC',
-            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
-        )
-    ) AS avatar
+    CASE
+        WHEN av.file_id IS NOT NULL THEN
+            json_build_object(
+                'id',
+                av.file_id,
+                'width',
+                av.width,
+                'height',
+                av.height,
+                'is_primary',
+                av.is_primary,
+                'original_name',
+                f.original_name,
+                'mime_type',
+                f.mime_type,
+                'destination',
+                f.destination,
+                'file_name',
+                f.file_name,
+                'size',
+                f.size,
+                'created_at',
+                to_char(
+                    av.created_at AT TIME ZONE 'UTC',
+                    'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                )
+            ) 
+        ELSE NULL
+    END AS avatar
 FROM
     users u
     LEFT JOIN user_roles ur ON ur.user_id = u.id
@@ -187,31 +195,35 @@ SELECT
             r.id IS NOT NULL
             AND r.status = 'ACTIVE'
     )::int AS role_count,
-    json_build_object(
-        'id',
-        av.file_id,
-        'width',
-        av.width,
-        'height',
-        av.height,
-        'is_primary',
-        av.is_primary,
-        'original_name',
-        f.original_name,
-        'mime_type',
-        f.mime_type,
-        'destination',
-        f.destination,
-        'file_name',
-        f.file_name,
-        'size',
-        f.size,
-        'created_at',
-        to_char(
-            av.created_at AT TIME ZONE 'UTC',
-            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
-        )
-    ) AS avatar
+    CASE
+        WHEN av.file_id IS NOT NULL THEN
+            json_build_object(
+                'id',
+                av.file_id,
+                'width',
+                av.width,
+                'height',
+                av.height,
+                'is_primary',
+                av.is_primary,
+                'original_name',
+                f.original_name,
+                'mime_type',
+                f.mime_type,
+                'destination',
+                f.destination,
+                'file_name',
+                f.file_name,
+                'size',
+                f.size,
+                'created_at',
+                to_char(
+                    av.created_at AT TIME ZONE 'UTC',
+                    'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                )
+            ) 
+        ELSE NULL
+    END AS avatar
 FROM
     users u
     LEFT JOIN user_roles ur ON ur.user_id = u.id
@@ -253,31 +265,35 @@ SELECT
             r.id IS NOT NULL
             AND r.status = 'ACTIVE'
     )::int AS role_count,
-    json_build_object(
-        'id',
-        av.file_id,
-        'width',
-        av.width,
-        'height',
-        av.height,
-        'is_primary',
-        av.is_primary,
-        'original_name',
-        f.original_name,
-        'mime_type',
-        f.mime_type,
-        'destination',
-        f.destination,
-        'file_name',
-        f.file_name,
-        'size',
-        f.size,
-        'created_at',
-        to_char(
-            av.created_at AT TIME ZONE 'UTC',
-            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
-        )
-    ) AS avatar
+    CASE
+        WHEN av.file_id IS NOT NULL THEN
+            json_build_object(
+                'id',
+                av.file_id,
+                'width',
+                av.width,
+                'height',
+                av.height,
+                'is_primary',
+                av.is_primary,
+                'original_name',
+                f.original_name,
+                'mime_type',
+                f.mime_type,
+                'destination',
+                f.destination,
+                'file_name',
+                f.file_name,
+                'size',
+                f.size,
+                'created_at',
+                to_char(
+                    av.created_at AT TIME ZONE 'UTC',
+                    'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                )
+            ) 
+        ELSE NULL
+    END AS avatar
 FROM
     users u
     LEFT JOIN user_roles ur ON ur.user_id = u.id

@@ -47,18 +47,18 @@ export function deleteFile(pathString: string) {
   });
 }
 
-export function convertAvatar(userAvatar: UserAvatar): Avatar {
-  const url = `${config.SERVER_URL}/api/v1${userAvatar.destination
+export function convertImage(image: Image): ImageURL {
+  const url = `${config.SERVER_URL}/api/v1${image.destination
     .replace("uploads", "files")
-    .replace(/\\/g, "/")}/${userAvatar.file_name}`;
+    .replace(/\\/g, "/")}/${image.file_name}`;
 
   return {
-    id: userAvatar.id,
-    height: userAvatar.height,
-    width: userAvatar.width,
-    size: userAvatar.size,
-    fileName: userAvatar.file_name,
+    id: image.id,
+    height: image.height,
+    width: image.width,
+    size: image.size,
+    fileName: image.file_name,
     url,
-    created_at: userAvatar.created_at,
+    created_at: image.created_at,
   };
 }

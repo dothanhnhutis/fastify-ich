@@ -2,6 +2,7 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import { PackagingRequestType } from "./packaging.schema";
 import { BadRequestError } from "@/shared/error-handler";
 import { StatusCodes } from "http-status-codes";
+import { convertImage } from "@/shared/utils";
 
 export class PackagingController {
   static async query(
@@ -10,10 +11,18 @@ export class PackagingController {
   ) {
     const data = await req.packagings.findPackagings(req.query);
 
+    const convert = data.packagings.map((p) => ({
+      ...p,
+      image: p.image ? convertImage(p.image) : null,
+    }));
+
     reply.code(StatusCodes.OK).send({
       statusCode: StatusCodes.OK,
       statusText: "OK",
-      data,
+      data: {
+        users: convert,
+        metadata: data.metadata,
+      },
     });
   }
 
@@ -27,7 +36,10 @@ export class PackagingController {
       statusCode: StatusCodes.OK,
       statusText: "OK",
       data: {
-        packaging,
+        packaging: {
+          ...packaging,
+          image: packaging.image ? convertImage(packaging.image) : null,
+        },
       },
     });
   }
@@ -44,7 +56,10 @@ export class PackagingController {
       statusCode: StatusCodes.OK,
       statusText: "OK",
       data: {
-        packaging,
+        packaging: {
+          ...packaging,
+          image: packaging.image ? convertImage(packaging.image) : null,
+        },
       },
     });
   }

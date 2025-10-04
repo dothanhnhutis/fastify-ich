@@ -4,11 +4,10 @@ import { FastifyInstance } from "fastify";
 
 import { UserRequsetType } from "@/modules/v1/users/user.schema";
 import Password from "@/shared/password";
-import { MultipartFile } from "@fastify/multipart";
 import { BadRequestError } from "@/shared/error-handler";
 import { deleteFile, isDataString } from "@/shared/utils";
 import { RoleRequestType } from "@/modules/v1/roles/role.schema";
-import { privateFileUpload, type FileUploadType } from "@/shared/upload";
+import { MulterFile } from "@/shared/middleware/multer";
 
 export default class UserRepo {
   constructor(private fastify: FastifyInstance) {}
@@ -943,7 +942,7 @@ export default class UserRepo {
     }
   }
 
-  async updateAvatarById(userId: string, file: FileUploadType) {
+  async updateAvatarById(userId: string, file: MulterFile) {
     try {
       await this.fastify.transaction(async (client) => {
         // thêm file mới

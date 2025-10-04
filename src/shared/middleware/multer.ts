@@ -21,7 +21,7 @@ const DEFAULT_CONFIG = {
   uploadDir: "/uploads",
 };
 
-export type FileUploadType = {
+export type MulterFile = {
   originalname: string;
   mimetype: string;
   encoding: string;
@@ -49,7 +49,7 @@ type MulterTextConfig = {
 type MulterConfig = MulterFileConfig | MulterTextConfig;
 
 interface FilesMap {
-  [fieldname: string]: FileUploadType[] | string;
+  [fieldname: string]: MulterFile[] | string;
 }
 
 /**
@@ -66,7 +66,7 @@ function validateMimeType(mimetype: string, allowedTypes: string[]): boolean {
 async function saveFile(
   file: MultipartFile,
   uploadDir: string
-): Promise<FileUploadType> {
+): Promise<MulterFile> {
   const id = uuidv7();
   const { filename: originalname, mimetype, encoding } = file;
   const filename = `${id}.${mimetype.split("/")[1]}`;
@@ -98,7 +98,7 @@ async function saveFileFromStream(
   part: MultipartFile,
   uploadDir: string,
   maxSize: number
-): Promise<FileUploadType> {
+): Promise<MulterFile> {
   let size = 0;
   const chunks: Buffer[] = [];
 
@@ -141,7 +141,7 @@ async function saveFileFromStreamV2(
   part: MultipartFile,
   uploadDir: string,
   maxSize: number
-): Promise<FileUploadType> {
+): Promise<MulterFile> {
   let size = 0;
   const { filename: originalname, mimetype, encoding } = part;
   const filename = `${uuidv7()}.${mimetype.split("/")[1]}`;
@@ -258,7 +258,7 @@ export const multerMiddleware = (
             field.fileSize
           );
 
-          (filesMap[fieldname] as FileUploadType[]).push(fileInfo);
+          (filesMap[fieldname] as MulterFile[]).push(fileInfo);
         }
 
         if (part.type === "field" && field.type == "text") {
