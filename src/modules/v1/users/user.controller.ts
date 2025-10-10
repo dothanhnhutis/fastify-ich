@@ -141,12 +141,10 @@ export class UserController {
       statusCode: StatusCodes.OK,
       statusText: "OK",
       data: {
-        currentUser: {
-          ...request.currUser,
-          avatar: request.currUser?.avatar
-            ? convertImage(request.currUser.avatar)
-            : null,
-        },
+        ...request.currUser,
+        avatar: request.currUser?.avatar
+          ? convertImage(request.currUser.avatar)
+          : null,
       },
     });
   }

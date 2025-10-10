@@ -46,7 +46,7 @@ export async function buildServer() {
         removeAdditional: true,
         $data: true,
         discriminator: true,
-        coerceTypes: false,
+        // coerceTypes: false,
       },
       plugins: [
         addFormats, // Thêm format validation (email, date, etc.)

@@ -225,15 +225,15 @@ export const queryStringRolesSchema = Type.Partial(
         },
       })
     ),
-    limit: Type.Integer({
-      minimum: 1,
-      maximum: 50,
-      errorMessage: {
-        type: "limit phải là số nguyên.",
-        minimum: "limit quá nhỏ (min >= 1).",
-        maximum: "limit quá lớn (max <= 50).",
-      },
-    }),
+    // limit: Type.Integer({
+    //   minimum: 1,
+    //   maximum: 50,
+    //   errorMessage: {
+    //     type: "limit phải là số nguyên.",
+    //     minimum: "limit quá nhỏ (min >= 1).",
+    //     maximum: "limit quá lớn (max <= 50).",
+    //   },
+    // }),
     page: Type.Integer({
       minimum: 1,
       errorMessage: {
@@ -241,6 +241,9 @@ export const queryStringRolesSchema = Type.Partial(
         minimum: "limit quá nhỏ (min >= 1).",
       },
     }),
+    limit: Type.Transform(Type.String())
+      .Decode((value) => Number(value))
+      .Encode((value) => String(value)),
   })
 );
 
