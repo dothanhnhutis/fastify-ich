@@ -20,6 +20,12 @@ import postgreSQLPlugin from "./plugins/postgres";
 import { Readable } from "stream";
 import { createGzip } from "zlib";
 
+import type { ZodTypeProvider } from "fastify-type-provider-zod";
+import {
+  serializerCompiler,
+  validatorCompiler,
+} from "fastify-type-provider-zod";
+
 // function getEncoder(req: FastifyRequest, reply: FastifyReply) {
 //   const accept = req.headers["accept-encoding"] || "";
 //   if (/\bbr\b/.test(accept)) {
@@ -40,20 +46,24 @@ export async function buildServer() {
   const server = fastify({
     logger: false,
     trustProxy: true,
-    ajv: {
-      customOptions: {
-        allErrors: true,
-        removeAdditional: true,
-        $data: true,
-        discriminator: true,
-        // coerceTypes: false,
-      },
-      plugins: [
-        addFormats, // Thêm format validation (email, date, etc.)
-        addErrors, // Thêm custom error messages
-      ],
-    },
+    // ajv: {
+    //   customOptions: {
+    //     allErrors: true,
+    //     removeAdditional: true,
+    //     $data: true,
+    //     discriminator: true,
+    //     // coerceTypes: false,
+    //   },
+    //   plugins: [
+    //     addFormats, // Thêm format validation (email, date, etc.)
+    //     addErrors, // Thêm custom error messages
+    //   ],
+    // },
   });
+
+  server.setValidatorCompiler(validatorCompiler);
+  server.setSerializerCompiler(serializerCompiler);
+  server.withTypeProvider<ZodTypeProvider>();
 
   // Plugins
   server.register(fastifyHelmet);
@@ -92,6 +102,7 @@ export async function buildServer() {
     // Wildcard support
     wildcard: true,
   });
+
   server.register(fastifyMultipart, {
     // cấu hình global tối đa
     // ở middleware có cấu hình thấp hơn
@@ -110,6 +121,7 @@ export async function buildServer() {
     // Nếu muốn khi vượt giới hạn fileSize ném lỗi
     throwFileSizeLimit: true,
   });
+
   server.register(fastifyCors, {
     origin: config.CLIENT_URL,
     credentials: true,

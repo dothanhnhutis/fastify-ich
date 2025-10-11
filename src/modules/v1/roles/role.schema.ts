@@ -1,4 +1,5 @@
 import { Type, Static } from "@sinclair/typebox";
+import z from "zod/v4";
 
 // copy sortUserEnum from user.schema.ts
 const sortUserEnum = [
@@ -241,15 +242,33 @@ export const queryStringRolesSchema = Type.Partial(
         minimum: "limit quá nhỏ (min >= 1).",
       },
     }),
-    limit: Type.Transform(Type.String())
-      .Decode((value) => Number(value))
-      .Encode((value) => String(value)),
+    // limit: Type.Transform(Type.String())
+    //   .Decode((value) => Number(value))
+    //   .Encode((value) => String(value)),
   })
 );
 
+const queryStringRolesSchema1 = z
+  .object({
+    limit: z.coerce
+      .number({
+        error: (ctx) => {
+          if (ctx.code == "invalid_type") return "limit phải là số";
+          return ctx.message;
+        },
+        // required_error: 'limit là bắt buộc',
+        // invalid_type_error: 'limit phải là số'
+      })
+      .int("limit phải là số nguyên")
+      .min(1, "limit phải >= 1")
+      .max(100, "limit không được vượt quá 100")
+      .default(10),
+  })
+  .partial();
+
 export const roleSchema = {
   query: {
-    querystring: queryStringRolesSchema,
+    querystring: queryStringRolesSchema1,
   },
   getById: {
     params: roleIdParamSchema,

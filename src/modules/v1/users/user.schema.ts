@@ -1,4 +1,5 @@
 import { Type, Static } from "@sinclair/typebox";
+import * as z from "zod/v4";
 
 // copy sortRoleEnum from role.schema.ts
 const sortRoleEnum = [
@@ -184,7 +185,7 @@ const sortEnum = [
   "updated_at.desc",
 ];
 
-const queryStringUsersSchema = Type.Partial(
+const queryStringUsersSchema1 = Type.Partial(
   Type.Object({
     username: Type.String({
       errorMessage: {
@@ -254,6 +255,81 @@ const queryStringUsersSchema = Type.Partial(
 const userIdParamSchema = Type.Object({
   id: Type.String(),
 });
+
+// --- zod
+
+const queryStringUsersSchema = z
+  .object({
+    username: z.string({
+      error: (ctx) => {
+        if (ctx.code === "invalid_type") return "Tên người dùng phải là chuỗi.";
+        return ctx.message;
+      },
+    }),
+    email: z.email({
+      error: (ctx) => {
+        if (ctx.code === "invalid_type") {
+          return "Email phải là chuỗi.";
+        } else {
+          return "Email không đúng định dạng.";
+        }
+      },
+    }),
+    status: z.enum(
+      ["ACTIVE", "INACTIVE"],
+      `Trạng thái phải là một trong 'ACTIVE', 'INACTIVE'.`
+    ),
+    created_from: z.iso.datetime(
+      "created_from phải có định dạng YYYY-MM-DD hoặc date-time RFC3339."
+    ),
+    created_to: z.iso.datetime(
+      "created_from phải có định dạng YYYY-MM-DD hoặc date-time RFC3339."
+    ),
+    // created_from: Type.String({
+    //   pattern:
+    //     "^(?:\\d{4}-\\d{2}-\\d{2}|(?:\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})))$",
+    //   errorMessage: {
+    //     type: "created_from phải là chuỗi.",
+    //     pattern:
+    //       "created_from phải có định dạng YYYY-MM-DD hoặc date-time RFC3339.",
+    //   },
+    // }),
+    // created_to: Type.String({
+    //   pattern:
+    //     "^(?:\\d{4}-\\d{2}-\\d{2}|(?:\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})))$",
+    //   errorMessage: {
+    //     type: "created_to phải là chuỗi.",
+    //     pattern:
+    //       "created_to phải có định dạng YYYY-MM-DD hoặc date-time RFC3339.",
+    //   },
+    // }),
+    sort: Type.Array(
+      Type.String({
+        enum: sortEnum,
+        errorMessage: {
+          type: "sort phải là chuỗi.",
+          enum: `sort phải là một trong: ${sortEnum.join(", ")}`,
+        },
+      })
+    ),
+    limit: Type.Integer({
+      minimum: 1,
+      maximum: 50,
+      errorMessage: {
+        type: "limit phải là số nguyên.",
+        minimum: "limit quá nhỏ (min >= 1).",
+        maximum: "limit quá lớn (max <= 50).",
+      },
+    }),
+    page: Type.Integer({
+      minimum: 1,
+      errorMessage: {
+        type: "limit phải là số nguyên.",
+        minimum: "limit quá nhỏ (min >= 1).",
+      },
+    }),
+  })
+  .partial();
 
 export const userSchema = {
   query: {

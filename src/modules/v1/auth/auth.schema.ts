@@ -1,39 +1,31 @@
-import { FastifySchema } from "fastify";
-import { Type, Static } from "@sinclair/typebox";
+import * as z from "zod/v4";
 
-const signInBodySchema = Type.Object(
-  {
-    email: Type.String({
-      format: "email",
-      errorMessage: {
-        type: "Email phải là chuỗi",
-        format: "Email không đúng định dạng",
+const signInBodySchema = z
+  .object({
+    email: z.email({
+      error: (ctx) => {
+        if (ctx.code === "invalid_format") {
+          return "Email không đúng định dạng";
+        } else {
+          return "Email phải là chuỗi";
+        }
       },
     }),
-    password: Type.String({
-      minLength: 8,
-      maxLength: 125,
-      pattern:
-        "^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[@$!%*?&])[A-Za-z0-9@$!%*?&]+$",
-      errorMessage: {
-        type: "Mật khẩu phải là chuỗi",
-        minLength: "Email và mật khẩu không hợp lệ.",
-        maxLength: "Email và mật khẩu không hợp lệ.",
-        pattern: "Email và mật khẩu không hợp lệ.",
-      },
-    }),
-  },
-  {
-    additionalProperties: false,
-    errorMessage: {
-      required: {
-        email: "không thể thiếu trường email.",
-        password: "không thể thiếu trường mật khẩu.",
-      },
-      additionalProperties: "|",
-    },
-  }
-);
+    password: z
+      .string({
+        error: (ctx) => {
+          if (ctx.code === "invalid_type") return "Mật khẩu phải là chuỗi";
+          return ctx.message;
+        },
+      })
+      .min(8, "Email và mật khẩu không hợp lệ.")
+      .max(125, "Email và mật khẩu không hợp lệ.")
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[@$!%*?&])[A-Za-z0-9@$!%*?&]+$/,
+        "Email và mật khẩu không hợp lệ."
+      ),
+  })
+  .strict();
 
 export const authSchema = {
   signin: {
@@ -43,6 +35,6 @@ export const authSchema = {
 
 export type AuthRequestType = {
   SignIn: {
-    Body: Static<typeof signInBodySchema>;
+    Body: z.infer<typeof signInBodySchema>;
   };
 };

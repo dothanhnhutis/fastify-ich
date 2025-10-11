@@ -1,6 +1,10 @@
 import { StatusCodes } from "http-status-codes";
 import { FastifyError, FastifyReply, FastifyRequest } from "fastify";
 import config from "./config";
+import {
+  hasZodFastifySchemaValidationErrors,
+  isResponseSerializationError,
+} from "fastify-type-provider-zod";
 
 export class CustomError<C extends string> extends Error {
   message: string;
@@ -83,18 +87,44 @@ export function getErrorMessage(error: unknown): string {
 
 export async function errorHandler(
   error: FastifyError,
-  _request: FastifyRequest,
+  request: FastifyRequest,
   reply: FastifyReply
 ) {
-  if (error.code == "FST_ERR_VALIDATION" && error.validation) {
-    return reply.status(StatusCodes.BAD_REQUEST).send({
-      statusText: "BAD_REQUEST",
-      statusCode: StatusCodes.BAD_REQUEST,
-      data: {
-        message: error.validation[0].message ?? "Validate error",
+  if (hasZodFastifySchemaValidationErrors(error)) {
+    return reply.code(400).send({
+      error: "Response Validation Error",
+      message: "Request doesn't match the schema",
+      statusCode: 400,
+      details: {
+        issues: error.validation,
+        method: request.method,
+        url: request.url,
       },
     });
   }
+
+  if (isResponseSerializationError(error)) {
+    return reply.code(500).send({
+      error: "Internal Server Error",
+      message: "Response doesn't match the schema",
+      statusCode: 500,
+      details: {
+        issues: error.cause.issues,
+        method: error.method,
+        url: error.url,
+      },
+    });
+  }
+
+  // if (error.code == "FST_ERR_VALIDATION" && error.validation) {
+  //   return reply.status(StatusCodes.BAD_REQUEST).send({
+  //     statusText: "BAD_REQUEST",
+  //     statusCode: StatusCodes.BAD_REQUEST,
+  //     data: {
+  //       message: error.validation[0].message ?? "Validate error",
+  //     },
+  //   });
+  // }
 
   if (reply.sent || (reply.raw && reply.raw.headersSent) || config.DEBUG) {
     return reply.status(StatusCodes.INTERNAL_SERVER_ERROR).send(error);
