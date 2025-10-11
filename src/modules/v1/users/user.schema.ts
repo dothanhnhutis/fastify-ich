@@ -1,3 +1,4 @@
+import { buildSortField } from "@/shared/utils";
 import { Type, Static } from "@sinclair/typebox";
 import * as z from "zod/v4";
 
@@ -170,20 +171,14 @@ const updateByIdBodySchema = Type.Partial(
   })
 );
 
-const sortEnum = [
-  "username.asc",
-  "username.desc",
-  "email.asc",
-  "email.desc",
-  "status.asc",
-  "status.desc",
-  "deactived_at.asc",
-  "deactived_at.desc",
-  "created_at.asc",
-  "created_at.desc",
-  "updated_at.asc",
-  "updated_at.desc",
-];
+const sortEnum = buildSortField([
+  "username",
+  "email",
+  "status",
+  "deactived_at",
+  "created_at",
+  "updated_at",
+]);
 
 const queryStringUsersSchema1 = Type.Partial(
   Type.Object({
@@ -252,6 +247,8 @@ const queryStringUsersSchema1 = Type.Partial(
   })
 );
 
+console.log(buildSortField(["name", "email"]));
+
 const userIdParamSchema = Type.Object({
   id: Type.String(),
 });
@@ -279,12 +276,62 @@ const queryStringUsersSchema = z
       ["ACTIVE", "INACTIVE"],
       `Trạng thái phải là một trong 'ACTIVE', 'INACTIVE'.`
     ),
-    created_from: z.iso.datetime(
-      "created_from phải có định dạng YYYY-MM-DD hoặc date-time RFC3339."
-    ),
-    created_to: z.iso.datetime(
-      "created_from phải có định dạng YYYY-MM-DD hoặc date-time RFC3339."
-    ),
+    created_from: z.iso.datetime({
+      offset: true,
+      precision: 3,
+      error: (ctx) => {
+        console.log(ctx);
+        if (ctx.code === "invalid_type") {
+          return "created_from phải chuỗi date-time ISO 8601 có độ chính sác 3 số milisecond";
+        }
+        if (ctx.code === "invalid_format") {
+          return "created_from phải có định dạng date-time ISO 8601 có độ chính sác 3 số milisecond";
+        }
+      },
+    }),
+    created_to: z.iso.datetime({
+      offset: true,
+      precision: 3,
+      error: (ctx) => {
+        console.log(ctx);
+        if (ctx.code === "invalid_type") {
+          return "created_to phải chuỗi date-time ISO 8601 có độ chính sác 3 số milisecond";
+        }
+        if (ctx.code === "invalid_format") {
+          return "created_to phải có định dạng date-time ISO 8601 có độ chính sác 3 số milisecond";
+        }
+      },
+    }),
+    sort: z.enum(sortEnum, `sort phải là một trong: ${sortEnum.join(", ")}`),
+    limit: z
+      .string()
+      .regex(/^\d+$/, "limit phải là chuỗi số")
+      .transform((val) => parseInt(val, 10))
+      .refine((val) => !isNaN(val), {
+        message: "limit không thể convert sang số",
+      })
+      .refine((val) => Number.isInteger(val), {
+        message: "limit phải là số nguyên",
+      })
+      .refine((val) => val > 0, {
+        message: "limit phải lớn hơn 0",
+      })
+      .refine((val) => val <= 50, {
+        message: "limit không được vượt quá 50",
+      }),
+    page: z
+      .string()
+      .regex(/^\d+$/, "limit phải là chuỗi số")
+      .transform((val) => parseInt(val, 10))
+      .refine((val) => !isNaN(val), {
+        message: "limit không thể convert sang số",
+      })
+      .refine((val) => Number.isInteger(val), {
+        message: "limit phải là số nguyên",
+      })
+      .refine((val) => val > 0, {
+        message: "limit phải lớn hơn 0",
+      }),
     // created_from: Type.String({
     //   pattern:
     //     "^(?:\\d{4}-\\d{2}-\\d{2}|(?:\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})))$",
@@ -303,31 +350,31 @@ const queryStringUsersSchema = z
     //       "created_to phải có định dạng YYYY-MM-DD hoặc date-time RFC3339.",
     //   },
     // }),
-    sort: Type.Array(
-      Type.String({
-        enum: sortEnum,
-        errorMessage: {
-          type: "sort phải là chuỗi.",
-          enum: `sort phải là một trong: ${sortEnum.join(", ")}`,
-        },
-      })
-    ),
-    limit: Type.Integer({
-      minimum: 1,
-      maximum: 50,
-      errorMessage: {
-        type: "limit phải là số nguyên.",
-        minimum: "limit quá nhỏ (min >= 1).",
-        maximum: "limit quá lớn (max <= 50).",
-      },
-    }),
-    page: Type.Integer({
-      minimum: 1,
-      errorMessage: {
-        type: "limit phải là số nguyên.",
-        minimum: "limit quá nhỏ (min >= 1).",
-      },
-    }),
+    // sort: Type.Array(
+    //   Type.String({
+    //     enum: sortEnum,
+    //     errorMessage: {
+    //       type: "sort phải là chuỗi.",
+    //       enum: `sort phải là một trong: ${sortEnum.join(", ")}`,
+    //     },
+    //   })
+    // ),
+    // limit: Type.Integer({
+    //   minimum: 1,
+    //   maximum: 50,
+    //   errorMessage: {
+    //     type: "limit phải là số nguyên.",
+    //     minimum: "limit quá nhỏ (min >= 1).",
+    //     maximum: "limit quá lớn (max <= 50).",
+    //   },
+    // }),
+    // page: Type.Integer({
+    //   minimum: 1,
+    //   errorMessage: {
+    //     type: "limit phải là số nguyên.",
+    //     minimum: "limit quá nhỏ (min >= 1).",
+    //   },
+    // }),
   })
   .partial();
 
@@ -356,7 +403,7 @@ export const userSchema = {
 
 export type UserRequsetType = {
   Query: {
-    Querystring: Static<typeof queryStringUsersSchema>;
+    Querystring: z.infer<typeof queryStringUsersSchema>;
   };
   GetById: { Params: Static<typeof userIdParamSchema> };
   GetRolesById: {

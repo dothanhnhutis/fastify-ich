@@ -13,6 +13,7 @@ export class SuperUserController {
     request: FastifyRequest<UserRequsetType["Query"]>,
     reply: FastifyReply
   ) {
+    console.log(request.query);
     const data = await request.users.findUsers(request.query);
     const convertAvatars = data.users.map((u) => ({
       ...u,

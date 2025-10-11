@@ -62,3 +62,7 @@ export function convertImage(image: Image): ImageURL {
     created_at: image.created_at,
   };
 }
+
+export const buildSortField = (fields: string[]) => {
+  return fields.flatMap((f) => [`${f}.asc`, `${f}.desc`]);
+};
