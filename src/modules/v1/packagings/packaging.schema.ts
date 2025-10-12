@@ -1,356 +1,153 @@
-import { Static, Type } from "@sinclair/typebox";
+import z from "zod/v4";
+import {
+  queryParamToArray,
+  queryParamToString,
+  queryStringSchema,
+} from "../global.schema";
+import { buildSortField } from "@/shared/utils";
 
-const packagingParamsSchema = Type.Object({
-  id: Type.String({
-    errorMessage: {
-      type: "Mã bao bì phải là chuỗi.",
-    },
-  }),
+const packagingParamsSchema = z.object({
+  id: z.string(),
 });
 
-const sortWarehouseEnum = [
-  "name.asc",
-  "name.desc",
-  "address.asc",
-  "address.desc",
-  "status.asc",
-  "status.desc",
-  "deactived_at.asc",
-  "deactived_at.desc",
-  "created_at.asc",
-  "created_at.desc",
-  "updated_at.asc",
-  "updated_at.desc",
-  "quantity.asc",
-  "quantity.desc",
-];
+const sortWarehouseEnum = buildSortField([
+  "name",
+  "address",
+  "status",
+  "deactived_at",
+  "created_at",
+  "updated_at",
+  "quantity",
+]);
 
-const queryStringWarehousesByPackagingIdSchema = Type.Partial(
-  Type.Object({
-    name: Type.String({
-      errorMessage: {
-        type: "Tên kho hàng phải là chuỗi.",
-      },
-    }),
-    address: Type.String({
-      errorMessage: {
-        type: "Địa chỉ kho phải là chuỗi.",
-      },
-    }),
-    status: Type.String({
-      enum: ["ACTIVE", "INACTIVE"],
-      errorMessage: {
-        type: "Trạng thái phải là chuỗi.",
-        enum: `Trạng thái phải là một trong 'ACTIVE', 'INACTIVE'.}`,
-      },
-    }),
-    created_from: Type.String({
-      pattern:
-        "^(?:\\d{4}-\\d{2}-\\d{2}|(?:\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})))$",
-      errorMessage: {
-        type: "created_from phải là chuỗi.",
-        pattern:
-          "created_from phải có định dạng YYYY-MM-DD hoặc date-time RFC3339.",
-      },
-    }),
-    created_to: Type.String({
-      pattern:
-        "^(?:\\d{4}-\\d{2}-\\d{2}|(?:\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})))$",
-      errorMessage: {
-        type: "created_to phải là chuỗi.",
-        pattern:
-          "created_to phải có định dạng YYYY-MM-DD hoặc date-time RFC3339.",
-      },
-    }),
-    sort: Type.Array(
-      Type.String({
-        enum: sortWarehouseEnum,
-        errorMessage: {
-          type: "sort phải là chuỗi.",
-          enum: `sort phải là một trong: ${sortWarehouseEnum.join(", ")}`,
-        },
-      })
-    ),
-    limit: Type.Integer({
-      minimum: 1,
-      maximum: 50,
-      errorMessage: {
-        type: "limit phải là số nguyên.",
-        minimum: "limit quá nhỏ (min >= 1).",
-        maximum: "limit quá lớn (max >= 50).",
-      },
-    }),
-    page: Type.Integer({
-      minimum: 1,
-      errorMessage: {
-        type: "limit phải là số nguyên.",
-        minimum: "limit quá nhỏ (min >= 1).",
-      },
-    }),
-  })
-);
-
-const sortEnum = [
-  "name.asc",
-  "name.desc",
-  "min_stock_level.asc",
-  "min_stock_level.desc",
-  "unit.asc",
-  "unit.desc",
-  "pcs_ctn.asc",
-  "pcs_ctn.desc",
-  "status.asc",
-  "status.desc",
-  "deactived_at.asc",
-  "deactived_at.desc",
-  "created_at.asc",
-  "created_at.desc",
-  "updated_at.asc",
-  "updated_at.desc",
-  "warehouse_count.asc",
-  "warehouse_count.desc",
-  "total_quantity.asc",
-  "total_quantity.desc",
-];
-
-const queryStringPackagingsSchema = Type.Partial(
-  Type.Object({
-    name: Type.String({
-      errorMessage: {
-        type: "Tên bao bì phải là chuỗi.",
-      },
-    }),
-    unit: Type.String({
-      enum: ["PIECE", "CARTON"],
-      errorMessage: {
-        type: "Loại bao bì phải là chuỗi.",
-        enum: `Loại bao bì phải là 'PIECE' hoặc 'CARTON'.`,
-      },
-    }),
-    status: Type.String({
-      enum: ["ACTIVE", "INACTIVE"],
-      errorMessage: {
-        type: "Trạng thái phải là chuỗi.",
-        enum: `Trạng thái phải là 'ACTIVE' hoặc 'INACTIVE'.`,
-      },
-    }),
-    created_from: Type.String({
-      pattern:
-        "^(?:\\d{4}-\\d{2}-\\d{2}|(?:\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})))$",
-      errorMessage: {
-        type: "created_from phải là chuỗi.",
-        pattern:
-          "created_from phải có định dạng YYYY-MM-DD hoặc date-time RFC3339.",
-      },
-    }),
-    created_to: Type.String({
-      pattern:
-        "^(?:\\d{4}-\\d{2}-\\d{2}|(?:\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})))$",
-      errorMessage: {
-        type: "created_to phải là chuỗi.",
-        pattern:
-          "created_to phải có định dạng YYYY-MM-DD hoặc date-time RFC3339.",
-      },
-    }),
-    sort: Type.Array(
-      Type.String({
-        enum: sortEnum,
-        errorMessage: {
-          type: "sort phải là chuỗi.",
-          enum: `sort phải là một trong: ${sortEnum.join(", ")}`,
-        },
-      })
-    ),
-    limit: Type.Integer({
-      minimum: 1,
-      maximum: 50,
-      errorMessage: {
-        type: "limit phải là số nguyên.",
-        minimum: "limit quá nhỏ (min >= 1).",
-        maximum: "limit quá lớn (max >= 50).",
-      },
-    }),
-    page: Type.Integer({
-      minimum: 1,
-      errorMessage: {
-        type: "limit phải là số nguyên.",
-        minimum: "limit quá nhỏ (min >= 1).",
-      },
-    }),
-  })
-);
-
-const createPackagingPieceBodySchema = Type.Object(
-  {
-    name: Type.String({
-      minLength: 1,
-      errorMessage: {
-        type: "Tên bao bì phải là chuỗi.",
-        minLength: "Tên bao bì không được bỏ trống.",
-      },
-    }),
-    min_stock_level: Type.Optional(
-      Type.Integer({
-        minimum: 1,
-        errorMessage: {
-          type: "Mức tồn kho tối thiểu phải là số nguyên.",
-          minimum: "Mức tồn kho tối thiểu phải là số nguyên dương.",
-        },
-      })
-    ),
-    unit: Type.Literal("PIECE", {
-      errorMessage: {
-        type: `Loại bao bì phải là 'PIECE' hoặc 'CARTON'.}`,
-      },
-    }),
-    warehouseIds: Type.Optional(
-      Type.Array(
-        Type.String({
-          errorMessage: {
-            type: "Mã kho hàng phải là chuỗi.",
-          },
-        }),
-        {
-          minItems: 1,
-          errorMessage: {
-            type: "Danh sách mã kho hàng phải là mãng.",
-            minItems: "Danh sách mã kho hàng phải có ít nhất 1 phần tử.",
-          },
-        }
+const queryStringWarehousesByPackagingIdSchema = queryStringSchema
+  .extend({
+    name: queryParamToString.pipe(z.string("Tên kho hàng phải là chuỗi.")),
+    address: queryParamToString.pipe(z.string("Địa chỉ kho phải là chuỗi.")),
+    status: queryParamToString.pipe(
+      z.enum(
+        ["ACTIVE", "INACTIVE"],
+        `Trạng thái phải là một trong 'ACTIVE', 'INACTIVE'.}`
       )
     ),
-  },
-  {
-    errorMessage: {
-      required: {
-        name: "Thiếu trường 'name' bắt buộc.",
-        unit: "Thiếu trường 'unit' bắt buộc.",
-      },
-    },
-  }
-);
-
-const createPackagingCartonBodySchema = Type.Object(
-  {
-    name: Type.String({
-      minLength: 1,
-      errorMessage: {
-        type: "Tên bao bì phải là chuỗi.",
-        minLength: "Tên bao bì không được bỏ trống.",
-      },
-    }),
-    min_stock_level: Type.Optional(
-      Type.Integer({
-        minimum: 1,
-        errorMessage: {
-          type: "Mức tồn kho tối thiểu phải là số nguyên.",
-          minimum: "Mức tồn kho tối thiểu phải là số nguyên dương.",
-        },
-      })
-    ),
-    unit: Type.Literal("CARTON", {
-      errorMessage: {
-        type: `Loại bao bì phải là 'PIECE' hoặc 'CARTON'.}`,
-      },
-    }),
-    pcs_ctn: Type.Integer({
-      minimum: 1,
-      errorMessage: {
-        type: "Quy cách phải là số nguyên.",
-        minimum: "Quy cách phải là số nguyên dương.",
-      },
-    }),
-    warehouseIds: Type.Optional(
-      Type.Array(
-        Type.String({
-          errorMessage: {
-            type: "Mã kho hàng phải là chuỗi.",
-          },
-        }),
-        {
-          minItems: 1,
-          errorMessage: {
-            type: "Danh sách mã kho hàng phải là mãng.",
-            minItems: "Danh sách mã kho hàng phải có ít nhất 1 phần tử.",
-          },
-        }
-      )
-    ),
-  },
-  {
-    errorMessage: {
-      required: {
-        name: "Thiếu trường 'name' bắt buộc.",
-        unit: "Thiếu trường 'unit' bắt buộc.",
-        pcs_ctn: "Thiếu trường 'pcs_ctn' bắt buộc.",
-      },
-    },
-  }
-);
-
-const createNewPackagingBodySchema = Type.Unsafe({
-  oneOf: [createPackagingPieceBodySchema, createPackagingCartonBodySchema],
-  discriminator: { propertyName: "unit" },
-});
-
-const updatePackagingByIdBodySchema = Type.Partial(
-  Type.Object({
-    name: Type.String({
-      minLength: 1,
-      errorMessage: {
-        type: "Tên bao bì phải là chuỗi.",
-        minLength: "Tên bao bì không được bỏ trống.",
-      },
-    }),
-    min_stock_level: Type.Optional(
-      Type.Integer({
-        minimum: 1,
-        errorMessage: {
-          type: "Mức tồn kho tối thiểu phải là số nguyên.",
-          minimum: "Mức tồn kho tối thiểu phải là số nguyên dương.",
-        },
-      })
-    ),
-    unit: Type.String({
-      enum: ["PIECE", "CARTON"],
-      errorMessage: {
-        type: "Loại bao bì phải là chuỗi.",
-        enum: `Loại bao bì phải là một trong 'PIECE', 'CARTON'.`,
-      },
-    }),
-    pcs_ctn: Type.Union([
-      Type.Integer({
-        minimum: 1,
-        errorMessage: {
-          type: "Quy cách phải là số nguyên.1",
-          minimum: "Quy cách phải là số nguyên dương.1",
-        },
-      }),
-      Type.Null(),
-    ]),
-    status: Type.String({
-      enum: ["ACTIVE", "INACTIVE"],
-      errorMessage: {
-        type: "Trạng thái phải là chuỗi.",
-        enum: `Trạng thái phải là một trong 'ACTIVE', 'INACTIVE'.`,
-      },
-    }),
-    warehouseIds: Type.Optional(
-      Type.Array(
-        Type.String({
-          errorMessage: {
-            type: "Mã kho hàng phải là chuỗi.",
-          },
-        }),
-        {
-          errorMessage: {
-            type: "Danh sách mã kho hàng phải là mãng.",
-          },
-        }
+    sort: queryParamToArray.pipe(
+      z.array(
+        z.enum(
+          sortWarehouseEnum,
+          `sort phải là một trong: ${sortWarehouseEnum.join(", ")}`
+        )
       )
     ),
   })
-);
+  .partial();
+
+const sortEnum = buildSortField([
+  "name",
+  "min_stock_level",
+  "unit",
+  "pcs_ctn",
+  "status",
+  "deactived_at",
+  "created_at",
+  "updated_at",
+  "warehouse_count",
+  "total_quantity",
+]);
+
+const queryStringPackagingsSchema = queryStringSchema
+  .extend({
+    name: queryParamToString.pipe(z.string("Tên bao bì phải là chuỗi.")),
+    unit: queryParamToString.pipe(
+      z.enum(["PIECE", "CARTON"], `Loại bao bì phải là 'PIECE' hoặc 'CARTON'.`)
+    ),
+    status: z.enum(
+      ["ACTIVE", "INACTIVE"],
+      `Trạng thái phải là 'ACTIVE' hoặc 'INACTIVE'.`
+    ),
+    sort: queryParamToArray.pipe(
+      z.array(
+        z.enum(sortEnum, `sort phải là một trong: ${sortEnum.join(", ")}`)
+      )
+    ),
+  })
+  .partial();
+
+const createPackagingPieceBodySchema = z
+  .object({
+    name: z
+      .string("Tên bao bì phải là chuỗi.")
+      .trim()
+      .min(1, "Tên bao bì không được bỏ trống."),
+    min_stock_level: z
+      .int("Mức tồn kho tối thiểu phải là số nguyên.")
+      .min(1, "Mức tồn kho tối thiểu phải là số nguyên dương.")
+      .optional(),
+    unit: z.literal("PIECE", `Loại bao bì phải là 'PIECE' hoặc 'CARTON'.}`),
+    warehouseIds: z
+      .array(
+        z.string("Mã kho hàng phải là chuỗi."),
+        "Danh sách mã kho hàng phải là mãng."
+      )
+      .min(1, "Danh sách mã kho hàng phải có ít nhất 1 phần tử.")
+      .optional(),
+  })
+  .strict();
+
+const createPackagingCartonBodySchema = z
+  .object({
+    name: z
+      .string("Tên bao bì phải là chuỗi.")
+      .trim()
+      .min(1, "Tên bao bì không được bỏ trống."),
+    min_stock_level: z
+      .int("Mức tồn kho tối thiểu phải là số nguyên.")
+      .min(1, "Mức tồn kho tối thiểu phải là số nguyên dương.")
+      .optional(),
+    unit: z.literal("CARTON", `Loại bao bì phải là 'PIECE' hoặc 'CARTON'.}`),
+    pcs_ctn: z
+      .int("Quy cách phải là số nguyên.")
+      .min(1, "Quy cách phải là số nguyên dương."),
+    warehouseIds: z
+      .array(
+        z.string("Mã kho hàng phải là chuỗi."),
+        "Danh sách mã kho hàng phải là mãng."
+      )
+      .min(1, "Danh sách mã kho hàng phải có ít nhất 1 phần tử.")
+      .optional(),
+  })
+  .strict();
+
+const createPackagingBodySchema = z.discriminatedUnion("unit", [
+  createPackagingPieceBodySchema,
+  createPackagingCartonBodySchema,
+]);
+
+const updatePackagingByIdBodySchema = z
+  .object({
+    name: z
+      .string("Tên bao bì phải là chuỗi.")
+      .trim()
+      .min(1, "Tên bao bì không được bỏ trống."),
+    min_stock_level: z
+      .int("Mức tồn kho tối thiểu phải là số nguyên.")
+      .min(1, "Mức tồn kho tối thiểu phải là số nguyên dương."),
+    unit: z.enum(
+      ["PIECE", "CARTON"],
+      `Loại bao bì phải là một trong 'PIECE', 'CARTON'.`
+    ),
+    pcs_ctn: z
+      .int("Quy cách phải là số nguyên.")
+      .min(1, "Quy cách phải là số nguyên dương."),
+    status: z.enum(
+      ["ACTIVE", "INACTIVE"],
+      "Trạng thái phải là một trong 'ACTIVE', 'INACTIVE'."
+    ),
+    warehouseIds: z.array(
+      z.string("Mã kho hàng phải là chuỗi."),
+      "Danh sách mã kho hàng phải là mãng."
+    ),
+  })
+  .partial();
 
 export const packagingSchema = {
   query: {
@@ -367,7 +164,7 @@ export const packagingSchema = {
     params: packagingParamsSchema,
   },
   create: {
-    body: createNewPackagingBodySchema,
+    body: createPackagingBodySchema,
   },
   updateById: {
     params: packagingParamsSchema,
@@ -380,28 +177,26 @@ export const packagingSchema = {
 
 export type PackagingRequestType = {
   Query: {
-    Querystring: Static<typeof queryStringPackagingsSchema>;
+    Querystring: z.infer<typeof queryStringPackagingsSchema>;
   };
   GetById: {
-    Params: Static<typeof packagingParamsSchema>;
+    Params: z.infer<typeof packagingParamsSchema>;
   };
   GetWarehousesById: {
-    Params: Static<typeof packagingParamsSchema>;
-    Querystring: Static<typeof queryStringWarehousesByPackagingIdSchema>;
+    Params: z.infer<typeof packagingParamsSchema>;
+    Querystring: z.infer<typeof queryStringWarehousesByPackagingIdSchema>;
   };
   GetDetailById: {
-    Params: Static<typeof packagingParamsSchema>;
+    Params: z.infer<typeof packagingParamsSchema>;
   };
   Create: {
-    Body:
-      | Static<typeof createPackagingPieceBodySchema>
-      | Static<typeof createPackagingCartonBodySchema>;
+    Body: z.infer<typeof createPackagingBodySchema>;
   };
   UpdateById: {
-    Params: Static<typeof packagingParamsSchema>;
-    Body: Static<typeof updatePackagingByIdBodySchema>;
+    Params: z.infer<typeof packagingParamsSchema>;
+    Body: z.infer<typeof updatePackagingByIdBodySchema>;
   };
   UpdateImageById: {
-    Params: Static<typeof packagingParamsSchema>;
+    Params: z.infer<typeof packagingParamsSchema>;
   };
 };

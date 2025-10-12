@@ -509,7 +509,7 @@ export default class UserRepo {
 
   async findRolesByUserId(
     userId: string,
-    query?: RoleRequestType["Query"]["Querystring"]
+    query?: UserRequsetType["GetRolesById"]["Querystring"]
   ): Promise<QueryRoles> {
     const newTable = `
       WITH
@@ -555,24 +555,12 @@ export default class UserRepo {
 
       if (query.created_from) {
         where.push(`created_at >= $${idx++}::timestamptz`);
-        values.push(
-          `${
-            isDataString(query.created_from.trim())
-              ? `${query.created_from.trim()}T00:00:00.000Z`
-              : query.created_from.trim()
-          }`
-        );
+        values.push(query.created_from);
       }
 
       if (query.created_to) {
         where.push(`created_at <= $${idx++}::timestamptz`);
-        values.push(
-          `${
-            isDataString(query.created_to.trim())
-              ? `${query.created_to.trim()}T23:59:59.999Z`
-              : query.created_to.trim()
-          }`
-        );
+        values.push(query.created_to);
       }
     }
 
@@ -714,12 +702,12 @@ export default class UserRepo {
 
     if (query.username != undefined) {
       where.push(`u.username ILIKE $${idx++}::text`);
-      values.push(`%${query.username.trim()}%`);
+      values.push(`%${query.username}%`);
     }
 
     if (query.email != undefined) {
       where.push(`u.email ILIKE $${idx++}::text`);
-      values.push(`%${query.email.trim()}%`);
+      values.push(`%${query.email}%`);
     }
 
     if (query.status != undefined) {
@@ -729,24 +717,12 @@ export default class UserRepo {
 
     if (query.created_from) {
       where.push(`u.created_at >= $${idx++}::timestamptz`);
-      values.push(
-        `${
-          isDataString(query.created_from.trim())
-            ? `${query.created_from.trim()}T00:00:00.000Z`
-            : query.created_from.trim()
-        }`
-      );
+      values.push(query.created_from);
     }
 
     if (query.created_to) {
       where.push(`u.created_at <= $${idx++}::timestamptz`);
-      values.push(
-        `${
-          isDataString(query.created_to.trim())
-            ? `${query.created_to.trim()}T23:59:59.999Z`
-            : query.created_to.trim()
-        }`
-      );
+      values.push(query.created_to);
     }
 
     if (where.length > 0) {

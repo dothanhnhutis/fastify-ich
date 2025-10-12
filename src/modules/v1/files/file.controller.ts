@@ -104,7 +104,6 @@ export class FileController {
     try {
       const parts = request.files();
       for await (const part of parts) {
-        console.log(part.filename);
         await part.toBuffer();
         // await pipeline(part.file, fs.createWriteStream(part.filename));
       }

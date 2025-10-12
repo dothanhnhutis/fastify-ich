@@ -167,10 +167,8 @@ export class PackagingController {
     ) {
       throw new BadRequestError("Không có file nào tải lên.");
     }
-    console.log("file");
 
     const file = request.multerField["image"][0];
-    console.log("1");
 
     await request.packagings.updateImageById(
       packaging.id,
