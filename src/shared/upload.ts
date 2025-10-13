@@ -42,7 +42,7 @@ class FileStore {
     const toPath = path.join(dir, filename);
     try {
       await pipeline(file, fs.createWriteStream(toPath));
-    } catch (err) {
+    } catch (err: unknown) {
       throw new Error("File save failed");
     }
 

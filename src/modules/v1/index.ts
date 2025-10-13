@@ -1,15 +1,13 @@
-import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-
-import authRoutes from "./auth/auth.routes";
-import userRoutes from "./users/user.routes";
-import roleRoutes from "./roles/role.routes";
-import fileRoutes from "./files/file.routes";
-import sessionRoutes from "./sessions/session.routes";
-import warehouseRoutes from "./warehouses/warehouse.routes";
-import packagingRoutes from "./packagings/packaging.routes";
-
-import packagingTransactionRoutes from "./packaging-transactions/packaging-transaction.routes";
 import { Type } from "@sinclair/typebox";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import authRoutes from "./auth/auth.routes";
+import fileRoutes from "./files/file.routes";
+import packagingTransactionRoutes from "./packaging-transactions/packaging-transaction.routes";
+import packagingRoutes from "./packagings/packaging.routes";
+import roleRoutes from "./roles/role.routes";
+import sessionRoutes from "./sessions/session.routes";
+import userRoutes from "./users/user.routes";
+import warehouseRoutes from "./warehouses/warehouse.routes";
 
 const sortEnum = [
   "name.asc",

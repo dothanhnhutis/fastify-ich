@@ -1,4 +1,4 @@
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 import versionRoutes from "./v1";
 
 export default async function appRoutes(fastify: FastifyInstance) {

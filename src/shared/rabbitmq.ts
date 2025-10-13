@@ -84,7 +84,7 @@ export default class AMQPConnectionPool {
       await this.setupQueuesAndExchanges();
 
       console.log("RabbitMQ - connect success");
-    } catch (error) {
+    } catch (error: unknown) {
       this.closeAll();
       throw new Error("RabbitMQ connect Error: ");
     }
@@ -299,7 +299,7 @@ export default class AMQPConnectionPool {
         await this.createChannels(conn, channels);
         console.log(`RabbitMQ - connection ${name} reconnect success`);
         break;
-      } catch (error) {
+      } catch (error: unknown) {
         console.log(
           `RabbitMQ - attempt connection ${name} time ${attempt} that bai`
         );
