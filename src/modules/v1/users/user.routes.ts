@@ -1,9 +1,9 @@
-import { FastifyInstance } from "fastify";
-import { SuperUserController, UserController } from "./user.controller";
-import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
+import type { FastifyInstance } from "fastify";
 import checkPermissionMiddleware from "@/shared/middleware/checkPermission";
-import { userSchema } from "./user.schema";
 import { multerMiddleware } from "@/shared/middleware/multer";
+import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
+import { SuperUserController, UserController } from "./user.controller";
+import { userSchema } from "./user.schema";
 
 export default async function userRoutes(fastify: FastifyInstance) {
   // Admin

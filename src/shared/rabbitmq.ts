@@ -68,7 +68,7 @@ export default class AMQPConnectionPool {
   public async connect() {
     // if (!this.options.connections) return;
     try {
-      for (let connection of this.options.connections) {
+      for (const connection of this.options.connections) {
         const { clientProperties, name, channels = [] } = connection;
 
         const conn = await amqplib.connect(this.options.server, {
@@ -94,7 +94,7 @@ export default class AMQPConnectionPool {
     conn: amqplib.ChannelModel,
     channels: NonNullable<AMQPConnection["channels"]>
   ) {
-    for (let ch of channels) {
+    for (const ch of channels) {
       let channel: amqplib.Channel | amqplib.ConfirmChannel;
       if (ch.confirmSelect) {
         channel = await conn.createConfirmChannel();
@@ -187,7 +187,7 @@ export default class AMQPConnectionPool {
           break;
 
         case "topic":
-        case "direct":
+        case "direct": {
           const q_topic_or_direct = await channel.assertQueue(
             queue.name || "",
             queue.options
@@ -198,8 +198,9 @@ export default class AMQPConnectionPool {
             queue.routingKey
           );
           break;
+        }
 
-        case "headers":
+        case "headers": {
           const q_headers = await channel.assertQueue(
             queue.name || "",
             queue.options
@@ -211,14 +212,16 @@ export default class AMQPConnectionPool {
             queue.headers
           );
           break;
+        }
 
-        default:
+        default: {
           const q_fanout = await channel.assertQueue(
             queue.name || "",
             queue.options
           );
           await channel.bindQueue(q_fanout.queue, queue.exchange, "");
           break;
+        }
       }
     }
 
@@ -300,7 +303,7 @@ export default class AMQPConnectionPool {
         console.log(
           `RabbitMQ - attempt connection ${name} time ${attempt} that bai`
         );
-        if (attempt == maxRetries)
+        if (attempt === maxRetries)
           console.log(
             `RabbitMQ - connection ${name} đã hết số lần thử kết nối lại.`
           );

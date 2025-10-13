@@ -1,9 +1,10 @@
-import amqplib from "amqplib";
+import type amqplib from "amqplib";
+import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 import fp from "fastify-plugin";
-import { FastifyInstance, FastifyPluginOptions } from "fastify";
-
-import AMQPConnectionPool, { AMQPConnectionPoolOptions } from "../rabbitmq";
 import { createUserConsume } from "../consumes/user-mail";
+import AMQPConnectionPool, {
+  type AMQPConnectionPoolOptions,
+} from "../rabbitmq";
 
 declare module "fastify" {
   interface FastifyInstance {

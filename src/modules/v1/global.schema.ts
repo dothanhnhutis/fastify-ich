@@ -1,5 +1,5 @@
-import { buildSortField } from "@/shared/utils";
 import z from "zod/v4";
+import { buildSortField } from "@/shared/utils";
 
 export const queryParamToString = z
   .union([z.string(), z.array(z.string())])

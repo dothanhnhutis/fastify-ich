@@ -1,9 +1,8 @@
-import { QueryConfig, QueryResult } from "pg";
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 import { StatusCodes } from "http-status-codes";
-
+import type { QueryConfig, QueryResult } from "pg";
+import type { PackagingTransactionDBType } from "@/modules/v1/packaging-transactions/packaging-transaction.schema";
 import { BadRequestError, CustomError } from "@/shared/error-handler";
-import { PackagingTransactionDBType } from "@/modules/v1/packaging-transactions/packaging-transaction.schema";
 
 export default class PackagingTransactionRepo {
   constructor(private fastify: FastifyInstance) {}
@@ -61,7 +60,7 @@ export default class PackagingTransactionRepo {
       const { rows }: QueryResult<PackagingTransaction> =
         await this.fastify.query<PackagingTransaction>(queryConfig);
       return rows[0] ?? null;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new BadRequestError(
         `PackagingTransactionRepo.findById() method error: ${error}`
       );
@@ -130,14 +129,14 @@ export default class PackagingTransactionRepo {
       const { rows }: QueryResult<PackagingTransaction> =
         await this.fastify.query<PackagingTransaction>(queryConfig);
       return rows[0] ?? null;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new BadRequestError(
         `PackagingTransactionRepo.findDetailById() method error: ${error}`
       );
     }
   }
 
-  async findItemsById(id: string, query?: any) {
+  async findItemsById(id: string, _?: string) {
     const queryConfig: QueryConfig = {
       text: `
       SELECT
@@ -196,7 +195,7 @@ export default class PackagingTransactionRepo {
       const { rows }: QueryResult<PackagingTransaction> =
         await this.fastify.query<PackagingTransaction>(queryConfig);
       return rows;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new BadRequestError(
         `PackagingTransactionRepo.findItemsById() method error: ${error}`
       );
@@ -281,7 +280,7 @@ export default class PackagingTransactionRepo {
       "$5::text",
     ];
 
-    if (data.type == "TRANSFER") {
+    if (data.type === "TRANSFER") {
       columns.push("to_warehouse_id");
       packagingTransactionValues.push(data.to_warehouse_id);
       placeholders.push("$6::text");
@@ -300,7 +299,7 @@ export default class PackagingTransactionRepo {
             values: packagingTransactionValues,
           });
 
-        const packagingTransactionItemFromValues: any[] = [
+        const packagingTransactionItemFromValues: (string | number)[] = [
           new_packaging_transactions[0].id,
         ];
 
@@ -320,17 +319,16 @@ export default class PackagingTransactionRepo {
           });
 
         // tạo danh sách sản phẩm từ kho nguồn
-        const { rows: transaction_items } =
-          await client.query<PackagingTransactionItem>({
-            text: `
+        await client.query<PackagingTransactionItem>({
+          text: `
             INSERT INTO packaging_transaction_items (packaging_transaction_id, packaging_id, warehouse_id, quantity, signed_quantity) 
             VALUES ${packagingTransactionItemFromPlaceholders.join(", ")}
             RETURNING *;
           `,
-            values: packagingTransactionItemFromValues,
-          });
+          values: packagingTransactionItemFromValues,
+        });
 
-        if (data.status == "COMPLETED") {
+        if (data.status === "COMPLETED") {
           await client.query({
             text: `
               UPDATE packaging_inventory pi
@@ -354,5 +352,5 @@ export default class PackagingTransactionRepo {
     }
   }
 
-  async updateById(id: string, data: any) {}
+  // async updateById(id: string, data: any) {}
 }

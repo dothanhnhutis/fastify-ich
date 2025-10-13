@@ -1,10 +1,10 @@
-import { FastifyInstance } from "fastify";
-import { QueryConfig, QueryResult } from "pg";
+import type { FastifyInstance } from "fastify";
 import { StatusCodes } from "http-status-codes";
+import type { QueryConfig, QueryResult } from "pg";
 
-import { RoleRequestType } from "@/modules/v1/roles/role.schema";
-import { isDataString } from "@/shared/utils";
+import type { RoleRequestType } from "@/modules/v1/roles/role.schema";
 import { BadRequestError, CustomError } from "@/shared/error-handler";
+import { isDataString } from "@/shared/utils";
 
 export default class RoleRepo {
   constructor(private fastify: FastifyInstance) {}
@@ -12,7 +12,7 @@ export default class RoleRepo {
   async findRoles(
     query: RoleRequestType["Query"]["Querystring"]
   ): Promise<QueryRoles> {
-    let queryString = [
+    const queryString = [
       `
       SELECT
           r.*,
@@ -29,22 +29,22 @@ export default class RoleRepo {
     `,
     ];
 
-    const values: any[] = [];
-    let where: string[] = [];
+    const values: (string | number | string[])[] = [];
+    const where: string[] = [];
     let idx = 1;
 
     try {
-      if (query.name != undefined) {
+      if (query.name !== undefined) {
         where.push(`name ILIKE $${idx++}::text`);
         values.push(`%${query.name.trim()}%`);
       }
 
-      if (query.permissions != undefined) {
+      if (query.permissions !== undefined) {
         where.push(`permissions @> $${idx++}::text[]`);
         values.push(query.permissions);
       }
 
-      if (query.description != undefined) {
+      if (query.description !== undefined) {
         where.push(`description ILIKE $${idx++}::text`);
         values.push(`%${query.description.trim()}%`);
       }
@@ -83,9 +83,9 @@ export default class RoleRepo {
         )}) SELECT COUNT(*) FROM roles`,
         values,
       });
-      const totalItem = parseInt(rows[0].count);
+      const totalItem = parseInt(rows[0].count, 10);
 
-      if (query.sort != undefined) {
+      if (query.sort !== undefined) {
         queryString.push(
           `ORDER BY ${query.sort
             .map((sort) => {
@@ -96,9 +96,9 @@ export default class RoleRepo {
         );
       }
 
-      let limit = query.limit ?? totalItem;
-      let page = query.page ?? 1;
-      let offset = (page - 1) * limit;
+      const limit = query.limit ?? totalItem;
+      const page = query.page ?? 1;
+      const offset = (page - 1) * limit;
 
       queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
       values.push(limit, offset);
@@ -123,7 +123,7 @@ export default class RoleRepo {
           itemEnd: Math.min(page * limit, totalItem),
         },
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new BadRequestError(`RoleRepo.query() method error: ${error}`);
     }
   }
@@ -155,7 +155,7 @@ export default class RoleRepo {
     try {
       const { rows }: QueryResult<Role> = await this.fastify.query(queryConfig);
       return rows[0] ?? null;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new CustomError({
         message: `RoleRepo.findById() method error: ${error}`,
         statusCode: StatusCodes.BAD_REQUEST,
@@ -190,24 +190,24 @@ export default class RoleRepo {
         )
       `;
 
-    let queryString = [`SELECT * FROM users`];
+    const queryString = [`SELECT * FROM users`];
 
-    const values: any[] = [roleId];
-    let where: string[] = [];
+    const values: (string | number)[] = [roleId];
+    const where: string[] = [];
     let idx = 2;
 
     if (query) {
-      if (query.email != undefined) {
+      if (query.email !== undefined) {
         where.push(`email ILIKE $${idx++}::text`);
         values.push(`%${query.email.trim()}%`);
       }
 
-      if (query.username != undefined) {
+      if (query.username !== undefined) {
         where.push(`username ILIKE $${idx++}::text`);
         values.push(`%${query.username.trim()}%`);
       }
 
-      if (query.status != undefined) {
+      if (query.status !== undefined) {
         where.push(`status = $${idx++}::text`);
         values.push(query.status);
       }
@@ -248,9 +248,9 @@ export default class RoleRepo {
           values,
         });
 
-        const totalItem = parseInt(rows[0].count);
+        const totalItem = parseInt(rows[0].count, 10);
 
-        if (query?.sort != undefined) {
+        if (query?.sort !== undefined) {
           queryString.push(
             `ORDER BY ${query.sort
               .map((sort) => {
@@ -261,9 +261,9 @@ export default class RoleRepo {
           );
         }
 
-        let limit = query?.limit ?? totalItem;
-        let page = query?.page ?? 1;
-        let offset = (page - 1) * limit;
+        const limit = query?.limit ?? totalItem;
+        const page = query?.page ?? 1;
+        const offset = (page - 1) * limit;
 
         queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
         values.push(limit, offset);
@@ -289,7 +289,7 @@ export default class RoleRepo {
           },
         };
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new BadRequestError(
         `RoleRepo.findUsersByRoleId() method error: ${error}`
       );
@@ -355,7 +355,7 @@ export default class RoleRepo {
     try {
       const { rows } = await this.fastify.query<RoleDetail>(queryConfig);
       return rows[0] ?? null;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new CustomError({
         message: `RoleRepo.findDetailById() method error: ${error}`,
         statusCode: StatusCodes.BAD_REQUEST,
@@ -402,7 +402,7 @@ export default class RoleRepo {
     data: RoleRequestType["UpdateById"]["Body"]
   ): Promise<void> {
     const sets: string[] = [];
-    const values: any[] = [];
+    const values: (string | string[] | Date)[] = [];
     let idx = 1;
 
     if (data.name !== undefined) {

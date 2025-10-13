@@ -1,10 +1,10 @@
 import {
   Pool,
-  PoolClient,
-  PoolConfig,
-  QueryConfig,
-  QueryResultRow,
-  QueryResult,
+  type PoolClient,
+  type PoolConfig,
+  type QueryConfig,
+  type QueryResult,
+  type QueryResultRow,
 } from "pg";
 
 export interface QueryOptions {

@@ -1,11 +1,11 @@
-import { FastifyReply, FastifyRequest } from "fastify";
-import { PackagingRequestType } from "./packaging.schema";
-import { BadRequestError } from "@/shared/error-handler";
+import type { FastifyReply, FastifyRequest } from "fastify";
 import { StatusCodes } from "http-status-codes";
+import { BadRequestError } from "@/shared/error-handler";
 import { convertImage } from "@/shared/utils";
+import type { PackagingRequestType } from "./packaging.schema";
 
-export class PackagingController {
-  static async query(
+export const PackagingController = {
+  async query(
     req: FastifyRequest<PackagingRequestType["Query"]>,
     reply: FastifyReply
   ) {
@@ -24,9 +24,9 @@ export class PackagingController {
         metadata: data.metadata,
       },
     });
-  }
+  },
 
-  static async getById(
+  async getById(
     req: FastifyRequest<PackagingRequestType["GetById"]>,
     reply: FastifyReply
   ) {
@@ -42,9 +42,9 @@ export class PackagingController {
         },
       },
     });
-  }
+  },
 
-  static async getDetailById(
+  async getDetailById(
     req: FastifyRequest<PackagingRequestType["GetDetailById"]>,
     reply: FastifyReply
   ) {
@@ -62,9 +62,9 @@ export class PackagingController {
         },
       },
     });
-  }
+  },
 
-  static async getWarehousesById(
+  async getWarehousesById(
     req: FastifyRequest<PackagingRequestType["GetWarehousesById"]>,
     reply: FastifyReply
   ) {
@@ -80,9 +80,9 @@ export class PackagingController {
       statusText: "OK",
       data,
     });
-  }
+  },
 
-  static async create(
+  async create(
     req: FastifyRequest<PackagingRequestType["Create"]>,
     reply: FastifyReply
   ) {
@@ -108,9 +108,9 @@ export class PackagingController {
         packaging,
       },
     });
-  }
+  },
 
-  static async updateById(
+  async updateById(
     req: FastifyRequest<PackagingRequestType["UpdateById"]>,
     reply: FastifyReply
   ) {
@@ -119,9 +119,9 @@ export class PackagingController {
 
     const unit = req.body.unit || packaging.unit;
     const pcs_ctn =
-      unit == "PIECE" ? null : req.body.pcs_ctn || packaging.pcs_ctn;
+      req.body.pcs_ctn === undefined ? packaging.pcs_ctn : req.body.pcs_ctn;
 
-    if (unit == "CARTON" && !pcs_ctn) {
+    if (unit === "CARTON" && pcs_ctn == null) {
       throw new BadRequestError("Thiếu trường 'pcs_ctn' bắt buộc.");
     }
 
@@ -149,9 +149,9 @@ export class PackagingController {
         message: "Cập nhật bao bì thành công.",
       },
     });
-  }
+  },
 
-  static async uploadPackagingImage(
+  async uploadPackagingImage(
     request: FastifyRequest<PackagingRequestType["UpdateImageById"]>,
     reply: FastifyReply
   ) {
@@ -162,18 +162,18 @@ export class PackagingController {
 
     if (
       !request.multerField ||
-      !request.multerField["image"] ||
-      !Array.isArray(request.multerField["image"])
+      !request.multerField.image ||
+      !Array.isArray(request.multerField.image)
     ) {
       throw new BadRequestError("Không có file nào tải lên.");
     }
 
-    const file = request.multerField["image"][0];
+    const file = request.multerField.image[0];
 
     await request.packagings.updateImageById(
       packaging.id,
       file,
-      request.currUser!.id
+      request.currUser?.id ?? ""
     );
 
     return reply.send({
@@ -183,9 +183,9 @@ export class PackagingController {
         message: "Cập nhật hinh bao bì thành công.",
       },
     });
-  }
+  },
 
-  // static async deleteById(
+  //  async deleteById(
   //   req: FastifyRequest<{ Params: DeletePackagingByIdParamsType }>,
   //   reply: FastifyReply
   // ) {
@@ -200,4 +200,4 @@ export class PackagingController {
   //     },
   //   });
   // }
-}
+};

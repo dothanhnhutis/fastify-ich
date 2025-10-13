@@ -1,7 +1,7 @@
-import { Static, Type } from "@sinclair/typebox";
+import z from "zod/v4";
 
-const sessionIdParamSchema = Type.Object({
-  id: Type.String(),
+const sessionIdParamSchema = z.object({
+  id: z.string(),
 });
 
 export const sessionSchema = {
@@ -12,6 +12,6 @@ export const sessionSchema = {
 
 export type SessionRequestType = {
   DeleteById: {
-    Params: Static<typeof sessionIdParamSchema>;
+    Params: z.infer<typeof sessionIdParamSchema>;
   };
 };

@@ -1,10 +1,10 @@
 import z from "zod/v4";
+import { buildSortField } from "@/shared/utils";
 import {
   queryParamToArray,
   queryParamToString,
   queryStringSchema,
 } from "../global.schema";
-import { buildSortField } from "@/shared/utils";
 
 const packagingParamsSchema = z.object({
   id: z.string(),
@@ -137,7 +137,8 @@ const updatePackagingByIdBodySchema = z
     ),
     pcs_ctn: z
       .int("Quy cách phải là số nguyên.")
-      .min(1, "Quy cách phải là số nguyên dương."),
+      .min(1, "Quy cách phải là số nguyên dương.")
+      .nullable(),
     status: z.enum(
       ["ACTIVE", "INACTIVE"],
       "Trạng thái phải là một trong 'ACTIVE', 'INACTIVE'."

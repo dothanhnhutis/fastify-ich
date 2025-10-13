@@ -1,13 +1,11 @@
+import type { FastifyInstance } from "fastify";
+import type { QueryConfig } from "pg";
 import sharp from "sharp";
-import { QueryConfig } from "pg";
-import { FastifyInstance } from "fastify";
-
-import { UserRequsetType } from "@/modules/v1/users/user.schema";
-import Password from "@/shared/password";
+import type { UserRequsetType } from "@/modules/v1/users/user.schema";
 import { BadRequestError } from "@/shared/error-handler";
-import { deleteFile, isDataString } from "@/shared/utils";
-import { RoleRequestType } from "@/modules/v1/roles/role.schema";
-import { MulterFile } from "@/shared/middleware/multer";
+import type { MulterFile } from "@/shared/middleware/multer";
+import { Password } from "@/shared/password";
+import { deleteFile } from "@/shared/utils";
 
 export default class UserRepo {
   constructor(private fastify: FastifyInstance) {}
@@ -498,11 +496,11 @@ export default class UserRepo {
         queryConfig
       );
       return userDetails[0] ?? null;
-    } catch (err: unknown) {
-      // this.fastify.logger.error(
-      //   { metadata: { query: queryConfig } },
-      //   `UserRepo.findUserDetailById() method error: ${err}`
-      // );
+    } catch (error: unknown) {
+      this.fastify.logger.error(
+        { metadata: { query: queryConfig } },
+        `UserRepo.findUserDetailById() method error: ${error}`
+      );
       return null;
     }
   }
@@ -528,27 +526,27 @@ export default class UserRepo {
 
     const queryString = [`SELECT * FROM roles`];
 
-    const values: any[] = [userId];
-    let where: string[] = [];
+    const values: (string | number | string[])[] = [userId];
+    const where: string[] = [];
     let idx = 2;
 
     if (query) {
-      if (query.name != undefined) {
+      if (query.name !== undefined) {
         where.push(`name ILIKE $${idx++}::text`);
         values.push(`%${query.name.trim()}%`);
       }
 
-      if (query.permissions != undefined) {
+      if (query.permissions !== undefined) {
         where.push(`permissions @> $${idx++}::text[]`);
         values.push(query.permissions);
       }
 
-      if (query.description != undefined) {
+      if (query.description !== undefined) {
         where.push(`description ILIKE $${idx++}::text`);
         values.push(`%${query.description.trim()}%`);
       }
 
-      if (query.status != undefined) {
+      if (query.status !== undefined) {
         where.push(`status = $${idx++}::text`);
         values.push(`${query.status}`);
       }
@@ -577,9 +575,9 @@ export default class UserRepo {
           values,
         });
 
-        const totalItem = parseInt(rows[0].count);
+        const totalItem = parseInt(rows[0].count, 10);
 
-        if (query && query.sort != undefined) {
+        if (query && query.sort !== undefined) {
           const unqueField = query.sort.reduce<Record<string, string>>(
             (prev, curr) => {
               const [field, direction] = curr.split(".");
@@ -596,9 +594,9 @@ export default class UserRepo {
           queryString.push(`ORDER BY ${orderBy}`);
         }
 
-        let limit = query?.limit ?? totalItem;
-        let page = query?.page ?? 1;
-        let offset = (page - 1) * limit;
+        const limit = query?.limit ?? totalItem;
+        const page = query?.page ?? 1;
+        const offset = (page - 1) * limit;
 
         queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
         values.push(limit, offset);
@@ -638,7 +636,7 @@ export default class UserRepo {
   async findUsers(
     query: UserRequsetType["Query"]["Querystring"]
   ): Promise<QueryUsers> {
-    let queryString = [
+    const queryString = [
       `
       SELECT
           u.id,
@@ -696,21 +694,21 @@ export default class UserRepo {
       
       `,
     ];
-    const values: any[] = [];
-    let where: string[] = [];
+    const values: (string | number)[] = [];
+    const where: string[] = [];
     let idx = 1;
 
-    if (query.username != undefined) {
+    if (query.username !== undefined) {
       where.push(`u.username ILIKE $${idx++}::text`);
       values.push(`%${query.username}%`);
     }
 
-    if (query.email != undefined) {
+    if (query.email !== undefined) {
       where.push(`u.email ILIKE $${idx++}::text`);
       values.push(`%${query.email}%`);
     }
 
-    if (query.status != undefined) {
+    if (query.status !== undefined) {
       where.push(`u.status = $${idx++}::text`);
       values.push(`${query.status}`);
     }
@@ -746,9 +744,9 @@ export default class UserRepo {
           values,
         });
 
-        const totalItem = parseInt(rows[0].count);
+        const totalItem = parseInt(rows[0].count, 10);
 
-        if (query.sort != undefined) {
+        if (query.sort !== undefined) {
           queryString.push(
             `ORDER BY ${query.sort
               .map((sort) => {
@@ -759,9 +757,9 @@ export default class UserRepo {
           );
         }
 
-        let limit = query.limit ?? totalItem;
-        let page = query.page ?? 1;
-        let offset = (page - 1) * limit;
+        const limit = query.limit ?? totalItem;
+        const page = query.page ?? 1;
+        const offset = (page - 1) * limit;
 
         queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
         values.push(limit, offset);
@@ -789,7 +787,7 @@ export default class UserRepo {
           },
         };
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new BadRequestError(`UserRepo.query() method error: ${error}`);
     }
   }
@@ -810,11 +808,11 @@ export default class UserRepo {
         const { rows: userRow } = await client.query<UserPassword>(queryConfig);
 
         if (data.roleIds && data.roleIds.length > 0) {
-          const values: any[] = [];
+          const values: string[] = [];
 
           const placeholder = data.roleIds
             .map((id, i) => {
-              let idx = i * 2;
+              const idx = i * 2;
               values.push(userRow[0].id, id);
               return `($${idx + 1}, $${idx + 2})`;
             })
@@ -851,11 +849,11 @@ export default class UserRepo {
     userId: string,
     data: UserRequsetType["UpdateById"]["Body"]
   ): Promise<void> {
-    if (Object.keys(data).length == 0) return;
+    if (Object.keys(data).length === 0) return;
     try {
       await this.fastify.transaction(async (client) => {
         const sets: string[] = [];
-        const values: any[] = [];
+        const values: (string | null | Date)[] = [];
         let idx = 1;
 
         if (data.username !== undefined) {
@@ -868,7 +866,10 @@ export default class UserRepo {
             `status = $${idx++}::text`,
             `deactived_at = $${idx++}::timestamptz`
           );
-          values.push(data.status, data.status == "ACTIVE" ? null : new Date());
+          values.push(
+            data.status,
+            data.status === "ACTIVE" ? null : new Date()
+          );
         }
 
         if (values.length > 0) {

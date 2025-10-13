@@ -1,8 +1,12 @@
-import { FastifyRequest, FastifyReply, preHandlerHookHandler } from "fastify";
-import { MultipartFile } from "@fastify/multipart";
-import fs from "fs";
-import path from "path";
-import { pipeline } from "stream/promises";
+import fs from "node:fs";
+import path from "node:path";
+import { pipeline } from "node:stream/promises";
+import type { MultipartFile } from "@fastify/multipart";
+import type {
+  FastifyReply,
+  FastifyRequest,
+  preHandlerHookHandler,
+} from "fastify";
 
 // ==================== TYPES ====================
 
@@ -160,10 +164,10 @@ export function singleUpload(
     limits: { ...DEFAULT_CONFIG.limits, ...options.limits },
   };
 
-  return async function (
+  return async (
     request: FastifyRequest,
     reply: FastifyReply
-  ): Promise<void> {
+  ): Promise<void> => {
     try {
       const data = await request.file({
         limits: {
@@ -227,10 +231,10 @@ export function multipleUpload(
   const maxFiles = maxCount || config.limits.files;
   const fieldnames = Array.isArray(fieldname) ? fieldname : [fieldname];
 
-  return async function (
+  return async (
     request: FastifyRequest,
     reply: FastifyReply
-  ): Promise<void> {
+  ): Promise<void> => {
     try {
       const parts = request.parts();
       const files: UploadedFileInfo[] = [];
@@ -308,10 +312,10 @@ export function fieldsUpload(
     fields.map((f) => [f.name, f.maxCount || 1])
   );
 
-  return async function (
+  return async (
     request: FastifyRequest,
     reply: FastifyReply
-  ): Promise<void> {
+  ): Promise<void> => {
     try {
       const parts = request.parts();
       const filesMap: FilesMap = {};

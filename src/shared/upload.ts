@@ -1,8 +1,8 @@
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
+import { pipeline } from "node:stream/promises";
+import type { MultipartFile } from "@fastify/multipart";
 import { v7 as uuidv7 } from "uuid";
-import { pipeline } from "stream/promises";
-import { MultipartFile } from "@fastify/multipart";
 
 type FileStoreType = {
   originalname: string;

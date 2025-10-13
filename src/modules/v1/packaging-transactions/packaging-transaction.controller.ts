@@ -1,11 +1,10 @@
+import type { FastifyReply, FastifyRequest } from "fastify";
 import { StatusCodes } from "http-status-codes";
-import { FastifyReply, FastifyRequest } from "fastify";
-
-import {
+import { BadRequestError } from "@/shared/error-handler";
+import type {
   PackagingTransactionDBType,
   PackagingTransactionRequestType,
 } from "./packaging-transaction.schema";
-import { BadRequestError } from "@/shared/error-handler";
 
 export class PackagingTransactionController {
   static async create(
@@ -20,8 +19,8 @@ export class PackagingTransactionController {
     if (!existsFromWarehouse)
       throw new BadRequestError("Mã kho hàng không tồn tại.");
 
-    if (type == "TRANSFER") {
-      if (from_warehouse_id == request.body.to_warehouse_id)
+    if (type === "TRANSFER") {
+      if (from_warehouse_id === request.body.to_warehouse_id)
         throw new BadRequestError(
           "Mã kho đích không được trùng với mã kho nguồn."
         );
@@ -48,7 +47,7 @@ export class PackagingTransactionController {
         );
 
       if (
-        (type == "EXPORT" || type == "TRANSFER") &&
+        (type === "EXPORT" || type === "TRANSFER") &&
         fromInventory.quantity - item.quantity < 0
       ) {
         throw new BadRequestError(
@@ -60,16 +59,16 @@ export class PackagingTransactionController {
         ...item,
         warehouse_id: from_warehouse_id,
         signed_quantity:
-          type == "IMPORT"
+          type === "IMPORT"
             ? item.quantity
-            : type == "EXPORT" || type == "TRANSFER"
+            : type === "EXPORT" || type === "TRANSFER"
             ? -item.quantity
-            : type == "ADJUST"
+            : type === "ADJUST"
             ? item.quantity - fromInventory.quantity
             : 0,
       });
 
-      if (type == "TRANSFER") {
+      if (type === "TRANSFER") {
         await request.packagingTransactions.findOrCreatePackagingInventory(
           item.packaging_id,
           request.body.to_warehouse_id
@@ -122,8 +121,8 @@ export class PackagingTransactionController {
     };
 
     if (
-      transaction.status == "COMPLETED" &&
-      request.body.status == transaction.status &&
+      transaction.status === "COMPLETED" &&
+      request.body.status === transaction.status &&
       Object.keys(request.body).length > 1
     )
       throw new BadRequestError(

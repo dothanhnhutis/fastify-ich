@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 
 type AeadAlgorithm =
   | "aes-128-gcm"

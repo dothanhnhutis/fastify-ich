@@ -1,30 +1,28 @@
-import path from "path";
-import fastify, { FastifyReply, FastifyRequest } from "fastify";
-import addErrors from "ajv-errors";
-import addFormats from "ajv-formats";
+import path from "node:path";
+import { Readable } from "node:stream";
+import { createGzip } from "node:zlib";
 import fastifyCors from "@fastify/cors";
-import fastifyStatic from "@fastify/static";
 import fastifyHelmet from "@fastify/helmet";
 import fastifyMultipart from "@fastify/multipart";
-
-import config from "./config";
-import appRoutes from "../modules";
-import logger from "./plugins/logger";
-import redisPlugin from "./plugins/redis";
-import rabbitMQPlugin from "./plugins/amqp";
-import cookiePlugin from "./plugins/cookie";
-import sessionPlugin from "./plugins/session";
-import compressionPlugin from "./plugins/compression";
-import { errorHandler } from "./error-handler";
-import postgreSQLPlugin from "./plugins/postgres";
-import { Readable } from "stream";
-import { createGzip } from "zlib";
-
+import fastifyStatic from "@fastify/static";
+import addErrors from "ajv-errors";
+import addFormats from "ajv-formats";
+import fastify, { FastifyReply, FastifyRequest } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import {
   serializerCompiler,
   validatorCompiler,
 } from "fastify-type-provider-zod";
+import appRoutes from "../modules";
+import config from "./config";
+import { errorHandler } from "./error-handler";
+import rabbitMQPlugin from "./plugins/amqp";
+import compressionPlugin from "./plugins/compression";
+import cookiePlugin from "./plugins/cookie";
+import logger from "./plugins/logger";
+import postgreSQLPlugin from "./plugins/postgres";
+import redisPlugin from "./plugins/redis";
+import sessionPlugin from "./plugins/session";
 
 // function getEncoder(req: FastifyRequest, reply: FastifyReply) {
 //   const accept = req.headers["accept-encoding"] || "";

@@ -1,5 +1,4 @@
-import { FastifyInstance } from "fastify";
-import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
+import type { FastifyInstance } from "fastify";
 import { FileController } from "./file.controller";
 
 export default function imageRoutes(fastify: FastifyInstance) {

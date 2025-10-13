@@ -1,15 +1,14 @@
 import argon2 from "argon2";
 import genPass from "generate-password";
 
-export default class Password {
-  static hash(data: string): Promise<string> {
+export const Password = {
+  hash(data: string): Promise<string> {
     return argon2.hash(data);
-  }
-  static async compare(hashData: string, data: string) {
+  },
+  async compare(hashData: string, data: string) {
     return await argon2.verify(hashData, data).catch(() => false);
-  }
-
-  static generate() {
+  },
+  generate() {
     return genPass.generate({
       length: 15,
       numbers: true,
@@ -18,5 +17,5 @@ export default class Password {
       symbols: "@$!%*?&",
       strict: true,
     });
-  }
-}
+  },
+};

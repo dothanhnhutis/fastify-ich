@@ -1,12 +1,11 @@
+import type { FastifyReply, FastifyRequest } from "fastify";
 import { StatusCodes } from "http-status-codes";
-import { FastifyReply, FastifyRequest } from "fastify";
-
-import Password from "@/shared/password";
-import { AuthRequestType } from "./auth.schema";
 import { BadRequestError } from "@/shared/error-handler";
+import { Password } from "@/shared/password";
+import type { AuthRequestType } from "./auth.schema";
 
-export class AuthController {
-  static async signIn(
+export const AuthController = {
+  async signIn(
     req: FastifyRequest<AuthRequestType["SignIn"]>,
     reply: FastifyReply
   ) {
@@ -37,5 +36,5 @@ export class AuthController {
           message: "Đăng nhập thành công.",
         },
       });
-  }
-}
+  },
+};

@@ -1,9 +1,13 @@
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
+import { pipeline } from "node:stream/promises";
+import type { MultipartFile } from "@fastify/multipart";
+import type {
+  FastifyReply,
+  FastifyRequest,
+  preHandlerHookHandler,
+} from "fastify";
 import { v7 as uuidv7 } from "uuid";
-import { pipeline } from "stream/promises";
-import { MultipartFile } from "@fastify/multipart";
-import { FastifyReply, FastifyRequest, preHandlerHookHandler } from "fastify";
 import { BadRequestError } from "../error-handler";
 
 declare module "fastify" {
@@ -207,7 +211,7 @@ export const multerMiddleware = (
       ];
     })
   );
-  return async (request: FastifyRequest, reply: FastifyReply) => {
+  return async (request: FastifyRequest, _: FastifyReply) => {
     if (!request.isMultipart())
       throw new BadRequestError("Request must be multipart/form-data");
 
@@ -222,7 +226,7 @@ export const multerMiddleware = (
         if (field === undefined)
           throw new Error(`Field '${fieldname}' không được phép`);
 
-        if (part.type === "file" && field.type == "file") {
+        if (part.type === "file" && field.type === "file") {
           if (!filesMap[fieldname]) {
             filesMap[fieldname] = [];
           }
@@ -261,7 +265,7 @@ export const multerMiddleware = (
           (filesMap[fieldname] as MulterFile[]).push(fileInfo);
         }
 
-        if (part.type === "field" && field.type == "text") {
+        if (part.type === "field" && field.type === "text") {
           if (Buffer.byteLength(part.value as string, "utf8") > field.fieldSize)
             throw new Error(
               `Field "${fieldname}" vượt quá số bytes cho phép (${field.fieldSize})`

@@ -1,14 +1,14 @@
-import {
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import type {
   FastifyInstance,
   FastifyPluginOptions,
   FastifyReply,
   RouteOptions,
 } from "fastify";
-import os from "os";
-import fs from "fs";
-import path from "path";
 import fp from "fastify-plugin";
-import pino, { type Level, Logger } from "pino";
+import pino, { type Level, type Logger } from "pino";
 import { createStream } from "rotating-file-stream";
 
 declare module "fastify" {

@@ -1,12 +1,8 @@
-import Fastify, {
-  FastifyInstance,
-  FastifyReply,
-  FastifyRequest,
-} from "fastify";
-import * as zlib from "zlib";
-import { promisify } from "util";
+import { Readable } from "node:stream";
+import { promisify } from "node:util";
+import * as zlib from "node:zlib";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import fp from "fastify-plugin";
-import { Readable } from "stream";
 
 // Promisify compression methods for async/await
 const gzipAsync = promisify(zlib.gzip);
@@ -66,7 +62,7 @@ function compression(payload: unknown, configs: compressionT) {
         ...configs.options,
       })
     );
-  } else if (configs.method == "deflate") {
+  } else if (configs.method === "deflate") {
   } else {
     throw new Error("");
   }

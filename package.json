@@ -17,6 +17,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.7.0",
   "devDependencies": {
+    "@biomejs/biome": "2.2.5",
     "@changesets/cli": "^2.29.6",
     "@types/amqplib": "^0.10.7",
     "@types/mime-types": "^3.0.1",

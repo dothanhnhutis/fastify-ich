@@ -1,9 +1,9 @@
+import type { FastifyInstance } from "fastify";
 import fp from "fastify-plugin";
-import Redis, { RedisOptions as RedisOpts } from "ioredis";
-import { FastifyInstance } from "fastify";
+import { StatusCodes } from "http-status-codes";
+import Redis, { type RedisOptions as RedisOpts } from "ioredis";
 import SessionRepo from "../db/repositories/session.repo";
 import { CustomError } from "../error-handler";
-import { StatusCodes } from "http-status-codes";
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -125,7 +125,7 @@ async function redisCache(fastify: FastifyInstance, options: RedisOptions) {
     // Create session with error handling
     try {
       req.sessions = new SessionRepo(fastify);
-    } catch (error: unknown) {
+    } catch (_: unknown) {
       // fastify.logger.error("Session initialization failed", { error });
       throw new CustomError({
         message: "Session initialization failed",

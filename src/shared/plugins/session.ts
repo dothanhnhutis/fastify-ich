@@ -1,5 +1,5 @@
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import fp from "fastify-plugin";
-import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { CryptoAES } from "../crypto";
 
 declare module "fastify" {

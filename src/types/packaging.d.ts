@@ -12,7 +12,7 @@ type Packaging = {
   id: string;
   name: string;
   min_stock_level: number;
-  unit: string;
+  unit: "PIECE" | "CARTON";
   pcs_ctn: number | null;
   status: string;
   deactived_at: Date | null;

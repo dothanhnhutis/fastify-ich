@@ -1,9 +1,8 @@
-import { UAParser } from "ua-parser-js";
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 import { StatusCodes } from "http-status-codes";
-
-import config from "@/shared/config";
+import { UAParser } from "ua-parser-js";
 import { v4 as uuidv4 } from "uuid";
+import config from "@/shared/config";
 import { CustomError } from "@/shared/error-handler";
 
 const SCAN_COUNT = 2;
@@ -21,7 +20,7 @@ export default class SessionRepo {
     const cookieOpt: CookieOptions = {
       path: "/",
       httpOnly: true,
-      secure: config.NODE_ENV == "production",
+      secure: config.NODE_ENV === "production",
       expires: new Date(now.getTime() + config.SESSION_MAX_AGE),
       ...data.cookie,
     };

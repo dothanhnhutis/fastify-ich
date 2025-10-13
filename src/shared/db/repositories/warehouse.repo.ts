@@ -1,9 +1,8 @@
-import { FastifyInstance } from "fastify";
-import { QueryConfig, QueryResult } from "pg";
-
-import { isDataString } from "@/shared/utils";
-import { WarehouseRequestType } from "@/modules/v1/warehouses/warehouse.schema";
+import type { FastifyInstance } from "fastify";
+import type { QueryConfig, QueryResult } from "pg";
+import type { WarehouseRequestType } from "@/modules/v1/warehouses/warehouse.schema";
 import { BadRequestError } from "@/shared/error-handler";
+import { isDataString } from "@/shared/utils";
 
 export default class WarehouseRepo {
   constructor(private fastify: FastifyInstance) {}
@@ -11,7 +10,7 @@ export default class WarehouseRepo {
   async findWarehouses(
     query: WarehouseRequestType["Query"]["Querystring"]
   ): Promise<{ warehouses: Warehouse[]; metadata: Metadata }> {
-    let queryString = [
+    const queryString = [
       `
       SELECT
           w.*,
@@ -26,21 +25,21 @@ export default class WarehouseRepo {
           LEFT JOIN packagings p ON (pi.packaging_id = p.id)
       `,
     ];
-    const values: any[] = [];
-    let where: string[] = [];
+    const values: (string | number)[] = [];
+    const where: string[] = [];
     let idx = 1;
 
-    if (query.name != undefined) {
+    if (query.name !== undefined) {
       where.push(`w.name ILIKE $${idx++}::text`);
       values.push(`%${query.name.trim()}%`);
     }
 
-    if (query.address != undefined) {
+    if (query.address !== undefined) {
       where.push(`w.address ILIKE $${idx++}::text`);
       values.push(`%${query.address.trim()}%`);
     }
 
-    if (query.deleted != undefined) {
+    if (query.deleted !== undefined) {
       where.push(
         query.deleted ? `disabled_at IS NOT NULL` : `disabled_at IS NULL`
       );
@@ -48,24 +47,12 @@ export default class WarehouseRepo {
 
     if (query.created_from) {
       where.push(`w.created_at >= $${idx++}::timestamptz`);
-      values.push(
-        `${
-          isDataString(query.created_from.trim())
-            ? `${query.created_from.trim()}T00:00:00.000Z`
-            : query.created_from.trim()
-        }`
-      );
+      values.push(query.created_from);
     }
 
     if (query.created_to) {
       where.push(`w.created_at <= $${idx++}::timestamptz`);
-      values.push(
-        `${
-          isDataString(query.created_to.trim())
-            ? `${query.created_to.trim()}T23:59:59.999Z`
-            : query.created_to.trim()
-        }`
-      );
+      values.push(query.created_to);
     }
 
     if (where.length > 0) {
@@ -82,9 +69,9 @@ export default class WarehouseRepo {
           )}) SELECT  COUNT(*)::int AS count FROM warehouses;`,
           values,
         });
-        const totalItem = parseInt(rows[0].count);
+        const totalItem = parseInt(rows[0].count, 10);
 
-        if (query.sort != undefined) {
+        if (query.sort !== undefined) {
           const unqueField = query.sort.reduce<Record<string, string>>(
             (prev, curr) => {
               const [field, direction] = curr.split(".");
@@ -101,9 +88,9 @@ export default class WarehouseRepo {
           queryString.push(`ORDER BY ${orderBy}`);
         }
 
-        let limit = query.limit ?? totalItem;
-        let page = query.page ?? 1;
-        let offset = (page - 1) * limit;
+        const limit = query.limit ?? totalItem;
+        const page = query.page ?? 1;
+        const offset = (page - 1) * limit;
 
         queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
         values.push(limit, offset);
@@ -131,7 +118,7 @@ export default class WarehouseRepo {
           },
         };
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new BadRequestError(`WarehouseRepo.query() method error: ${error}`);
     }
   }
@@ -159,7 +146,7 @@ export default class WarehouseRepo {
       const { rows }: QueryResult<Warehouse> =
         await this.fastify.query<Warehouse>(queryConfig);
       return rows[0] ?? null;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new BadRequestError(
         `WarehouseRepo.findById() method error: ${error}`
       );
@@ -186,25 +173,25 @@ export default class WarehouseRepo {
         )
     `;
     const queryString = [`SELECT * FROM packagings`];
-    const values: any[] = [warehouseId];
-    let where: string[] = [];
+    const values: (string | number)[] = [warehouseId];
+    const where: string[] = [];
     let idx = 2;
 
     if (query) {
-      if (query.name != undefined) {
+      if (query.name !== undefined) {
         where.push(`name ILIKE $${idx++}::text`);
         values.push(`%${query.name.trim()}%`);
       }
 
-      if (query.unit != undefined) {
+      if (query.unit !== undefined) {
         where.push(`unit = $${idx++}::text`);
         values.push(query.unit);
       }
 
-      if (query.status != undefined) {
+      if (query.status !== undefined) {
         where.push(
           `status = $${idx++}::text`,
-          query.status == "ACTIVE"
+          query.status === "ACTIVE"
             ? "deactived_at IS NULL"
             : "deactived_at IS NOT NULL"
         );
@@ -246,9 +233,9 @@ export default class WarehouseRepo {
           ),
           values,
         });
-        const totalItem = parseInt(rows[0].count);
+        const totalItem = parseInt(rows[0].count, 10);
 
-        if (query?.sort != undefined) {
+        if (query?.sort !== undefined) {
           const unqueField = query.sort.reduce<Record<string, string>>(
             (prev, curr) => {
               const [field, direction] = curr.split(".");
@@ -265,9 +252,9 @@ export default class WarehouseRepo {
           queryString.push(`ORDER BY ${orderBy}`);
         }
 
-        let limit = query?.limit ?? totalItem;
-        let page = query?.page ?? 1;
-        let offset = (page - 1) * limit;
+        const limit = query?.limit ?? totalItem;
+        const page = query?.page ?? 1;
+        const offset = (page - 1) * limit;
 
         queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
         values.push(limit, offset);
@@ -295,7 +282,7 @@ export default class WarehouseRepo {
           },
         };
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new BadRequestError(
         `PackagingRepo.findPackagingsByWarehouseId() method error: ${error}`
       );
@@ -366,7 +353,7 @@ export default class WarehouseRepo {
       const { rows }: QueryResult<WarehouseDetail> =
         await this.fastify.query<WarehouseDetail>(queryConfig);
       return rows[0] ?? null;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new BadRequestError(
         `WarehouseRepo.findWarehouseDetailById() method error: ${error}`
       );
@@ -416,7 +403,7 @@ export default class WarehouseRepo {
     warehouseId: string,
     data: WarehouseRequestType["UpdateById"]["Body"]
   ): Promise<void> {
-    if (Object.keys(data).length == 0) return;
+    if (Object.keys(data).length === 0) return;
 
     try {
       await this.fastify.transaction(async (client) => {
@@ -455,7 +442,7 @@ export default class WarehouseRepo {
 
         let idx = 1;
         const sets: string[] = [];
-        const values: any[] = [];
+        const values: (number | string | null | Date)[] = [];
         if (data.name !== undefined) {
           sets.push(`"name" = $${idx++}`);
           values.push(data.name);
@@ -471,7 +458,10 @@ export default class WarehouseRepo {
             `status = $${idx++}::text`,
             `deactived_at = $${idx++}::timestamptz`
           );
-          values.push(data.status, data.status == "ACTIVE" ? null : new Date());
+          values.push(
+            data.status,
+            data.status === "ACTIVE" ? null : new Date()
+          );
         }
 
         values.push(warehouseId);
@@ -483,9 +473,7 @@ export default class WarehouseRepo {
             )} WHERE id = $${idx} RETURNING *;`,
             values,
           };
-          const { rows: warehouses } = await client.query<Warehouse>(
-            queryConfig
-          );
+          await client.query<Warehouse>(queryConfig);
         }
       });
     } catch (error) {

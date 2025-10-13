@@ -1,5 +1,5 @@
+import type { FastifyInstance, FastifyRequest } from "fastify";
 import fp from "fastify-plugin";
-import { FastifyInstance, FastifyRequest } from "fastify";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -68,31 +68,31 @@ function serializeCookie(
 
   let cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}`;
 
-  if (maxAge != undefined) {
+  if (maxAge !== undefined) {
     cookie += `; Max-Age=${Math.floor(maxAge / 1000)}`;
   }
 
-  if (expires != undefined) {
+  if (expires !== undefined) {
     cookie += `; Expires=${expires.toUTCString()}`;
   }
 
-  if (httpOnly != undefined) {
+  if (httpOnly !== undefined) {
     cookie += "; HttpOnly";
   }
 
-  if (secure != undefined) {
+  if (secure !== undefined) {
     cookie += "; Secure";
   }
 
-  if (sameSite != undefined) {
+  if (sameSite !== undefined) {
     cookie += `; SameSite=${sameSite}`;
   }
 
-  if (path != undefined) {
+  if (path !== undefined) {
     cookie += `; Path=${path}`;
   }
 
-  if (domain != undefined) {
+  if (domain !== undefined) {
     cookie += `; Domain=${domain}`;
   }
 
@@ -104,7 +104,12 @@ function parseCookies(cookieHeader?: string): Map<string, string> {
   if (!cookieHeader) return cookies;
   cookieHeader.split("; ").forEach((cookie) => {
     const [name, value] = cookie.trim().split("=").map(decodeURIComponent);
-    if (name && value && typeof name == "string" && typeof value == "string") {
+    if (
+      name &&
+      value &&
+      typeof name === "string" &&
+      typeof value === "string"
+    ) {
       cookies.set(name, value);
     }
   });

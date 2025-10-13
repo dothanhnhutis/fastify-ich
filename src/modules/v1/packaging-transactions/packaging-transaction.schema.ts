@@ -1,174 +1,118 @@
 import { FastifySchema } from "fastify";
-import { Static, Type } from "@sinclair/typebox";
+import z from "zod/v4";
 
-const packagingTransactionParamsSchema = Type.Object({
-  id: Type.String({
-    errorMessage: {
-      type: "Mã phiếu kho phải là chuỗi.",
-    },
-  }),
+const packagingTransactionParamsSchema = z.object({
+  id: z.string(),
 });
 
-const createPackagingTransactionBaseBody = Type.Object({
-  from_warehouse_id: Type.String({
-    minLength: 1,
-    errorMessage: {
-      type: "Mã kho hàng phải là chuỗi.",
-      minLength: "Mã kho hàng không được bỏ trống.",
+const createPackagingTransactionBaseBody = z.object({
+  from_warehouse_id: z
+    .string("Mã kho hàng phải là chuỗi.")
+    .trim()
+    .min(1, "Mã kho hàng không được bỏ trống."),
+  note: z.string("Ghi chú phải là chuỗi.").default(""),
+  transaction_date: z.iso.datetime({
+    error: (ctx) => {
+      if (ctx.code === "invalid_type") return "Ngày lập phiếu phải là chuỗi.";
+      if (ctx.code === "invalid_format")
+        return "Ngày lập phiếu phải là chuỗi date-time. ex: 2025-09-05T01:28:57Z";
     },
   }),
-  note: Type.String({
-    default: "",
-    errorMessage: {
-      type: "Ghi chú phải là chuỗi.",
-    },
-  }),
-  transaction_date: Type.String({
-    format: "date-time",
-    errorMessage: {
-      type: "Ngày lập phiếu phải là chuỗi.",
-      format:
-        "Ngày lập phiếu phải là chuỗi date-time. ex: 2025-09-05T01:28:57Z",
-    },
-  }),
-  status: Type.String({
-    default: "DRAFT",
-    enum: ["DRAFT", "CREATED", "COMPLETED"],
-    errorMessage: {
-      type: "Trạng thái phiếu phải là chuỗi.",
-      enum: `Trạng thái phiếu phải là 'DRAFT', 'CREATED' hoặc 'COMPLETED'.`,
-    },
-  }),
-  items: Type.Array(
-    Type.Object({
-      packaging_id: Type.String({
-        minLength: 1,
-        errorMessage: {
-          type: "Mã bao bì phải là chuỗi.",
-          minLength: "Mã bao bì không được bỏ trống.",
-        },
-      }),
-      quantity: Type.Integer({
-        minimum: 1,
-        errorMessage: {
-          type: "Số lượng phải là số nguyên.",
-          minimum: "Số lượng phải là số nguyên dương",
-        },
-      }),
-    }),
-    {
-      minItems: 1,
-      errorMessage: {
-        type: "Danh sách bao bì phải là mãng.",
-        minItems: "Danh sách bao bì không được bỏ trống.",
-      },
-    }
+  status: z.enum(
+    ["DRAFT", "CREATED", "COMPLETED"],
+    `Trạng thái phiếu phải là 'DRAFT', 'CREATED' hoặc 'COMPLETED'.`
   ),
+  items: z
+    .array(
+      z.object({
+        packaging_id: z.string("Mã bao bì phải là chuỗi."),
+        quantity: z
+          .int("Số lượng phải là số nguyên.")
+          .min(1, "Số lượng phải >=1"),
+      }),
+      "Danh sách bao bì phải là mãng."
+    )
+    .min(1, "Danh sách bao bì không được bỏ trống."),
 });
 
-const createPackagingTransactionImportBody = Type.Composite([
-  createPackagingTransactionBaseBody,
-  Type.Object({
-    type: Type.Literal("IMPORT", {
-      errorMessage: {
-        type: "Loại phiếu phải là 'IMPORT', 'EXPORT', 'ADJUST' hoặc 'TRANSFER'.",
-      },
-    }),
-  }),
+const createPackagingTransactionImportBody =
+  createPackagingTransactionBaseBody.extend({
+    type: z.literal(
+      "IMPORT",
+      "Loại phiếu phải là 'IMPORT', 'EXPORT', 'ADJUST' hoặc 'TRANSFER'."
+    ),
+  });
+
+const createPackagingTransactionExportBody =
+  createPackagingTransactionBaseBody.extend({
+    type: z.literal(
+      "EXPORT",
+      "Loại phiếu phải là 'IMPORT', 'EXPORT', 'ADJUST' hoặc 'TRANSFER'."
+    ),
+  });
+
+const createPackagingTransactionAdjustBody =
+  createPackagingTransactionBaseBody.extend({
+    type: z.literal(
+      "ADJUST",
+      "Loại phiếu phải là 'IMPORT', 'EXPORT', 'ADJUST' hoặc 'TRANSFER'."
+    ),
+  });
+
+const createPackagingTransactionTransferBody =
+  createPackagingTransactionBaseBody.extend({
+    type: z.literal(
+      "TRANSFER",
+      "Loại phiếu phải là 'IMPORT', 'EXPORT', 'ADJUST' hoặc 'TRANSFER'."
+    ),
+    to_warehouse_id: z
+      .string("Mã kho đích phải là chuỗi.")
+      .trim()
+      .min(1, "Mã kho đích không được bỏ trống."),
+  });
+
+const createPackagingTransactionBody = z.discriminatedUnion("type", [
+  createPackagingTransactionImportBody,
+  createPackagingTransactionExportBody,
+  createPackagingTransactionAdjustBody,
+  createPackagingTransactionTransferBody,
 ]);
 
-const createPackagingTransactionExportBody = Type.Composite([
-  createPackagingTransactionBaseBody,
-  Type.Object({
-    type: Type.Literal("EXPORT", {
-      errorMessage: {
-        type: "Loại phiếu phải là 'IMPORT', 'EXPORT', 'ADJUST' hoặc 'TRANSFER'.",
-      },
-    }),
-  }),
-]);
-
-const createPackagingTransactionAdjustBody = Type.Composite([
-  createPackagingTransactionBaseBody,
-  Type.Object({
-    type: Type.Literal("ADJUST", {
-      errorMessage: {
-        type: "Loại phiếu phải là 'IMPORT', 'EXPORT', 'ADJUST' hoặc 'TRANSFER'.",
-      },
-    }),
-  }),
-]);
-
-const createPackagingTransactionTransferBody = Type.Composite([
-  createPackagingTransactionBaseBody,
-  Type.Object({
-    type: Type.Literal("TRANSFER", {
-      errorMessage: {
-        type: "Loại phiếu phải là 'IMPORT', 'EXPORT', 'ADJUST' hoặc 'TRANSFER'.",
-      },
-    }),
-    to_warehouse_id: Type.String({
-      minLength: 1,
-      errorMessage: {
-        type: "Mã kho đích phải là chuỗi.",
-        minLength: "Mã kho đích không được bỏ trống.",
-      },
-    }),
-  }),
-]);
-
-const createPackagingTransactionBody = Type.Unsafe({
-  oneOf: [
-    createPackagingTransactionImportBody,
-    createPackagingTransactionExportBody,
-    createPackagingTransactionAdjustBody,
-    createPackagingTransactionTransferBody,
-  ],
-  discriminator: { propertyName: "type" },
-});
-
-export class packagingTransactionSchema {
-  static create = {
+export const packagingTransactionSchema = {
+  create: {
     body: createPackagingTransactionBody,
-  };
-
-  static getById = {
+  },
+  getById: {
     params: packagingTransactionParamsSchema,
-  };
-
-  static getDetailById = {
+  },
+  getDetailById: {
     params: packagingTransactionParamsSchema,
-  };
-}
+  },
+};
 
 export type PackagingTransactionRequestType = {
   Create: {
-    Body:
-      | Static<typeof createPackagingTransactionImportBody>
-      | Static<typeof createPackagingTransactionExportBody>
-      | Static<typeof createPackagingTransactionAdjustBody>
-      | Static<typeof createPackagingTransactionTransferBody>;
+    Body: z.infer<typeof createPackagingTransactionBody>;
   };
   GetById: {
-    Params: Static<typeof packagingTransactionParamsSchema>;
+    Params: z.infer<typeof packagingTransactionParamsSchema>;
   };
-
   GetItemsById: {
-    Params: Static<typeof packagingTransactionParamsSchema>;
+    Params: z.infer<typeof packagingTransactionParamsSchema>;
     Query: any;
   };
   GetDetailById: {
-    Params: Static<typeof packagingTransactionParamsSchema>;
+    Params: z.infer<typeof packagingTransactionParamsSchema>;
   };
   UpdateById: {
-    Params: Static<typeof packagingTransactionParamsSchema>;
+    Params: z.infer<typeof packagingTransactionParamsSchema>;
     Body: any;
   };
 };
 
 export type PackagingTransactionDBType = {
   create:
-    | (Omit<Static<typeof createPackagingTransactionImportBody>, "items"> & {
+    | (Omit<z.infer<typeof createPackagingTransactionImportBody>, "items"> & {
         items: {
           warehouse_id: string;
           packaging_id: string;
@@ -176,7 +120,7 @@ export type PackagingTransactionDBType = {
           signed_quantity: number;
         }[];
       })
-    | (Omit<Static<typeof createPackagingTransactionExportBody>, "items"> & {
+    | (Omit<z.infer<typeof createPackagingTransactionExportBody>, "items"> & {
         items: {
           warehouse_id: string;
           packaging_id: string;
@@ -184,7 +128,7 @@ export type PackagingTransactionDBType = {
           signed_quantity: number;
         }[];
       })
-    | (Omit<Static<typeof createPackagingTransactionAdjustBody>, "items"> & {
+    | (Omit<z.infer<typeof createPackagingTransactionAdjustBody>, "items"> & {
         items: {
           warehouse_id: string;
           packaging_id: string;
@@ -192,7 +136,7 @@ export type PackagingTransactionDBType = {
           signed_quantity: number;
         }[];
       })
-    | (Omit<Static<typeof createPackagingTransactionTransferBody>, "items"> & {
+    | (Omit<z.infer<typeof createPackagingTransactionTransferBody>, "items"> & {
         items: {
           warehouse_id: string;
           packaging_id: string;

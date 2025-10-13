@@ -1,10 +1,10 @@
-import { StatusCodes } from "http-status-codes";
-import { FastifyError, FastifyReply, FastifyRequest } from "fastify";
-import config from "./config";
+import type { FastifyError, FastifyReply, FastifyRequest } from "fastify";
 import {
   hasZodFastifySchemaValidationErrors,
   isResponseSerializationError,
 } from "fastify-type-provider-zod";
+import { StatusCodes } from "http-status-codes";
+import config from "./config";
 
 export class CustomError<C extends string> extends Error {
   message: string;
@@ -116,7 +116,7 @@ export async function errorHandler(
     });
   }
 
-  // if (error.code == "FST_ERR_VALIDATION" && error.validation) {
+  // if (error.code === "FST_ERR_VALIDATION" && error.validation) {
   //   return reply.status(StatusCodes.BAD_REQUEST).send({
   //     statusText: "BAD_REQUEST",
   //     statusCode: StatusCodes.BAD_REQUEST,

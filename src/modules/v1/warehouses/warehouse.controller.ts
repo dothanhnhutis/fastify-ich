@@ -1,10 +1,10 @@
-import { FastifyReply, FastifyRequest } from "fastify";
-import { WarehouseRequestType } from "./warehouse.schema";
+import type { FastifyReply, FastifyRequest } from "fastify";
 import { StatusCodes } from "http-status-codes";
 import { BadRequestError } from "@/shared/error-handler";
+import type { WarehouseRequestType } from "./warehouse.schema";
 
-export class WarehouseController {
-  static async query(
+export const WarehouseController = {
+  async query(
     req: FastifyRequest<WarehouseRequestType["Query"]>,
     reply: FastifyReply
   ) {
@@ -15,9 +15,9 @@ export class WarehouseController {
       statusText: "OK",
       data,
     });
-  }
+  },
 
-  static async getById(
+  async getById(
     req: FastifyRequest<WarehouseRequestType["GetById"]>,
     reply: FastifyReply
   ) {
@@ -30,9 +30,9 @@ export class WarehouseController {
         warehouse,
       },
     });
-  }
+  },
 
-  static async getPackagingsById(
+  async getPackagingsById(
     req: FastifyRequest<WarehouseRequestType["GetPackagingsById"]>,
     reply: FastifyReply
   ) {
@@ -47,9 +47,9 @@ export class WarehouseController {
       statusText: "OK",
       packagings: detail,
     });
-  }
+  },
 
-  static async getDetailById(
+  async getDetailById(
     req: FastifyRequest<WarehouseRequestType["GetDetailById"]>,
     reply: FastifyReply
   ) {
@@ -60,9 +60,9 @@ export class WarehouseController {
       statusText: "OK",
       packagings: detail,
     });
-  }
+  },
 
-  static async create(
+  async create(
     req: FastifyRequest<WarehouseRequestType["Create"]>,
     reply: FastifyReply
   ) {
@@ -86,9 +86,9 @@ export class WarehouseController {
         role,
       },
     });
-  }
+  },
 
-  static async updateById(
+  async updateById(
     req: FastifyRequest<WarehouseRequestType["UpdateById"]>,
     reply: FastifyReply
   ) {
@@ -116,9 +116,9 @@ export class WarehouseController {
         message: "Cập nhật nhà kho thành công.",
       },
     });
-  }
+  },
 
-  // static async deleteById(
+  //  async deleteById(
   //   req: FastifyRequest<WarehouseRequestType[""]>,
   //   reply: FastifyReply
   // ) {
@@ -135,4 +135,4 @@ export class WarehouseController {
   //     },
   //   });
   // }
-}
+};

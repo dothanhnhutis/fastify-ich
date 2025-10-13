@@ -1,21 +1,20 @@
-import {
+import type { FastifyInstance } from "fastify";
+import fp from "fastify-plugin";
+import { StatusCodes } from "http-status-codes";
+import type {
   PoolClient,
   PoolConfig,
   QueryConfig,
   QueryResult,
   QueryResultRow,
 } from "pg";
-import fp from "fastify-plugin";
-import { FastifyInstance } from "fastify";
-
-import PostgeSQL, { QueryOptions } from "../db";
-import { CustomError } from "../error-handler";
-import { StatusCodes } from "http-status-codes";
-import UserRepo from "@/db/user.repo";
-import RoleRepo from "@/db/role.repo";
-import WarehouseRepo from "@/db/warehouse.repo";
 import PackagingRepo from "@/db/packaging.repo";
 import PackagingTransactionRepo from "@/db/packaging-transaction.repo";
+import RoleRepo from "@/db/role.repo";
+import UserRepo from "@/db/user.repo";
+import WarehouseRepo from "@/db/warehouse.repo";
+import PostgeSQL, { type QueryOptions } from "../db";
+import { CustomError } from "../error-handler";
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -67,7 +66,7 @@ async function postgresDB(fastify: FastifyInstance, options: PoolConfig) {
 
   fastify.addHook("onReady", async () => {
     const ok = await dbManager.healthCheck();
-    if (ok.status == "healthy") {
+    if (ok.status === "healthy") {
       fastify.logger.info("PostgreSQL - Database connected successfully");
     } else {
       throw new CustomError({
@@ -87,7 +86,7 @@ async function postgresDB(fastify: FastifyInstance, options: PoolConfig) {
     req.packagingTransactions = new PackagingTransactionRepo(fastify);
   });
 
-  fastify.addHook("onClose", async (instance) => {
+  fastify.addHook("onClose", async () => {
     await dbManager.close();
   });
 

@@ -1,9 +1,8 @@
-import path from "path";
-import fs from "fs";
-import { FastifyError } from "fastify";
-
-import { BadRequestError, PermissionError } from "./error-handler";
+import fs from "node:fs";
+import path from "node:path";
+import type { FastifyError } from "fastify";
 import config from "./config";
+import { BadRequestError, PermissionError } from "./error-handler";
 
 const dateStringRegex: RegExp = /^\d{4}-\d{2}-\d{2}$/;
 const timestamptzStringRegex: RegExp =

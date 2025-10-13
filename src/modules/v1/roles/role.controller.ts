@@ -1,11 +1,10 @@
+import type { FastifyReply, FastifyRequest } from "fastify";
 import { StatusCodes } from "http-status-codes";
-import { FastifyReply, FastifyRequest } from "fastify";
-
-import { RoleRequestType } from "./role.schema";
 import { BadRequestError } from "@/shared/error-handler";
+import type { RoleRequestType } from "./role.schema";
 
-export class RoleController {
-  static async getUsersById(
+export const RoleController = {
+  async getUsersById(
     req: FastifyRequest<RoleRequestType["GetUsersById"]>,
     reply: FastifyReply
   ) {
@@ -16,9 +15,9 @@ export class RoleController {
       statusText: "OK",
       data: role,
     });
-  }
+  },
 
-  static async getDetailById(
+  async getDetailById(
     req: FastifyRequest<RoleRequestType["GetDetailById"]>,
     reply: FastifyReply
   ) {
@@ -30,9 +29,9 @@ export class RoleController {
       statusText: "OK",
       data: role,
     });
-  }
+  },
 
-  static async getById(
+  async getById(
     req: FastifyRequest<RoleRequestType["GetById"]>,
     reply: FastifyReply
   ) {
@@ -46,9 +45,9 @@ export class RoleController {
         role,
       },
     });
-  }
+  },
 
-  static async query(
+  async query(
     req: FastifyRequest<RoleRequestType["Query"]>,
     reply: FastifyReply
   ) {
@@ -60,9 +59,9 @@ export class RoleController {
       statusText: "OK",
       data,
     });
-  }
+  },
 
-  static async create(
+  async create(
     req: FastifyRequest<RoleRequestType["Create"]>,
     reply: FastifyReply
   ) {
@@ -75,9 +74,9 @@ export class RoleController {
         role,
       },
     });
-  }
+  },
 
-  static async updateById(
+  async updateById(
     req: FastifyRequest<RoleRequestType["UpdateById"]>,
     reply: FastifyReply
   ) {
@@ -95,9 +94,9 @@ export class RoleController {
         message: "Cập nhật vai trò thành công.",
       },
     });
-  }
+  },
 
-  static async deleteById(
+  async deleteById(
     req: FastifyRequest<RoleRequestType["DeletaById"]>,
     reply: FastifyReply
   ) {
@@ -113,5 +112,5 @@ export class RoleController {
         message: "Xoá vai trò thành công.",
       },
     });
-  }
-}
+  },
+};

@@ -1,5 +1,5 @@
+import type { FastifyInstance } from "fastify";
 import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
-import { FastifyInstance } from "fastify";
 import { WarehouseController } from "./warehouse.controller";
 import { warehouseSchema } from "./warehouse.schema";
 
@@ -7,7 +7,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/",
     {
-      schema: warehouseSchema["query"],
+      schema: warehouseSchema.query,
       preHandler: [
         requiredAuthMiddleware,
         // checkPermissionMiddleware(["read:warehouse:*"]),
@@ -19,7 +19,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/:id/detail",
     {
-      schema: warehouseSchema["getDetailById"],
+      schema: warehouseSchema.getDetailById,
       preHandler: [
         requiredAuthMiddleware,
         // checkPermissionMiddleware(["read:warehouse:*"]),
@@ -31,7 +31,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/:id/packagings",
     {
-      schema: warehouseSchema["getPackagingsById"],
+      schema: warehouseSchema.getPackagingsById,
       preHandler: [
         requiredAuthMiddleware,
         // checkPermissionMiddleware(["read:warehouse:*"]),
@@ -43,7 +43,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/:id",
     {
-      schema: warehouseSchema["getById"],
+      schema: warehouseSchema.getById,
       preHandler: [
         requiredAuthMiddleware,
         // checkPermissionMiddleware(["read:warehouse:id"]),
@@ -55,7 +55,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/",
     {
-      schema: warehouseSchema["create"],
+      schema: warehouseSchema.create,
       preHandler: [
         requiredAuthMiddleware,
         // checkPermissionMiddleware(["read:warehouse"]),
@@ -67,7 +67,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.patch(
     "/:id",
     {
-      schema: warehouseSchema["updateById"],
+      schema: warehouseSchema.updateById,
       preHandler: [
         requiredAuthMiddleware,
         // checkPermissionMiddleware(["update:warehouse"]),

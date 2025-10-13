@@ -1,13 +1,12 @@
-import path from "path";
-import fs from "fs";
+import fs from "node:fs";
+import path from "node:path";
+import type { FastifyReply, FastifyRequest } from "fastify";
 import mime from "mime-types";
-import { FastifyReply, FastifyRequest } from "fastify";
-import { securityPath } from "@/shared/utils";
 import config from "@/shared/config";
-import { pipeline } from "stream/promises";
+import { isFastifyError, securityPath } from "@/shared/utils";
 
-export class FileController {
-  static async view(
+export const FileController = {
+  async view(
     request: FastifyRequest<{ Params: { "*": string } }>,
     reply: FastifyReply
   ) {
@@ -69,9 +68,9 @@ export class FileController {
         return reply.code(500).send({ error: "Internal server error" });
       }
     }
-  }
+  },
 
-  static async download(request: FastifyRequest, reply: FastifyReply) {
+  async download(_: FastifyRequest, reply: FastifyReply) {
     const dir = "uploads";
     const filename = "logo.png";
     const filePath = path.join(__dirname, dir, filename);
@@ -86,16 +85,16 @@ export class FileController {
       reply.header("Content-Disposition", `attachment; filename="${filename}"`);
 
       return fs.createReadStream(filePath);
-    } catch (error: any) {
-      if (error.code === "ENOENT") {
+    } catch (error: unknown) {
+      if (isFastifyError(error) && error.code === "ENOENT") {
         return reply.code(404).send({ error: "File not found" });
       }
       // return reply.code(500).send({ error: "Internal server error" });
       throw error;
     }
-  }
+  },
 
-  static async singleUpload(request: FastifyRequest, reply: FastifyReply) {
+  async singleUpload(request: FastifyRequest, reply: FastifyReply) {
     if (!request.isMultipart()) {
       return reply
         .code(400)
@@ -113,11 +112,5 @@ export class FileController {
     reply.code(200).send({
       message: "ok",
     });
-  }
-
-  static async mutipleUpload(request: FastifyRequest, reply: FastifyReply) {
-    reply.code(200).send({
-      message: "ok",
-    });
-  }
-}
+  },
+};

@@ -294,7 +294,7 @@ END;
 $$;
 
 --- func đảm bảo logic unit <-> pcs_ctn
--- nếu unit != CARTON thì auto set pcs_ctn = NULL
+-- nếu unit !==CARTON thì auto set pcs_ctn = NULL
 CREATE OR REPLACE FUNCTION enforce_pcs_ctn_null () RETURNS TRIGGER AS $$
 BEGIN
     IF NEW.unit <> 'CARTON' THEN
@@ -305,7 +305,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- func đảm bảo logic type <-> to_warehouse_id
--- nếu type != TRANSFER thì auto set to_warehouse_id = NULL
+-- nếu type !==TRANSFER thì auto set to_warehouse_id = NULL
 CREATE OR REPLACE FUNCTION enforce_to_warehouse_null () RETURNS TRIGGER AS $$
 BEGIN
     IF NEW.type <> 'TRANSFER' THEN
@@ -344,13 +344,13 @@ CREATE TRIGGER trg_updated_at_packaging_transaction_items BEFORE
 UPDATE ON packaging_transaction_items FOR EACH ROW
 EXECUTE FUNCTION set_updated_at ();
 
--- trigger nếu type != CARTON thì auto set pcs_ctn = NULL
+-- trigger nếu type !==CARTON thì auto set pcs_ctn = NULL
 CREATE TRIGGER trg_set_pcs_ctn_null BEFORE INSERT
 OR
 UPDATE ON packagings FOR EACH ROW
 EXECUTE FUNCTION enforce_pcs_ctn_null ();
 
--- trigger nếu type != TRANSFER thì auto set to_warehouse_id = NULL
+-- trigger nếu type !==TRANSFER thì auto set to_warehouse_id = NULL
 CREATE TRIGGER trg_set_to_warehouse_null BEFORE INSERT
 OR
 UPDATE ON packaging_transactions FOR EACH ROW

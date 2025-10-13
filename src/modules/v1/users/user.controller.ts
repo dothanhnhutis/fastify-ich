@@ -1,15 +1,13 @@
+import type { FastifyReply, FastifyRequest } from "fastify";
 import { StatusCodes } from "http-status-codes";
-import { FastifyReply, FastifyRequest } from "fastify";
-
-import { UserRequsetType } from "./user.schema";
 import config from "@/shared/config";
 import { BadRequestError } from "@/shared/error-handler";
-import { convertImage, isFastifyError } from "@/shared/utils";
-import { privateFileUpload } from "@/shared/upload";
+import { convertImage } from "@/shared/utils";
+import type { UserRequsetType } from "./user.schema";
 
 // Admin
-export class SuperUserController {
-  static async query(
+export const SuperUserController = {
+  async query(
     request: FastifyRequest<UserRequsetType["Query"]>,
     reply: FastifyReply
   ) {
@@ -27,9 +25,9 @@ export class SuperUserController {
         metadata: data.metadata,
       },
     });
-  }
+  },
 
-  static async getById(
+  async getById(
     request: FastifyRequest<UserRequsetType["GetById"]>,
     reply: FastifyReply
   ) {
@@ -47,9 +45,9 @@ export class SuperUserController {
         },
       },
     });
-  }
+  },
 
-  static async getRolesById(
+  async getRolesById(
     request: FastifyRequest<UserRequsetType["GetRolesById"]>,
     reply: FastifyReply
   ) {
@@ -66,9 +64,9 @@ export class SuperUserController {
       statusText: "OK",
       data: roles,
     });
-  }
+  },
 
-  static async getDetailById(
+  async getDetailById(
     request: FastifyRequest<UserRequsetType["GetDetailById"]>,
     reply: FastifyReply
   ) {
@@ -86,9 +84,9 @@ export class SuperUserController {
         },
       },
     });
-  }
+  },
 
-  static async create(
+  async create(
     request: FastifyRequest<UserRequsetType["Create"]>,
     reply: FastifyReply
   ) {
@@ -98,7 +96,7 @@ export class SuperUserController {
     if (existsUser) throw new BadRequestError("Email đã tồn tại.");
 
     if (request.body.roleIds) {
-      for (let id of request.body.roleIds) {
+      for (const id of request.body.roleIds) {
         const role = await request.roles.findRoleById(id);
         if (!role) throw new BadRequestError(`Quyền id='${id}' không tồn tại.`);
       }
@@ -112,9 +110,9 @@ export class SuperUserController {
         message: "Tạo người dùng thành công.",
       },
     });
-  }
+  },
 
-  static async updateById(
+  async updateById(
     request: FastifyRequest<UserRequsetType["UpdateById"]>,
     reply: FastifyReply
   ) {
@@ -132,11 +130,11 @@ export class SuperUserController {
         message: "Cập nhật người dùng thành công.",
       },
     });
-  }
-}
+  },
+};
 
-export class UserController {
-  static async me(request: FastifyRequest, reply: FastifyReply) {
+export const UserController = {
+  async me(request: FastifyRequest, reply: FastifyReply) {
     reply.code(StatusCodes.OK).send({
       statusCode: StatusCodes.OK,
       statusText: "OK",
@@ -147,9 +145,9 @@ export class UserController {
           : null,
       },
     });
-  }
+  },
 
-  static async logout(request: FastifyRequest, reply: FastifyReply) {
+  async logout(request: FastifyRequest, reply: FastifyReply) {
     if (request.sessionId) {
       await request.sessions.delete(request.sessionId);
     }
@@ -164,20 +162,20 @@ export class UserController {
           message: "Đăng xuất thành công",
         },
       });
-  }
+  },
 
-  static async uploadAvatar(request: FastifyRequest, reply: FastifyReply) {
+  async uploadAvatar(request: FastifyRequest, reply: FastifyReply) {
     if (
       !request.multerField ||
-      !request.multerField["avatar"] ||
-      !Array.isArray(request.multerField["avatar"])
+      !request.multerField.avatar ||
+      !Array.isArray(request.multerField.avatar)
     ) {
       throw new BadRequestError("Không có file nào tải lên.");
     }
 
-    const file = request.multerField["avatar"][0];
+    const file = request.multerField.avatar[0];
 
-    await request.users.updateAvatarById(request.currUser!.id, file);
+    await request.users.updateAvatarById(request.currUser?.id ?? "", file);
 
     return reply.send({
       statusCode: StatusCodes.OK,
@@ -186,10 +184,10 @@ export class UserController {
         message: "Cập nhật avatar thành công.",
       },
     });
-  }
+  },
 
-  static async deleteAvatar(request: FastifyRequest, reply: FastifyReply) {
-    await request.users.deleteAvatarById(request.currUser!.id);
+  async deleteAvatar(request: FastifyRequest, reply: FastifyReply) {
+    await request.users.deleteAvatarById(request.currUser?.id ?? "");
 
     return reply.send({
       statusCode: StatusCodes.OK,
@@ -198,5 +196,5 @@ export class UserController {
         message: "Xoá avatar thành công.",
       },
     });
-  }
-}
+  },
+};

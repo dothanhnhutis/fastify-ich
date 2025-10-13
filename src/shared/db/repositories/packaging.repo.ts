@@ -1,11 +1,10 @@
-import { FastifyInstance } from "fastify";
-import { QueryConfig, QueryResult } from "pg";
-
-import { BadRequestError } from "@/shared/error-handler";
-import { PackagingRequestType } from "@/modules/v1/packagings/packaging.schema";
-import { deleteFile, isDataString } from "@/shared/utils";
-import { MulterFile } from "@/shared/middleware/multer";
+import type { FastifyInstance } from "fastify";
+import type { QueryConfig, QueryResult } from "pg";
 import sharp from "sharp";
+import type { PackagingRequestType } from "@/modules/v1/packagings/packaging.schema";
+import { BadRequestError } from "@/shared/error-handler";
+import type { MulterFile } from "@/shared/middleware/multer";
+import { deleteFile, isDataString } from "@/shared/utils";
 
 export default class PackagingRepo {
   constructor(private fastify: FastifyInstance) {}
@@ -13,7 +12,7 @@ export default class PackagingRepo {
   async findPackagings(
     query: PackagingRequestType["Query"]["Querystring"]
   ): Promise<QueryPackagings> {
-    let queryString = [
+    const queryString = [
       `
       SELECT
           p.*,
@@ -69,24 +68,24 @@ export default class PackagingRepo {
               AND pim.deleted_at IS NULL
       `,
     ];
-    const values: any[] = [];
-    let where: string[] = [];
+    const values: (string | number)[] = [];
+    const where: string[] = [];
     let idx = 1;
 
-    if (query.name != undefined) {
+    if (query.name !== undefined) {
       where.push(`p.name ILIKE $${idx++}::text`);
       values.push(`%${query.name.trim()}%`);
     }
 
-    if (query.unit != undefined) {
+    if (query.unit !== undefined) {
       where.push(`p.unit = $${idx++}::text`);
       values.push(query.unit);
     }
 
-    if (query.status != undefined) {
+    if (query.status !== undefined) {
       where.push(
         `status = $${idx++}::text`,
-        query.status == "ACTIVE"
+        query.status === "ACTIVE"
           ? "deactived_at IS NULL"
           : "deactived_at IS NOT NULL"
       );
@@ -132,9 +131,9 @@ export default class PackagingRepo {
           )}) SELECT  COUNT(*)::int AS count FROM grouped;`,
           values,
         });
-        const totalItem = parseInt(rows[0].count);
+        const totalItem = parseInt(rows[0].count, 10);
 
-        if (query.sort != undefined) {
+        if (query.sort !== undefined) {
           const unqueField = query.sort.reduce<Record<string, string>>(
             (prev, curr) => {
               const [field, direction] = curr.split(".");
@@ -151,9 +150,9 @@ export default class PackagingRepo {
           queryString.push(`ORDER BY ${orderBy}`);
         }
 
-        let limit = query.limit ?? totalItem;
-        let page = query.page ?? 1;
-        let offset = (page - 1) * limit;
+        const limit = query.limit ?? totalItem;
+        const page = query.page ?? 1;
+        const offset = (page - 1) * limit;
 
         queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
         values.push(limit, offset);
@@ -179,7 +178,7 @@ export default class PackagingRepo {
           },
         };
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new BadRequestError(`PackagingRepo.query() method error: ${error}`);
     }
   }
@@ -269,7 +268,7 @@ export default class PackagingRepo {
       const { rows }: QueryResult<Packaging> =
         await this.fastify.query<Packaging>(queryConfig);
       return rows[0] ?? null;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new BadRequestError(
         `PackagingRepo.findById() method error: ${error}`
       );
@@ -298,25 +297,25 @@ export default class PackagingRepo {
 
     const queryString = [`SELECT * FROM warehouses`];
 
-    const values: any[] = [packagingId];
-    let where: string[] = [];
+    const values: (string | number)[] = [packagingId];
+    const where: string[] = [];
     let idx = 2;
 
     if (query) {
-      if (query.name != undefined) {
+      if (query.name !== undefined) {
         where.push(`name ILIKE $${idx++}::text`);
         values.push(`%${query.name.trim()}%`);
       }
 
-      if (query.address != undefined) {
+      if (query.address !== undefined) {
         where.push(`address ILIKE $${idx++}::text`);
         values.push(`%${query.address.trim()}%`);
       }
 
-      if (query.status != undefined) {
+      if (query.status !== undefined) {
         where.push(
           `status = $${idx++}::text`,
-          query.status == "ACTIVE"
+          query.status === "ACTIVE"
             ? "deactived_at IS NULL"
             : "deactived_at IS NOT NULL"
         );
@@ -358,9 +357,9 @@ export default class PackagingRepo {
           ),
           values,
         });
-        const totalItem = parseInt(rows[0].count);
+        const totalItem = parseInt(rows[0].count, 10);
 
-        if (query?.sort != undefined) {
+        if (query?.sort !== undefined) {
           const unqueField = query.sort.reduce<Record<string, string>>(
             (prev, curr) => {
               const [field, direction] = curr.split(".");
@@ -377,9 +376,9 @@ export default class PackagingRepo {
           queryString.push(`ORDER BY ${orderBy}`);
         }
 
-        let limit = query?.limit ?? totalItem;
-        let page = query?.page ?? 1;
-        let offset = (page - 1) * limit;
+        const limit = query?.limit ?? totalItem;
+        const page = query?.page ?? 1;
+        const offset = (page - 1) * limit;
 
         queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
         values.push(limit, offset);
@@ -407,7 +406,7 @@ export default class PackagingRepo {
           },
         };
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new BadRequestError(
         `PackagingRepo.findWarehousesByPackagingId() method error: ${error}`
       );
@@ -535,7 +534,7 @@ export default class PackagingRepo {
       const { rows }: QueryResult<PackagingDetail> =
         await this.fastify.query<PackagingDetail>(queryConfig);
       return rows[0] ?? null;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new BadRequestError(
         `PackagingRepo.findPackagingDetailById() method error: ${error}`
       );
@@ -544,18 +543,18 @@ export default class PackagingRepo {
 
   async createNewPackaging(data: PackagingRequestType["Create"]["Body"]) {
     const columns: string[] = ["name", "unit"];
-    const values: any[] = [data.name, data.unit];
+    const values: (string | number)[] = [data.name, data.unit];
     const placeholders: string[] = ["$1::text", "$2::text"];
 
     let idx = values.length;
 
-    if (data.unit == "CARTON") {
+    if (data.unit === "CARTON") {
       columns.push("pcs_ctn");
       values.push(data.pcs_ctn);
       placeholders.push(`$${++idx}::integer`);
     }
 
-    if (data.min_stock_level != undefined) {
+    if (data.min_stock_level !== undefined) {
       columns.push("min_stock_level");
       values.push(data.min_stock_level);
       placeholders.push(`$${++idx}::integer`);
@@ -595,7 +594,7 @@ export default class PackagingRepo {
     packagingId: string,
     data: PackagingRequestType["UpdateById"]["Body"]
   ): Promise<void> {
-    if (Object.keys(data).length == 0) return;
+    if (Object.keys(data).length === 0) return;
 
     try {
       await this.fastify.transaction(async (client) => {
@@ -633,7 +632,7 @@ export default class PackagingRepo {
 
         let idx = 1;
         const sets: string[] = [];
-        const values: any[] = [];
+        const values: (string | number | null | Date)[] = [];
 
         if (data.name !== undefined) {
           sets.push(`name = $${idx++}::text`);
@@ -660,7 +659,10 @@ export default class PackagingRepo {
             `status = $${idx++}::text`,
             `deactived_at = $${idx++}::timestamptz`
           );
-          values.push(data.status, data.status == "ACTIVE" ? null : new Date());
+          values.push(
+            data.status,
+            data.status === "ACTIVE" ? null : new Date()
+          );
         }
         values.push(packagingId);
 

@@ -1,10 +1,6 @@
-import Fastify, {
-  FastifyInstance,
-  FastifyReply,
-  FastifyRequest,
-} from "fastify";
-import * as zlib from "zlib";
-import { promisify } from "util";
+import { promisify } from "node:util";
+import * as zlib from "node:zlib";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import fp from "fastify-plugin";
 
 // Promisify compression methods for async/await
@@ -74,10 +70,10 @@ class CompressionHandler {
     method: CompressionType,
     options: CompressionOptions = {}
   ): Promise<Buffer> {
-    const level = options.level || this.DEFAULT_LEVEL;
+    const level = options.level || CompressionHandler.DEFAULT_LEVEL;
 
     switch (method) {
-      case CompressionType.BROTLI:
+      case CompressionType.BROTLI: {
         const brotliOptions: zlib.BrotliOptions = {
           params: {
             [zlib.constants.BROTLI_PARAM_QUALITY]: level,
@@ -86,6 +82,7 @@ class CompressionHandler {
           ...options.brotliOptions,
         };
         return await brotliCompressAsync(data, brotliOptions);
+      }
 
       case CompressionType.GZIP:
         return await gzipAsync(data, { level });
@@ -136,18 +133,21 @@ class CompressionHandler {
     options: CompressionOptions = {}
   ): Promise<FastifyReply> {
     try {
-      const threshold = options.threshold || this.DEFAULT_THRESHOLD;
+      const threshold =
+        options.threshold || CompressionHandler.DEFAULT_THRESHOLD;
       const request = reply.request as FastifyRequest;
       const acceptEncoding = request.headers["accept-encoding"] || "";
 
       // Check if compression is supported
-      const compressionMethod = this.getBestCompressionMethod(acceptEncoding);
+      const compressionMethod =
+        CompressionHandler.getBestCompressionMethod(acceptEncoding);
       if (!compressionMethod) {
         return reply.send(payload);
       }
 
       // Serialize payload
-      const { data, contentType } = this.serializePayload(payload);
+      const { data, contentType } =
+        CompressionHandler.serializePayload(payload);
       const originalSize = data.length;
 
       // Check if payload is large enough to compress
@@ -156,7 +156,7 @@ class CompressionHandler {
       }
 
       // Compress data
-      const compressedData = await this.compressData(
+      const compressedData = await CompressionHandler.compressData(
         data,
         compressionMethod,
         options
