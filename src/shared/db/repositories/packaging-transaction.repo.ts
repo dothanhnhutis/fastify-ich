@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { StatusCodes } from "http-status-codes";
 import type { QueryConfig, QueryResult } from "pg";
-import type { PackagingTransactionDBType } from "@/modules/v1/packaging-transactions/packaging-transaction.schema";
+import type { PackagingTransactionDBType } from "@/modules/packaging-transaction/v1/packaging-transaction.schema";
 import { BadRequestError, CustomError } from "@/shared/error-handler";
 
 export default class PackagingTransactionRepo {

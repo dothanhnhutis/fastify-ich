@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { StatusCodes } from "http-status-codes";
 import { UAParser } from "ua-parser-js";
 import { v4 as uuidv4 } from "uuid";
-import config from "@/shared/config";
+import config from "@/shared/config/env";
 import { CustomError } from "@/shared/error-handler";
 
 const SCAN_COUNT = 2;

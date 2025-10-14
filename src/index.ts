@@ -1,5 +1,5 @@
-import config from "./shared/config";
-import { buildServer } from "./shared/server";
+import { buildServer } from "./server";
+import config from "./shared/config/env";
 
 // Khởi tạo server
 async function start(): Promise<void> {

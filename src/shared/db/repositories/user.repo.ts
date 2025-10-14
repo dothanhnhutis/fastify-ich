@@ -1,11 +1,11 @@
 import type { FastifyInstance } from "fastify";
 import type { QueryConfig } from "pg";
 import sharp from "sharp";
-import type { UserRequsetType } from "@/modules/v1/users/user.schema";
+import type { UserRequsetType } from "@/modules/user/v1/user.schema";
 import { BadRequestError } from "@/shared/error-handler";
 import type { MulterFile } from "@/shared/middleware/multer";
-import { Password } from "@/shared/password";
 import { deleteFile } from "@/shared/utils";
+import { Password } from "@/shared/utils/password";
 
 export default class UserRepo {
   constructor(private fastify: FastifyInstance) {}

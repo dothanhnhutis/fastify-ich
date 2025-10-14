@@ -22,7 +22,7 @@ export default class PostgeSQL {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  public async query<R extends QueryResultRow = any, I = any[]>(
+  public async query<R extends QueryResultRow, I = unknown[]>(
     queryConfig: QueryConfig<I>,
     options?: QueryOptions
   ): Promise<QueryResult<R>> {
@@ -32,7 +32,7 @@ export default class PostgeSQL {
     } catch (error: unknown) {
       let err = error;
       console.log(`Query failed:`, error);
-      if (options && options.maxRetries && options.maxRetries > 0) {
+      if (options?.maxRetries && options.maxRetries > 0) {
         const delay: number =
           options.retryDelay && options.retryDelay > 0
             ? options.retryDelay

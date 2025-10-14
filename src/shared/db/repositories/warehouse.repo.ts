@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import type { QueryConfig, QueryResult } from "pg";
-import type { WarehouseRequestType } from "@/modules/v1/warehouses/warehouse.schema";
+import type { WarehouseRequestType } from "@/modules/warehouse/v1/warehouse.schema";
 import { BadRequestError } from "@/shared/error-handler";
 import { isDataString } from "@/shared/utils";
 
