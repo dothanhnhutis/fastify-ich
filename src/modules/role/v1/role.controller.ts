@@ -1,6 +1,6 @@
+import { BadRequestError } from "@shared/utils/error-handler";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { StatusCodes } from "http-status-codes";
-import { BadRequestError } from "@/shared/error-handler";
 import type { RoleRequestType } from "./role.schema";
 
 export const RoleController = {

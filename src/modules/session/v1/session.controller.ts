@@ -1,8 +1,8 @@
+import env from "@shared/config/env";
+import { BadRequestError } from "@shared/utils/error-handler";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { StatusCodes } from "http-status-codes";
-import config from "@/shared/config/env";
-import { BadRequestError } from "@/shared/error-handler";
-import type { SessionRequestType } from "../../v1/sessions/session.schema";
+import type { SessionRequestType } from "./session.schema";
 
 export const SessionController = {
   async getAll(req: FastifyRequest, reply: FastifyReply) {
@@ -24,7 +24,7 @@ export const SessionController = {
     const { id } = req.params;
     const userId = req.currUser?.id ?? "";
 
-    const sessionId = `${config.SESSION_KEY_NAME}:${userId}:${id}`;
+    const sessionId = `${env.SESSION_KEY_NAME}:${userId}:${id}`;
     const session = await req.sessions.findById(sessionId);
 
     if (!session || session.userId !== userId)

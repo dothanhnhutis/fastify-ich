@@ -1,22 +1,22 @@
 import path from "node:path";
-import { Readable } from "node:stream";
-import { createGzip } from "node:zlib";
+// import { Readable } from "node:stream";
+// import { createGzip } from "node:zlib";
 import fastifyCors from "@fastify/cors";
 import fastifyHelmet from "@fastify/helmet";
 import fastifyMultipart from "@fastify/multipart";
 import fastifyStatic from "@fastify/static";
-import addErrors from "ajv-errors";
-import addFormats from "ajv-formats";
-import fastify, { FastifyReply, FastifyRequest } from "fastify";
+import { errorHandler } from "@shared/utils/error-handler";
+// import addErrors from "ajv-errors";
+// import addFormats from "ajv-formats";
+import fastify from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import {
   serializerCompiler,
   validatorCompiler,
 } from "fastify-type-provider-zod";
-import { errorHandler } from "./error-handler";
 import appRoutes from "./modules";
 import rabbitMQPlugin from "./plugins/amqp";
-import compressionPlugin from "./plugins/compression";
+// import compressionPlugin from "./plugins/compression";
 import cookiePlugin from "./plugins/cookie";
 import logger from "./plugins/logger";
 import postgreSQLPlugin from "./plugins/postgres";

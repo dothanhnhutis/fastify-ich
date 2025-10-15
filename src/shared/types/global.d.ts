@@ -1,3 +1,5 @@
+export {};
+
 declare global {
   interface CookieOptions {
     maxAge?: number;

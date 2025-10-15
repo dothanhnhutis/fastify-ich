@@ -1,6 +1,6 @@
+import checkPermissionMiddleware from "@shared/middleware/checkPermission";
+import requiredAuthMiddleware from "@shared/middleware/requiredAuth";
 import type { FastifyInstance } from "fastify";
-import checkPermissionMiddleware from "@/shared/middleware/checkPermission";
-import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
 import { RoleController } from "./role.controller";
 import { roleSchema } from "./role.schema";
 

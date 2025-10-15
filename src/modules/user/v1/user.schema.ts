@@ -1,8 +1,6 @@
+import { queryStringRolesSchema } from "@modules/shared/role/role.shared.schema";
+import { queryStringUsersSchema } from "@modules/shared/user/user.shared.schema";
 import * as z from "zod/v4";
-import {
-  queryStringRolesSchema,
-  queryStringUsersSchema,
-} from "../../v1/global.schema";
 
 const userIdParamSchema = z.object({
   id: z.string(),
