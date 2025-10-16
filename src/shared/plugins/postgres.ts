@@ -1,5 +1,7 @@
+import PackagingRepository from "@modules/packaging/v1/packaging.repo";
 import RoleRepository from "@modules/role/v1/role.repo";
 import { UserRepository } from "@modules/user/v1/user.repo";
+import { WarehouseRepository } from "@modules/warehouse/v1/warehouse.repo";
 import PostgeSQL, { type QueryOptions } from "@shared/db/db";
 import { CustomError } from "@shared/utils/error-handler";
 import type { FastifyInstance } from "fastify";
@@ -28,8 +30,8 @@ declare module "fastify" {
   interface FastifyRequest {
     users: UserRepository;
     roles: RoleRepository;
-    // warehouses: WarehouseRepo;
-    // packagings: PackagingRepo;
+    warehouses: WarehouseRepository;
+    packagings: PackagingRepository;
     // packagingTransactions: PackagingTransactionRepo;
   }
 }
@@ -78,8 +80,8 @@ async function postgresDB(fastify: FastifyInstance, options: PoolConfig) {
   fastify.addHook("onRequest", async (req, _reply) => {
     req.users = new UserRepository(fastify);
     req.roles = new RoleRepository(fastify);
-    // req.warehouses = new WarehouseRepo(fastify);
-    // req.packagings = new PackagingRepo(fastify);
+    req.warehouses = new WarehouseRepository(fastify);
+    req.packagings = new PackagingRepository(fastify);
     // req.packagingTransactions = new PackagingTransactionRepo(fastify);
   });
 

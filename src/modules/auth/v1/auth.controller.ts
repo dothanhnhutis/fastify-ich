@@ -1,8 +1,8 @@
+import { BadRequestError } from "@shared/utils/error-handler";
+import { comparePassword } from "@shared/utils/password";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { StatusCodes } from "http-status-codes";
-import { BadRequestError } from "@/shared/error-handler";
-import { Password } from "@/shared/utils/password";
-import type { AuthRequestType } from "../../v1/auth/auth.schema";
+import type { AuthRequestType } from "./auth.schema";
 
 export const AuthController = {
   async signIn(
@@ -15,7 +15,7 @@ export const AuthController = {
     if (
       !user ||
       !user.password_hash ||
-      !(await Password.compare(user.password_hash, password))
+      !(await comparePassword(user.password_hash, password))
     )
       throw new BadRequestError("Email và mật khẩu không hợp lệ.");
 

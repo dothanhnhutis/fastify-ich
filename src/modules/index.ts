@@ -1,13 +1,12 @@
 // import { Type } from "@sinclair/typebox";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import authRoutes from "./auth";
+import fileRoutes from "./file";
+import packagingRoutes from "./packaging";
 import roleRoutes from "./role";
+import sessionRoutes from "./session";
 import userRoutes from "./user";
-// import fileRoutes from "./files/file.routes";
-// import packagingRoutes from "./packaging/v1/packaging.routes";
-// import packagingTransactionRoutes from "./packaging-transaction/v1/packaging-transaction.routes";
-// import sessionRoutes from "./session/v1/session.routes";
-// import warehouseRoutes from "./warehouse/v1/warehouse.routes";
+import warehouseRoutes from "./warehouse";
 
 // const sortEnum = [
 //   "name.asc",
@@ -50,13 +49,13 @@ export default async function versionRoutes(fastify: FastifyInstance) {
     });
   });
 
-  fastify.register(authRoutes, { prefix: "/auth" });
-  fastify.register(userRoutes, { prefix: "/users" });
-  fastify.register(roleRoutes, { prefix: "/roles" });
-  // fastify.register(fileRoutes, { prefix: "/files" });
-  // fastify.register(sessionRoutes, { prefix: "/users/sessions" });
-  // fastify.register(warehouseRoutes, { prefix: "/warehouses" });
-  // fastify.register(packagingRoutes, { prefix: "/packagings" });
+  fastify.register(authRoutes);
+  fastify.register(userRoutes);
+  fastify.register(roleRoutes);
+  fastify.register(fileRoutes);
+  fastify.register(sessionRoutes);
+  fastify.register(warehouseRoutes);
+  fastify.register(packagingRoutes);
   // fastify.register(packagingTransactionRoutes, {
   //   prefix: "/packaging-transactions",
   // });

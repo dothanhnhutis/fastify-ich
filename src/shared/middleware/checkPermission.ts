@@ -1,9 +1,9 @@
+import { PermissionError } from "@shared/utils/error-handler";
 import type {
   FastifyReply,
   FastifyRequest,
   RouteGenericInterface,
 } from "fastify";
-import { PermissionError } from "../error-handler";
 
 export default function checkPermissionMiddleware(permissions: string[]) {
   return async <T extends RouteGenericInterface>(

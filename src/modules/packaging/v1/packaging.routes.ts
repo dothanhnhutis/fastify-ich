@@ -1,8 +1,8 @@
+import { multerMiddleware } from "@shared/middleware/multer";
+import requiredAuthMiddleware from "@shared/middleware/requiredAuth";
 import type { FastifyInstance } from "fastify";
-import { multerMiddleware } from "@/shared/middleware/multer";
-import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
-import { packagingSchema } from "../../v1/packagings/packaging.schema";
 import { PackagingController } from "./packaging.controller";
+import { packagingSchema } from "./packaging.schema";
 
 export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(

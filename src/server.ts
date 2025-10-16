@@ -5,6 +5,13 @@ import fastifyCors from "@fastify/cors";
 import fastifyHelmet from "@fastify/helmet";
 import fastifyMultipart from "@fastify/multipart";
 import fastifyStatic from "@fastify/static";
+import rabbitMQPlugin from "@shared/plugins/amqp";
+import cookiePlugin from "@shared/plugins/cookie";
+import logger from "@shared/plugins/logger";
+import postgreSQLPlugin from "@shared/plugins/postgres";
+import redisPlugin from "@shared/plugins/redis";
+import sessionPlugin from "@shared/plugins/session";
+
 import { errorHandler } from "@shared/utils/error-handler";
 // import addErrors from "ajv-errors";
 // import addFormats from "ajv-formats";
@@ -15,14 +22,7 @@ import {
   validatorCompiler,
 } from "fastify-type-provider-zod";
 import appRoutes from "./modules";
-import rabbitMQPlugin from "./plugins/amqp";
-// import compressionPlugin from "./plugins/compression";
-import cookiePlugin from "./plugins/cookie";
-import logger from "./plugins/logger";
-import postgreSQLPlugin from "./plugins/postgres";
-import redisPlugin from "./plugins/redis";
-import sessionPlugin from "./plugins/session";
-import config from "./shared/config/env";
+import env from "./shared/config/env";
 
 // function getEncoder(req: FastifyRequest, reply: FastifyReply) {
 //   const accept = req.headers["accept-encoding"] || "";
@@ -121,7 +121,7 @@ export async function buildServer() {
   });
 
   server.register(fastifyCors, {
-    origin: config.CLIENT_URL,
+    origin: env.CLIENT_URL,
     credentials: true,
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
   });
@@ -129,22 +129,22 @@ export async function buildServer() {
   await server
     .register(logger)
     .register(postgreSQLPlugin, {
-      connectionString: config.DATABASE_URL,
+      connectionString: env.DATABASE_URL,
       max: 100,
       idleTimeoutMillis: 30_000,
     })
     .register(redisPlugin, {
-      host: config.REDIS_HOST,
-      port: config.REDIS_PORT,
+      host: env.REDIS_HOST,
+      port: env.REDIS_PORT,
     })
     .register(rabbitMQPlugin, {
       server: {
-        username: config.RABBITMQ_USERNAME,
-        password: config.RABBITMQ_PASSWORD,
-        hostname: config.RABBITMQ_HOSTNAME,
-        port: config.RABBITMQ_PORT,
-        vhost: config.RABBITMQ_VHOST,
-        frameMax: config.RABBITMQ_FRAME_MAX,
+        username: env.RABBITMQ_USERNAME,
+        password: env.RABBITMQ_PASSWORD,
+        hostname: env.RABBITMQ_HOSTNAME,
+        port: env.RABBITMQ_PORT,
+        vhost: env.RABBITMQ_VHOST,
+        frameMax: env.RABBITMQ_FRAME_MAX,
       },
       connections: [
         {
@@ -198,12 +198,12 @@ export async function buildServer() {
 
   server.register(cookiePlugin, {
     httpOnly: true,
-    secure: config.NODE_ENV === "production",
+    secure: env.NODE_ENV === "production",
   });
 
   server.register(sessionPlugin, {
-    secret: config.SESSION_SECRET_KEY,
-    cookieName: config.SESSION_KEY_NAME,
+    secret: env.SESSION_SECRET_KEY,
+    cookieName: env.SESSION_KEY_NAME,
     refreshCookie: true,
   });
 

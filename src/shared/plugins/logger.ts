@@ -127,7 +127,7 @@ async function logger(
       },
       base: {
         pid: process.pid,
-        hostname: require("os").hostname(),
+        hostname: os.hostname(),
         service: options.serviceName || "fastify-app",
       },
     },
@@ -156,7 +156,7 @@ async function logger(
   });
 
   // Hook để log tất cả requests
-  fastify.addHook("onRequest", async (request, reply) => {
+  fastify.addHook("onRequest", async (request, _) => {
     request.log = logger;
     request.startTime = process.hrtime();
 
@@ -192,7 +192,7 @@ async function logger(
   });
 
   // Hook để log errors
-  fastify.addHook("onError", async (request, reply, error) => {
+  fastify.addHook("onError", async (request, _, error) => {
     logger.error(
       {
         requestId: request.id,
@@ -202,8 +202,8 @@ async function logger(
           name: error.name,
           message: error.message,
           stack: error.stack,
-          statusCode: (error as any).statusCode || 500,
-          validation: (error as any).validation || null,
+          statusCode: error.statusCode || 500,
+          validation: error.validation || null,
         },
         ip: request.ip,
       },

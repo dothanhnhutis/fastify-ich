@@ -2,13 +2,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
 import type { MultipartFile } from "@fastify/multipart";
+import { BadRequestError } from "@shared/utils/error-handler";
 import type {
   FastifyReply,
   FastifyRequest,
   preHandlerHookHandler,
 } from "fastify";
 import { v7 as uuidv7 } from "uuid";
-import { BadRequestError } from "../error-handler";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -198,7 +198,7 @@ export const multerMiddleware = (
     fields.map((f) => {
       const { name, ...other } = f;
       return [
-        f.name,
+        name,
         other.type === "text"
           ? other
           : {

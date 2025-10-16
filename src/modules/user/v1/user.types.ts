@@ -1,12 +1,14 @@
 import type { Role } from "@modules/shared/role/role.shared.types";
 import type {
-  UserPassword,
+  User,
   UserWithoutPassword,
 } from "@modules/shared/user/user.shared.types";
 import type { MulterFile } from "@shared/middleware/multer";
 import type { UserRequsetType } from "./user.schema";
 
-export type QueryUsers = { users: UserWithoutPassword[]; metadata: Metadata };
+export type UserPassword = User & {
+  password_hash: string;
+};
 
 export type UserDetail = UserWithoutPassword & {
   roles: Role[];
@@ -26,7 +28,7 @@ export interface IUserRepository {
   ): Promise<{ roles: Role[]; metadata: Metadata }>;
   findUsers(
     query: UserRequsetType["Query"]["Querystring"]
-  ): Promise<QueryUsers>;
+  ): Promise<{ users: UserWithoutPassword[]; metadata: Metadata }>;
   createNewUser(data: UserRequsetType["Create"]["Body"]): Promise<UserPassword>;
   updateUserById(
     userId: string,

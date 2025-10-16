@@ -1,7 +1,7 @@
+import { BadRequestError } from "@shared/utils/error-handler";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { StatusCodes } from "http-status-codes";
-import { BadRequestError } from "@/shared/error-handler";
-import type { WarehouseRequestType } from "../../v1/warehouses/warehouse.schema";
+import type { WarehouseRequestType } from "./warehouse.schema";
 
 export const WarehouseController = {
   async query(

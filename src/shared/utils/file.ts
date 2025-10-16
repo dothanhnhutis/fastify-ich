@@ -34,8 +34,8 @@ export function deleteFile(pathString: string) {
 }
 
 export function convertImage(image: Image): ImageURL {
-  const url = `${env.SERVER_URL}/api/v1${image.destination
-    .replace("uploads", "files")
+  const url = `${env.SERVER_URL}/api${image.destination
+    .replace("uploads", "files/v1")
     .replace(/\\/g, "/")}/${image.file_name}`;
 
   return {

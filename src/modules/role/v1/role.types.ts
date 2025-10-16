@@ -5,13 +5,8 @@ import type {
 } from "@modules/shared/user/user.shared.types";
 import type { RoleRequestType } from "./role.schema";
 
-type RoleDetail = Role & {
+export type RoleDetail = Role & {
   users: UserWithoutPassword[];
-};
-
-type QueryUsersByRoleId = {
-  users: User[];
-  metadata: Metadata;
 };
 
 export interface IRoleRepository {
@@ -22,15 +17,12 @@ export interface IRoleRepository {
   findUsersByRoleId(
     roleId: string,
     query?: RoleRequestType["GetUsersById"]["Querystring"]
-  ): Promise<QueryUsersByRoleId>;
-
+  ): Promise<{ users: User[]; metadata: Metadata }>;
   findRoleDetailById(roleId: string): Promise<RoleDetail | null>;
-
   create(data: RoleRequestType["Create"]["Body"]): Promise<Role>;
   update(
     id: string,
     data: RoleRequestType["UpdateById"]["Body"]
   ): Promise<void>;
-
   delete(id: string): Promise<Role>;
 }

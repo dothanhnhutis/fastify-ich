@@ -1,5 +1,5 @@
+import requiredAuthMiddleware from "@shared/middleware/requiredAuth";
 import type { FastifyInstance } from "fastify";
-import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
 import { SessionController } from "./session.controller";
 import { sessionSchema } from "./session.schema";
 

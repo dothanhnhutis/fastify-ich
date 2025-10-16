@@ -1,10 +1,10 @@
-import z from "zod/v4";
-import { buildSortField } from "@/shared/utils";
 import {
+  buildSortField,
   queryParamToArray,
   queryParamToString,
   queryStringSchema,
-} from "../../v1/global.schema";
+} from "@shared/utils/validate";
+import z from "zod/v4";
 
 const warehouseIdParamsSchema = z.object({
   id: z.string(),

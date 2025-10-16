@@ -6,7 +6,7 @@ import type { FastifyInstance } from "fastify";
 import { StatusCodes } from "http-status-codes";
 import type { QueryConfig, QueryResult } from "pg";
 import type { RoleRequestType } from "./role.schema";
-import type { IRoleRepository } from "./role.types";
+import type { IRoleRepository, RoleDetail } from "./role.types";
 
 export default class RoleRepository implements IRoleRepository {
   constructor(private fastify: FastifyInstance) {}

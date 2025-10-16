@@ -1,13 +1,10 @@
+import { BadRequestError } from "@shared/utils/error-handler";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { StatusCodes } from "http-status-codes";
-import { BadRequestError } from "@/shared/error-handler";
-import type {
-  PackagingTransactionDBType,
-  PackagingTransactionRequestType,
-} from "../../v1/packaging-transactions/packaging-transaction.schema";
+import type { PackagingTransactionRequestType } from "./packaging-transaction.schema";
 
-export class PackagingTransactionController {
-  static async create(
+export const PackagingTransactionController = {
+  async create(
     request: FastifyRequest<PackagingTransactionRequestType["Create"]>,
     reply: FastifyReply
   ) {
@@ -94,9 +91,9 @@ export class PackagingTransactionController {
         message: "Tạo phiếu thành công.",
       },
     });
-  }
+  },
 
-  static async updateById(
+  async updateById(
     request: FastifyRequest<{
       Params: { id: string };
       Body: {
@@ -128,9 +125,9 @@ export class PackagingTransactionController {
       throw new BadRequestError(
         "Không thê cập nhât nội dung phiếu đã hoàn thành."
       );
-  }
+  },
 
-  static async getById(
+  async getById(
     request: FastifyRequest<PackagingTransactionRequestType["GetById"]>,
     reply: FastifyReply
   ) {
@@ -145,9 +142,9 @@ export class PackagingTransactionController {
         transaction,
       },
     });
-  }
+  },
 
-  static async getDetailById(
+  async getDetailById(
     request: FastifyRequest<PackagingTransactionRequestType["GetDetailById"]>,
     reply: FastifyReply
   ) {
@@ -162,9 +159,9 @@ export class PackagingTransactionController {
         transaction,
       },
     });
-  }
+  },
 
-  static async getItemsById(
+  async getItemsById(
     request: FastifyRequest<PackagingTransactionRequestType["GetItemsById"]>,
     reply: FastifyReply
   ) {
@@ -178,5 +175,5 @@ export class PackagingTransactionController {
         transactions,
       },
     });
-  }
-}
+  },
+};

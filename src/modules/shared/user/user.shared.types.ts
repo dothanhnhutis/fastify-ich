@@ -15,7 +15,3 @@ export type User = {
 export type UserWithoutPassword = User & {
   has_password: boolean;
 };
-
-export type UserPassword = User & {
-  password_hash: string;
-};

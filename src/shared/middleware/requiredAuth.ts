@@ -1,9 +1,9 @@
+import { NotAuthorizedError } from "@shared/utils/error-handler";
 import type {
   FastifyReply,
   FastifyRequest,
   RouteGenericInterface,
 } from "fastify";
-import { NotAuthorizedError } from "../error-handler";
 
 export default async function requiredAuthMiddleware<
   T extends RouteGenericInterface

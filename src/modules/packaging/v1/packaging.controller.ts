@@ -1,8 +1,8 @@
+import { BadRequestError } from "@shared/utils/error-handler";
+import { convertImage } from "@shared/utils/file";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { StatusCodes } from "http-status-codes";
-import { BadRequestError } from "@/shared/error-handler";
-import { convertImage } from "@/shared/utils";
-import type { PackagingRequestType } from "../../v1/packagings/packaging.schema";
+import type { PackagingRequestType } from "./packaging.schema";
 
 export const PackagingController = {
   async query(

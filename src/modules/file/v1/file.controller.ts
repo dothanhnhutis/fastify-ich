@@ -1,9 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
+import env from "@shared/config/env";
+import { securityPath } from "@shared/utils/file";
+import { isFastifyError } from "@shared/utils/helper";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import mime from "mime-types";
-import config from "@/shared/config/env";
-import { isFastifyError, securityPath } from "@/shared/utils";
 
 export const FileController = {
   async view(
@@ -32,7 +33,7 @@ export const FileController = {
       reply.header("Cache-Control", "private, max-age=3600"); // Cache 1 giờ
       reply.header("Last-Modified", stats.mtime.toUTCString());
 
-      reply.header("Access-Control-Allow-Origin", config.CLIENT_URL);
+      reply.header("Access-Control-Allow-Origin", env.CLIENT_URL);
       reply.header("Cross-Origin-Resource-Policy", "cross-origin");
 
       // Support range requests (cho video, audio, large files)

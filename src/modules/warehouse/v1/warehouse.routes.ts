@@ -1,5 +1,5 @@
+import requiredAuthMiddleware from "@shared/middleware/requiredAuth";
 import type { FastifyInstance } from "fastify";
-import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
 import { WarehouseController } from "./warehouse.controller";
 import { warehouseSchema } from "./warehouse.schema";
 

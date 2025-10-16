@@ -1,6 +1,7 @@
+import type { UserDetail } from "@modules/user/v1/user.types";
+import { CryptoAES } from "@shared/utils/crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import fp from "fastify-plugin";
-import { CryptoAES } from "../shared/utils/crypto";
 
 declare module "fastify" {
   interface FastifyRequest {

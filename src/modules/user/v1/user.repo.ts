@@ -1,9 +1,6 @@
 import type { FileUpload } from "@modules/shared/file/file.shared.types";
 import type { Role } from "@modules/shared/role/role.shared.types";
-import type {
-  UserPassword,
-  UserWithoutPassword,
-} from "@modules/shared/user/user.shared.types";
+import type { UserWithoutPassword } from "@modules/shared/user/user.shared.types";
 import type { MulterFile } from "@shared/middleware/multer";
 import { BadRequestError } from "@shared/utils/error-handler";
 import { deleteFile } from "@shared/utils/file";
@@ -12,7 +9,7 @@ import type { FastifyInstance } from "fastify";
 import type { QueryConfig } from "pg";
 import sharp from "sharp";
 import type { UserRequsetType } from "./user.schema";
-import type { IUserRepository, UserDetail } from "./user.types";
+import type { IUserRepository, UserDetail, UserPassword } from "./user.types";
 
 export class UserRepository implements IUserRepository {
   constructor(private fastify: FastifyInstance) {}

@@ -1,4 +1,3 @@
-import { FastifySchema } from "fastify";
 import z from "zod/v4";
 
 const packagingTransactionParamsSchema = z.object({
