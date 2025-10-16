@@ -1,3 +1,7 @@
+import RoleRepository from "@modules/role/v1/role.repo";
+import { UserRepository } from "@modules/user/v1/user.repo";
+import PostgeSQL, { type QueryOptions } from "@shared/db/db";
+import { CustomError } from "@shared/utils/error-handler";
 import type { FastifyInstance } from "fastify";
 import fp from "fastify-plugin";
 import { StatusCodes } from "http-status-codes";
@@ -8,18 +12,11 @@ import type {
   QueryResult,
   QueryResultRow,
 } from "pg";
-import PackagingRepo from "@/db/packaging.repo";
-import PackagingTransactionRepo from "@/db/packaging-transaction.repo";
-import RoleRepo from "@/db/role.repo";
-import UserRepo from "@/db/user.repo";
-import WarehouseRepo from "@/db/warehouse.repo";
-import { CustomError } from "../error-handler";
-import PostgeSQL, { type QueryOptions } from "../shared/db";
 
 declare module "fastify" {
   interface FastifyInstance {
     pg: PostgeSQL;
-    query: <R extends QueryResultRow = any, I = any[]>(
+    query: <R extends QueryResultRow, I = unknown[]>(
       queryConfig: QueryConfig<I>,
       options?: QueryOptions
     ) => Promise<QueryResult<R>>;
@@ -29,11 +26,11 @@ declare module "fastify" {
     ) => Promise<T>;
   }
   interface FastifyRequest {
-    users: UserRepo;
-    roles: RoleRepo;
-    warehouses: WarehouseRepo;
-    packagings: PackagingRepo;
-    packagingTransactions: PackagingTransactionRepo;
+    users: UserRepository;
+    roles: RoleRepository;
+    // warehouses: WarehouseRepo;
+    // packagings: PackagingRepo;
+    // packagingTransactions: PackagingTransactionRepo;
   }
 }
 
@@ -45,7 +42,7 @@ async function postgresDB(fastify: FastifyInstance, options: PoolConfig) {
   fastify.decorateRequest("roles");
   fastify.decorate(
     "query",
-    async <R extends QueryResultRow = any, I = any[]>(
+    async <R extends QueryResultRow, I = unknown[]>(
       queryConfig: QueryConfig<I>,
       options?: QueryOptions
     ) => {
@@ -79,11 +76,11 @@ async function postgresDB(fastify: FastifyInstance, options: PoolConfig) {
   });
 
   fastify.addHook("onRequest", async (req, _reply) => {
-    req.users = new UserRepo(fastify);
-    req.roles = new RoleRepo(fastify);
-    req.warehouses = new WarehouseRepo(fastify);
-    req.packagings = new PackagingRepo(fastify);
-    req.packagingTransactions = new PackagingTransactionRepo(fastify);
+    req.users = new UserRepository(fastify);
+    req.roles = new RoleRepository(fastify);
+    // req.warehouses = new WarehouseRepo(fastify);
+    // req.packagings = new PackagingRepo(fastify);
+    // req.packagingTransactions = new PackagingTransactionRepo(fastify);
   });
 
   fastify.addHook("onClose", async () => {

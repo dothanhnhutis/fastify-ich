@@ -54,49 +54,6 @@ export default class PostgeSQL {
     }
   }
 
-  // public async transaction<T>(
-  //   callback: (client: PoolClient) => Promise<T>,
-  //   options?: QueryOptions
-  // ) :Promise<T>{
-  //   let client: PoolClient | null = null;
-  //   try {
-  //     client = await this.pool.connect();
-  //     await client.query("BEGIN");
-  //     await callback(client);
-  //     await client.query("COMMIT");
-  //   } catch (error: unknown) {
-  //     if (client) await client.query("ROLLBACK");
-  //     let err = error;
-  //     console.log(`transaction failed:`, error);
-  //     if (options && options.maxRetries && options.maxRetries > 0) {
-  //       const delay: number =
-  //         options.retryDelay && options.retryDelay > 0
-  //           ? options.retryDelay
-  //           : 1000;
-  //       for (let attempt = 1; attempt <= options.maxRetries; attempt++) {
-  //         try {
-  //           console.log(`transaction attempt ${attempt}, retrying...`);
-  //           await this.sleep(delay);
-  //           client = await this.pool.connect();
-  //           const result = await callback(client);
-  //           await client.query("COMMIT");
-  //           console.log(`transaction attempt ${attempt} success`);
-  //           return result;
-  //         } catch (retryErr: unknown) {
-  //           if (client) await client.query("ROLLBACK");
-  //           console.log(`transaction attempt ${attempt} failed:`, retryErr);
-  //           err = retryErr;
-  //         }
-  //       }
-  //     }
-  //     throw err;
-  //   } finally {
-  //     if (client) {
-  //       client.release();
-  //     }
-  //   }
-  // }
-
   public async transaction<T>(
     callback: (client: PoolClient) => Promise<T>,
     options?: QueryOptions

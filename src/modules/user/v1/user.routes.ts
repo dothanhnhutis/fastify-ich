@@ -10,7 +10,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/",
     {
-      schema: userSchema["query"],
+      schema: userSchema.query,
       preHandler: [
         requiredAuthMiddleware,
         checkPermissionMiddleware(["read:user:*"]),
@@ -22,7 +22,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/:id",
     {
-      schema: userSchema["getById"],
+      schema: userSchema.getById,
       preHandler: [
         requiredAuthMiddleware,
         checkPermissionMiddleware(["read:user:id"]),
@@ -34,7 +34,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/:id/roles",
     {
-      schema: userSchema["getRolesById"],
+      schema: userSchema.getRolesById,
       preHandler: [
         requiredAuthMiddleware,
         checkPermissionMiddleware(["read:user:*"]),
@@ -46,7 +46,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/:id/detail",
     {
-      schema: userSchema["getDetailById"],
+      schema: userSchema.getDetailById,
       preHandler: [
         requiredAuthMiddleware,
         checkPermissionMiddleware(["read:user:*"]),
@@ -58,7 +58,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/",
     {
-      schema: userSchema["create"],
+      schema: userSchema.create,
       preHandler: [
         requiredAuthMiddleware,
         checkPermissionMiddleware(["create:user"]),
@@ -70,7 +70,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.patch(
     "/:id",
     {
-      schema: userSchema["updateById"],
+      schema: userSchema.updateById,
       preHandler: [
         requiredAuthMiddleware,
         checkPermissionMiddleware(["update:user"]),

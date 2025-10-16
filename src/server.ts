@@ -87,7 +87,7 @@ export async function buildServer() {
     constraints: {},
 
     // Custom error handler
-    setHeaders: (res, path, stat) => {
+    setHeaders: (res, path) => {
       // Custom headers cho mỗi file
       if (path.endsWith(".jpg") || path.endsWith(".png")) {
         res.setHeader("X-File-Type", "image");

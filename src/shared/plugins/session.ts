@@ -24,7 +24,6 @@ interface SessionOptions {
 
 async function session(fastify: FastifyInstance, options: SessionOptions) {
   const { cookieName, secret, refreshCookie = false } = options;
-
   const cryptoCookie = new CryptoAES("aes-256-gcm", secret);
 
   fastify.decorateRequest("currUser", null);
