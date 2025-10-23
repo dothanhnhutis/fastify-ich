@@ -78,10 +78,8 @@ export const SuperUserController = {
       statusCode: StatusCodes.OK,
       statusText: "OK",
       data: {
-        user: {
-          ...userDetail,
-          avatar: userDetail.avatar ? convertImage(userDetail.avatar) : null,
-        },
+        ...userDetail,
+        avatar: userDetail.avatar ? convertImage(userDetail.avatar) : null,
       },
     });
   },
