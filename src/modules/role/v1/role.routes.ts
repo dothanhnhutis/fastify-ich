@@ -11,7 +11,7 @@ export default async function roleRoutes(fastify: FastifyInstance) {
       schema: roleSchema.query,
       preHandler: [
         requiredAuthMiddleware,
-        checkPermissionMiddleware(["read:role:*"]),
+        checkPermissionMiddleware(["read:role"]),
       ],
     },
     RoleController.query
@@ -23,7 +23,7 @@ export default async function roleRoutes(fastify: FastifyInstance) {
       schema: roleSchema.getById,
       preHandler: [
         requiredAuthMiddleware,
-        checkPermissionMiddleware(["read:role:id"]),
+        checkPermissionMiddleware(["read:role"]),
       ],
     },
     RoleController.getById
@@ -36,7 +36,7 @@ export default async function roleRoutes(fastify: FastifyInstance) {
       // exposeHeadRoute: false,
       preHandler: [
         requiredAuthMiddleware,
-        checkPermissionMiddleware(["read:role:*"]),
+        checkPermissionMiddleware(["read:role"]),
       ],
     },
     RoleController.getUsersById
@@ -48,7 +48,7 @@ export default async function roleRoutes(fastify: FastifyInstance) {
       schema: roleSchema.getDetailById,
       preHandler: [
         requiredAuthMiddleware,
-        checkPermissionMiddleware(["read:role:*"]),
+        checkPermissionMiddleware(["read:role"]),
       ],
     },
     RoleController.getDetailById

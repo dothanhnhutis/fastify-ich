@@ -128,7 +128,7 @@ export default class RoleRepository implements IRoleRepository {
     }
   }
 
-  async findRolesv3(query: RoleRequestType["Query"]["Querystring"]) {
+  async findRolesv2(query: RoleRequestType["Query"]["Querystring"]) {
     const queryString = [
       `
       SELECT
@@ -350,10 +350,41 @@ export default class RoleRepository implements IRoleRepository {
               u.status,
               u.deactived_at,
               u.created_at,
-              u.updated_at
+              u.updated_at,
+              CASE
+                WHEN av.file_id IS NOT NULL THEN 
+                  json_build_object(
+                    'id',
+                    av.file_id,
+                    'width',
+                    av.width,
+                    'height',
+                    av.height,
+                    'is_primary',
+                    av.is_primary,
+                    'original_name',
+                    f.original_name,
+                    'mime_type',
+                    f.mime_type,
+                    'destination',
+                    f.destination,
+                    'file_name',
+                    f.file_name,
+                    'size',
+                    f.size,
+                    'created_at',
+                    to_char(
+                        av.created_at AT TIME ZONE 'UTC',
+                        'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                        )
+                    )
+                ELSE null
+              END AS avatar
           FROM
               user_roles ur
               LEFT JOIN users u ON (u.id = ur.user_id)
+              LEFT JOIN user_avatars av ON (u.id = av.user_id)
+              LEFT JOIN files f ON f.id = av.file_id
           WHERE
               ur.role_id = $1::text
               AND u.status = 'ACTIVE'
