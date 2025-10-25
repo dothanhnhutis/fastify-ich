@@ -41,9 +41,7 @@ export const RoleController = {
     reply.code(StatusCodes.OK).send({
       statusCode: StatusCodes.OK,
       statusText: "OK",
-      data: {
-        role,
-      },
+      data: role,
     });
   },
 
@@ -52,7 +50,7 @@ export const RoleController = {
     reply: FastifyReply
   ) {
     console.log(req.query);
-    const data = await req.roles.findRoles(req.query);
+    const data = await req.roles.findRolesv3(req.query);
 
     reply.code(StatusCodes.OK).send({
       statusCode: StatusCodes.OK,
