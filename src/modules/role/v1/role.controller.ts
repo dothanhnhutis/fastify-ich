@@ -49,7 +49,6 @@ export const RoleController = {
     req: FastifyRequest<RoleRequestType["Query"]>,
     reply: FastifyReply
   ) {
-    console.log(req.query);
     const data = await req.roles.findRolesv2(req.query);
 
     reply.code(StatusCodes.OK).send({

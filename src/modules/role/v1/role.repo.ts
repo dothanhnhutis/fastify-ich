@@ -12,6 +12,7 @@ export default class RoleRepository implements IRoleRepository {
   constructor(private fastify: FastifyInstance) {}
 
   async findRoles(query: RoleRequestType["Query"]["Querystring"]) {
+    console.log(query);
     const queryString = [
       `
       SELECT
@@ -204,6 +205,8 @@ export default class RoleRepository implements IRoleRepository {
     const where: string[] = [];
     let idx = 1;
 
+    console.log(query);
+
     try {
       if (query.name !== undefined) {
         where.push(`name ILIKE $${idx++}::text`);
@@ -213,6 +216,11 @@ export default class RoleRepository implements IRoleRepository {
       if (query.permissions !== undefined) {
         where.push(`permissions @> $${idx++}::text[]`);
         values.push(query.permissions);
+      }
+
+      if (query.status !== undefined) {
+        where.push(`r.status = $${idx++}::text`);
+        values.push(`${query.status}`);
       }
 
       if (query.description !== undefined) {

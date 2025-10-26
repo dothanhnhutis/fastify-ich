@@ -13,7 +13,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
       schema: userSchema.query,
       preHandler: [
         requiredAuthMiddleware,
-        checkPermissionMiddleware(["read:user:*"]),
+        checkPermissionMiddleware(["read:user"]),
       ],
     },
     SuperUserController.query
@@ -25,7 +25,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
       schema: userSchema.getById,
       preHandler: [
         requiredAuthMiddleware,
-        checkPermissionMiddleware(["read:user:id"]),
+        checkPermissionMiddleware(["read:user"]),
       ],
     },
     SuperUserController.getById
@@ -37,7 +37,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
       schema: userSchema.getRolesById,
       preHandler: [
         requiredAuthMiddleware,
-        checkPermissionMiddleware(["read:user:*"]),
+        checkPermissionMiddleware(["read:user"]),
       ],
     },
     SuperUserController.getRolesById
@@ -49,7 +49,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
       schema: userSchema.getDetailById,
       preHandler: [
         requiredAuthMiddleware,
-        checkPermissionMiddleware(["read:user:*"]),
+        checkPermissionMiddleware(["read:user"]),
       ],
     },
     SuperUserController.getDetailById
