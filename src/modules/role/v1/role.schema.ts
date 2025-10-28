@@ -13,7 +13,16 @@ const createNewRoleBodySchema = z.object({
     .min(1, "Tên vai trò không được trống"),
   description: z.string("Mô tả vai trò phải là chuỗi.").default(""),
   permissions: z
-    .array(z.string("Quyền phải là chuỗi."), "Danh sách quyền phải là mãng.")
+    .array(
+      z.string("Quyền truy cập phải là chuỗi."),
+      "Danh sách quyền truy cập phải là mãng chuỗi."
+    )
+    .default([]),
+  userIds: z
+    .array(
+      z.string("Tài khoản phải là chuỗi."),
+      "Danh sách tài khoản phải là mãng chuỗi."
+    )
     .default([]),
 });
 

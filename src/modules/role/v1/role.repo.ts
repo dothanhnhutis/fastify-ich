@@ -579,13 +579,6 @@ export default class RoleRepository implements IRoleRepository {
     const values = [data.name, data.description, data.permissions];
     const placeholders = ["$1::text", "$2::text", "$3::text[]"];
 
-    // let idx = values.length;
-    // if (data.description !== undefined) {
-    //   columns.push("description");
-    //   values.push(data.description);
-    //   placeholders.push(`$${idx++}::text`);
-    // }
-
     const queryConfig: QueryConfig = {
       text: `INSERT INTO roles (${columns.join(
         ", "
@@ -594,10 +587,21 @@ export default class RoleRepository implements IRoleRepository {
     };
 
     try {
-      const { rows }: QueryResult<Role> = await this.fastify.query<Role>(
-        queryConfig
-      );
-      return rows[0] ?? null;
+      return await this.fastify.transaction<Role>(async (client) => {
+        const { rows }: QueryResult<Role> = await client.query<Role>(
+          queryConfig
+        );
+        const newRole = rows[0];
+
+        await client.query({
+          text: `INSERT INTO user_roles (role_id, user_id) VALUES ${data.userIds
+            .map((_, idx) => `($1, $${idx + 2})`)
+            .join(", ")};`,
+          values: [newRole.id, ...data.userIds],
+        });
+
+        return newRole;
+      });
     } catch (error: unknown) {
       throw new CustomError({
         message: `RoleRepo.create() method error: ${error}`,

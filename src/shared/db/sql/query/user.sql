@@ -33,6 +33,88 @@ VALUES
 RETURNING
     *;
 
+
+---
+SELECT 
+	u.id,
+    u.email,
+    (u.password_hash IS NOT NULL)::boolean AS has_password,
+    u.username,
+    u.status,
+    u.deactived_at,
+    u.created_at,
+    u.updated_at,
+    COUNT(r.id) FILTER (
+        WHERE
+            r.id IS NOT NULL
+            AND r.status = 'ACTIVE'
+    )::int AS role_count,
+    CASE
+        WHEN av.file_id IS NOT NULL THEN
+            json_build_object(
+                'id',
+                av.file_id,
+                'width',
+                av.width,
+                'height',
+                av.height,
+                'is_primary',
+                av.is_primary,
+                'original_name',
+                f.original_name,
+                'mime_type',
+                f.mime_type,
+                'destination',
+                f.destination,
+                'file_name',
+                f.file_name,
+                'size',
+                f.size,
+                'created_at',
+                to_char(
+                    av.created_at AT TIME ZONE 'UTC',
+                    'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                )
+            ) 
+        ELSE NULL
+    END AS avatar
+FROM users u
+	LEFT JOIN user_roles ur ON ur.user_id = u.id
+	LEFT JOIN roles r ON ur.role_id = r.id
+	LEFT JOIN user_avatars av ON av.user_id = u.id
+	AND av.deleted_at IS NULL
+	AND av.is_primary = true
+	LEFT JOIN files f ON f.id = av.file_id
+	AND av.deleted_at IS NULL
+-- WHERE u.id IN (
+--   '0199f7ba-deaa-7e0f-9d22-6cc8fac6383b',
+--   '0199f7c4-3d12-7fd8-80ab-ecb8a6be738f'
+-- )
+WHERE u.id = ANY (ARRAY[
+  '0199f7ba-deaa-7e0f-9d22-6cc8fac6383b',
+  '0199f7c4-3d12-7fd8-80ab-ecb8a6be738f'
+  ]
+)
+GROUP BY
+    u.id,
+    u.email,
+    u.password_hash,
+    u.username,
+    u.status,
+    u.deactived_at,
+    u.created_at,
+    u.updated_at,
+    av.file_id,
+    av.width,
+    av.height,
+    av.is_primary,
+    av.created_at,
+    f.original_name,
+    f.mime_type,
+    f.destination,
+    f.file_name,
+    f.size;
+
 --- findUserWithoutPasswordByEmail
 SELECT
     u.id,

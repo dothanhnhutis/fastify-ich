@@ -62,6 +62,18 @@ export const RoleController = {
     req: FastifyRequest<RoleRequestType["Create"]>,
     reply: FastifyReply
   ) {
+    if (req.body.userIds.length > 0) {
+      const users = await req.users.findUserInList(req.body.userIds);
+      if (users.length !== req.body.userIds.length) {
+        const invalidId = req.body.userIds.filter(
+          (id) => !users.map(({ id }) => id).includes(id)
+        );
+        throw new BadRequestError(
+          `Tài khoản id=${invalidId[0]} không tồn tại.`
+        );
+      }
+    }
+
     const role = await req.roles.create(req.body);
     reply.code(StatusCodes.OK).send({
       statusCode: StatusCodes.OK,
