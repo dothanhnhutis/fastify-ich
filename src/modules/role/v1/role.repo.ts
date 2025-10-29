@@ -593,12 +593,13 @@ export default class RoleRepository implements IRoleRepository {
         );
         const newRole = rows[0];
 
-        await client.query({
-          text: `INSERT INTO user_roles (role_id, user_id) VALUES ${data.userIds
-            .map((_, idx) => `($1, $${idx + 2})`)
-            .join(", ")};`,
-          values: [newRole.id, ...data.userIds],
-        });
+        if (data.userIds.length > 0)
+          await client.query({
+            text: `INSERT INTO user_roles (role_id, user_id) VALUES ${data.userIds
+              .map((_, idx) => `($1, $${idx + 2})`)
+              .join(", ")};`,
+            values: [newRole.id, ...data.userIds],
+          });
 
         return newRole;
       });
