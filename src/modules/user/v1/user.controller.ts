@@ -12,18 +12,11 @@ export const SuperUserController = {
     reply: FastifyReply
   ) {
     const data = await request.users.findUsers(request.query);
-    const convertAvatars = data.users.map((u) => ({
-      ...u,
-      avatar: u.avatar ? convertImage(u.avatar) : null,
-    }));
 
     reply.code(StatusCodes.OK).send({
       statusCode: StatusCodes.OK,
       statusText: "OK",
-      data: {
-        users: convertAvatars,
-        metadata: data.metadata,
-      },
+      data,
     });
   },
 

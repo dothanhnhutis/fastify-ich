@@ -613,12 +613,16 @@ export default class RoleRepository implements IRoleRepository {
 
   async update(id: string, data: RoleRequestType["UpdateById"]["Body"]) {
     const sets: string[] = [];
-    const values: (string | string[] | Date)[] = [];
+    const values: (string | string[] | Date | null)[] = [];
     let idx = 1;
 
     if (data.name !== undefined) {
       sets.push(`name = $${idx++}::text`);
       values.push(data.name);
+    }
+    if (data.description !== undefined) {
+      sets.push(`description = $${idx++}::text`);
+      values.push(data.description);
     }
     if (data.permissions !== undefined) {
       sets.push(`permissions = $${idx++}::text[]`);
@@ -627,9 +631,11 @@ export default class RoleRepository implements IRoleRepository {
     if (data.status !== undefined) {
       sets.push(
         `status = $${idx++}::text`,
-        `deactived_at = $${idx++}::timestamptz`
+        `deactived_at = ${
+          data.status === "ACTIVE" ? `$${idx++}` : `$${idx++}::timestamptz`
+        }`
       );
-      values.push(data.status, new Date());
+      values.push(data.status, data.status === "ACTIVE" ? null : new Date());
     }
 
     if (sets.length === 0) {
@@ -646,7 +652,47 @@ export default class RoleRepository implements IRoleRepository {
     };
 
     try {
-      await this.fastify.query(queryConfig);
+      await this.fastify.transaction(async (client) => {
+        await client.query(queryConfig);
+
+        if (data.userIds) {
+          if (data.userIds.length === 0) {
+            // xoá hết
+            await client.query({
+              text: `
+              DELETE FROM user_roles
+              WHERE
+                  role_id = $1
+              RETURNING *;
+            `,
+              values: [id],
+            });
+          } else {
+            // xoá
+            await client.query({
+              text: `
+              DELETE FROM user_roles
+              WHERE
+                  role_id = $1
+                  AND user_id = ALL($2::text[])
+              RETURNING *;
+            `,
+              values: [id, data.userIds],
+            });
+            // tạo mới
+            await client.query({
+              text: `
+              INSERT INTO user_roles (role_id, user_id) 
+              VALUES ${data.userIds
+                .map((_, idx) => `($1, $${idx + 2})`)
+                .join(", ")}
+              ON CONFLICT DO NOTHING;
+            `,
+              values: [id, ...data.userIds],
+            });
+          }
+        }
+      });
     } catch (error: unknown) {
       throw new CustomError({
         message: `RoleRepo.update() method error: ${error}`,

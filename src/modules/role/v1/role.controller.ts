@@ -91,8 +91,21 @@ export const RoleController = {
   ) {
     const role = await req.roles.findRoleById(req.params.id);
     if (!role) throw new BadRequestError("Vai trò không tồn tại.");
-    if (!role.canUpdate)
+
+    if (!role.can_update)
       throw new BadRequestError("Vai trò không được chỉnh sửa.");
+
+    if (req.body.userIds && req.body.userIds.length > 0) {
+      const users = await req.users.findUserInList(req.body.userIds);
+      if (users.length !== req.body.userIds.length) {
+        const invalidId = req.body.userIds.filter(
+          (id) => !users.map(({ id }) => id).includes(id)
+        );
+        throw new BadRequestError(
+          `Tài khoản id=${invalidId[0]} không tồn tại.`
+        );
+      }
+    }
 
     await req.roles.update(role.id, req.body);
 
@@ -111,7 +124,7 @@ export const RoleController = {
   ) {
     const role = await req.roles.findRoleById(req.params.id);
     if (!role) throw new BadRequestError("Vai trò không tồn tại.");
-    if (!role.canDelete) throw new BadRequestError("Vai trò không được xoá.");
+    if (!role.can_delete) throw new BadRequestError("Vai trò không được xoá.");
     await req.roles.delete(role.id);
 
     reply.code(StatusCodes.OK).send({
