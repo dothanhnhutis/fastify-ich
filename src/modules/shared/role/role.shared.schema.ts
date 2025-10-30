@@ -10,6 +10,7 @@ const sortRoleEnum = buildSortField([
   "name",
   "permissions",
   "description",
+  "deactived_at",
   "status",
   "created_at",
   "updated_at",

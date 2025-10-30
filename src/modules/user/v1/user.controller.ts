@@ -1,6 +1,5 @@
 import env from "@shared/config/env";
 import { BadRequestError } from "@shared/utils/error-handler";
-import { convertImage } from "@shared/utils/file";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { StatusCodes } from "http-status-codes";
 import type { UserRequsetType } from "./user.schema";
@@ -31,12 +30,7 @@ export const SuperUserController = {
     reply.code(StatusCodes.OK).send({
       statusCode: StatusCodes.OK,
       statusText: "OK",
-      data: {
-        user: {
-          ...existsUser,
-          avatar: existsUser.avatar ? convertImage(existsUser.avatar) : null,
-        },
-      },
+      data: existsUser,
     });
   },
 
@@ -70,10 +64,7 @@ export const SuperUserController = {
     reply.code(StatusCodes.OK).send({
       statusCode: StatusCodes.OK,
       statusText: "OK",
-      data: {
-        ...userDetail,
-        avatar: userDetail.avatar ? convertImage(userDetail.avatar) : null,
-      },
+      data: userDetail,
     });
   },
 
@@ -129,12 +120,7 @@ export const UserController = {
     reply.code(StatusCodes.OK).send({
       statusCode: StatusCodes.OK,
       statusText: "OK",
-      data: {
-        ...request.currUser,
-        avatar: request.currUser?.avatar
-          ? convertImage(request.currUser.avatar)
-          : null,
-      },
+      data: request.currUser,
     });
   },
 

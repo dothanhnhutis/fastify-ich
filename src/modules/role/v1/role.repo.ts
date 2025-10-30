@@ -205,8 +205,6 @@ export default class RoleRepository implements IRoleRepository {
     const where: string[] = [];
     let idx = 1;
 
-    console.log(query);
-
     try {
       if (query.name !== undefined) {
         where.push(`name ILIKE $${idx++}::text`);
