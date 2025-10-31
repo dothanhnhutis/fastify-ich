@@ -6,31 +6,36 @@ import {
 } from "fastify-type-provider-zod";
 import { StatusCodes } from "http-status-codes";
 
-export class CustomError<C extends string> extends Error {
+export class CustomError<C extends Record<string, unknown>> extends Error {
+  error: string;
   message: string;
   statusCode: number;
-  statusText?: C;
+  details?: C;
 
   constructor({
+    error,
     message,
     statusCode,
-    statusText,
+    details,
   }: {
+    error: string;
     message: string;
     statusCode: number;
-    statusText?: C;
+    details?: C;
   }) {
     super();
+    this.error = error;
     this.message = message;
     this.statusCode = statusCode;
-    this.statusText = statusText;
+    this.details = details;
   }
 
   serialize() {
     return {
-      statusText: this.statusText,
+      error: this.error,
+      message: this.message,
       statusCode: this.statusCode,
-      data: { message: this.message },
+      details: this.details,
     };
   }
 }
@@ -90,6 +95,7 @@ export async function errorHandler(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
+  // validate input
   if (hasZodFastifySchemaValidationErrors(error)) {
     return reply.code(400).send({
       error: "Response Validation Error",
@@ -102,7 +108,7 @@ export async function errorHandler(
       },
     });
   }
-
+  // validate output
   if (isResponseSerializationError(error)) {
     return reply.code(500).send({
       error: "Internal Server Error",
@@ -126,16 +132,17 @@ export async function errorHandler(
   //   });
   // }
 
+  // debug mode
   if (reply.sent || reply.raw?.headersSent || env.DEBUG) {
     return reply.status(StatusCodes.INTERNAL_SERVER_ERROR).send(error);
   }
 
+  // app error
   if (error instanceof CustomError) {
     return reply.status(error.statusCode).send(error.serialize());
   }
 
-  console.log(error);
-
+  // unknown error
   reply.status(500).send({
     statusText: "INTERNAL_SERVER_ERROR",
     statusCode: StatusCodes.INTERNAL_SERVER_ERROR,

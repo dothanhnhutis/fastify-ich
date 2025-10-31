@@ -936,66 +936,71 @@ export class UserRepository implements IUserRepository {
     data: UserRequsetType["UpdateById"]["Body"]
   ) {
     if (Object.keys(data).length === 0) return;
+
+    const sets: string[] = [];
+    const values: (string | null | Date)[] = [];
+    let idx = 1;
+
+    if (data.username !== undefined) {
+      sets.push(`username = $${idx++}::text`);
+      values.push(data.username);
+    }
+
+    if (data.status !== undefined) {
+      sets.push(
+        `status = $${idx++}::text`,
+        `deactived_at = $${idx++}::timestamptz`
+      );
+      values.push(data.status, data.status === "ACTIVE" ? null : new Date());
+    }
+
+    values.push(userId);
+
+    const queryConfig: QueryConfig = {
+      text: `UPDATE users SET ${sets.join(
+        ", "
+      )} WHERE id = $${idx} RETURNING *;`,
+      values,
+    };
     try {
       await this.fastify.transaction(async (client) => {
-        const sets: string[] = [];
-        const values: (string | null | Date)[] = [];
-        let idx = 1;
-
-        if (data.username !== undefined) {
-          sets.push(`username = $${idx++}::text`);
-          values.push(data.username);
-        }
-
-        if (data.status !== undefined) {
-          sets.push(
-            `status = $${idx++}::text`,
-            `deactived_at = $${idx++}::timestamptz`
-          );
-          values.push(
-            data.status,
-            data.status === "ACTIVE" ? null : new Date()
-          );
-        }
-
-        if (values.length > 0) {
-          values.push(userId);
-          const queryConfig: QueryConfig = {
-            text: `UPDATE users SET ${sets.join(
-              ", "
-            )} WHERE id = $${idx} RETURNING *;`,
-            values,
-          };
-          await client.query(queryConfig);
-        }
+        await client.query(queryConfig);
+        console.log(data);
 
         if (data.roleIds) {
-          if (data.roleIds.length > 0) {
-            // delete role
+          if (data.roleIds.length === 0) {
+            // xoá hết
             await client.query({
-              text: `DELETE FROM user_roles 
-          WHERE user_id = $1::text 
-            AND role_id NOT IN (${data.roleIds
-              .map((_, i) => {
-                return `$${i + 2}::text`;
-              })
-              .join(", ")}) 
-          RETURNING *;`,
-              values: [userId, ...data.roleIds],
-            });
-
-            // insert role
-            await client.query({
-              text: `INSERT INTO user_roles 
-          VALUES ${data.roleIds.map((_, i) => `($1, $${i + 2})`).join(", ")} 
-          ON CONFLICT DO NOTHING;`,
-              values: [userId, ...data.roleIds],
+              text: `
+              DELETE FROM user_roles 
+              WHERE 
+                user_id = $1::text 
+              RETURNING *;`,
+              values: [userId],
             });
           } else {
+            console.log("roleIds", data.roleIds);
+
+            // xoá cai nao khong co trong list
             await client.query({
-              text: `DELETE FROM user_roles
-            WHERE user_id = $1::text RETURNING *;`,
-              values: [userId],
+              text: `
+              DELETE FROM user_roles
+              WHERE 
+                user_id = $1::text
+                AND role_id = ALL($2::text[])
+              RETURNING *;`,
+              values: [userId, data.roleIds],
+            });
+
+            // tao nhung cai chua co
+            await client.query({
+              text: `
+              INSERT INTO user_roles (user_id, role_id)
+              VALUES ${data.roleIds
+                .map((_, i) => `($1, $${i + 2})`)
+                .join(", ")} 
+              ON CONFLICT DO NOTHING;`,
+              values: [userId, ...data.roleIds],
             });
           }
         }

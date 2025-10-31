@@ -99,7 +99,6 @@ export const SuperUserController = {
     reply: FastifyReply
   ) {
     const { id } = request.params;
-
     const existsUser = await request.users.findUserWithoutPasswordById(id);
     if (!existsUser) throw new BadRequestError("Người dùng không tồn tại.");
 

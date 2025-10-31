@@ -611,6 +611,7 @@ export default class RoleRepository implements IRoleRepository {
   }
 
   async update(id: string, data: RoleRequestType["UpdateById"]["Body"]) {
+    if (Object.keys(data).length === 0) return;
     const sets: string[] = [];
     const values: (string | string[] | Date | null)[] = [];
     let idx = 1;
@@ -661,7 +662,7 @@ export default class RoleRepository implements IRoleRepository {
               text: `
               DELETE FROM user_roles
               WHERE
-                  role_id = $1
+                  role_id = $1::text
               RETURNING *;
             `,
               values: [id],
