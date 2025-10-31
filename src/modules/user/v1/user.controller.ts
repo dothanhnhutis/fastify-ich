@@ -26,7 +26,11 @@ export const SuperUserController = {
     const existsUser = await request.users.findUserWithoutPasswordById(
       request.params.id
     );
-    if (!existsUser) throw new BadRequestError("Người dùng không tồn tại.");
+    if (!existsUser)
+      throw new BadRequestError(
+        `SuperUserController.getById function error: userId=${request.params.id} không tồn tại.`,
+        "Người dùng không tồn tại."
+      );
     reply.code(StatusCodes.OK).send({
       statusCode: StatusCodes.OK,
       statusText: "OK",
@@ -41,7 +45,11 @@ export const SuperUserController = {
     const existsUser = await request.users.findUserWithoutPasswordById(
       request.params.id
     );
-    if (!existsUser) throw new BadRequestError("Người dùng không tồn tại.");
+    if (!existsUser)
+      throw new BadRequestError(
+        `SuperUserController.getRolesById function error: userId=${request.params.id} không tồn tại.`,
+        "Người dùng không tồn tại."
+      );
     const roles = await request.users.findRolesByUserId(
       request.params.id,
       request.query
@@ -60,7 +68,11 @@ export const SuperUserController = {
     const userDetail = await request.users.findUserDetailById(
       request.params.id
     );
-    if (!userDetail) throw new BadRequestError("Người dùng không tồn tại.");
+    if (!userDetail)
+      throw new BadRequestError(
+        `SuperUserController.getDetailById function error: userId=${request.params.id} không tồn tại.`,
+        "Người dùng không tồn tại."
+      );
     reply.code(StatusCodes.OK).send({
       statusCode: StatusCodes.OK,
       statusText: "OK",
@@ -75,19 +87,26 @@ export const SuperUserController = {
     const existsUser = await request.users.findUserWithoutPasswordByEmail(
       request.body.email
     );
-    if (existsUser) throw new BadRequestError("Email đã tồn tại.");
+    if (existsUser)
+      throw new BadRequestError(
+        `SuperUserController.create function error: email=${request.body.email} đã tồn tại.`,
+        "Email đã tồn tại."
+      );
 
     if (request.body.roleIds) {
       for (const id of request.body.roleIds) {
         const role = await request.roles.findRoleById(id);
-        if (!role) throw new BadRequestError(`Quyền id='${id}' không tồn tại.`);
+        if (!role)
+          throw new BadRequestError(
+            `SuperUserController.create function error: roleId=${id} không tồn tại.`,
+            `Quyền truy cập roleId='${id}' không tồn tại.`
+          );
       }
     }
     await request.users.createNewUser(request.body);
 
     reply.code(StatusCodes.CREATED).send({
       statusCode: StatusCodes.OK,
-      statusText: "CREATED",
       data: {
         message: "Tạo người dùng thành công.",
       },
@@ -100,7 +119,11 @@ export const SuperUserController = {
   ) {
     const { id } = request.params;
     const existsUser = await request.users.findUserWithoutPasswordById(id);
-    if (!existsUser) throw new BadRequestError("Người dùng không tồn tại.");
+    if (!existsUser)
+      throw new BadRequestError(
+        `SuperUserController.updateById function error: userId=${request.params.id} không tồn tại.`,
+        "Người dùng không tồn tại."
+      );
 
     await request.users.updateUserById(id, request.body);
 
@@ -133,7 +156,6 @@ export const UserController = {
       .clearCookie(env.SESSION_KEY_NAME)
       .send({
         statusCode: StatusCodes.OK,
-        statusText: "OK",
         data: {
           message: "Đăng xuất thành công",
         },
@@ -146,7 +168,10 @@ export const UserController = {
       !request.multerField.avatar ||
       !Array.isArray(request.multerField.avatar)
     ) {
-      throw new BadRequestError("Không có file nào tải lên.");
+      throw new BadRequestError(
+        `SuperUserController.uploadAvatar function error: không có field avatar được upload lên`,
+        "Không có file nào tải lên."
+      );
     }
 
     const file = request.multerField.avatar[0];
@@ -155,7 +180,6 @@ export const UserController = {
 
     return reply.send({
       statusCode: StatusCodes.OK,
-      statusText: "OK",
       data: {
         message: "Cập nhật avatar thành công.",
       },
@@ -167,7 +191,6 @@ export const UserController = {
 
     return reply.send({
       statusCode: StatusCodes.OK,
-      statusText: "OK",
       data: {
         message: "Xoá avatar thành công.",
       },

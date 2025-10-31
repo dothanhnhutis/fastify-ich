@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { CustomError } from "@shared/utils/error-handler";
 import type {
   FastifyInstance,
   FastifyPluginOptions,
@@ -113,7 +114,7 @@ async function logger(
   // Tạo logger với multiple streams
   const logger = pino(
     {
-      level: "info",
+      level: "warn",
       timestamp: () => `,"time":"${new Date().toISOString()}"`,
       formatters: {
         level: (label: string) => {

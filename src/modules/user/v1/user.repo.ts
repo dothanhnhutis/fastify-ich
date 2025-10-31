@@ -97,8 +97,8 @@ export class UserRepository implements IUserRepository {
       return rows;
     } catch (err: unknown) {
       this.fastify.logger.error(
-        { metadata: { query: queryConfig } },
-        `UserRepo.findUserInList() method error: ${err}`
+        { metadata: { queryConfig } },
+        `UserRepository.findUserInList() method error: ${err}`
       );
       return [];
     }
@@ -193,8 +193,8 @@ export class UserRepository implements IUserRepository {
       return rows[0] ?? null;
     } catch (err: unknown) {
       this.fastify.logger.error(
-        { metadata: { query: queryConfig } },
-        `UserRepo.findUserWithoutPasswordById() method error: ${err}`
+        { metadata: { queryConfig } },
+        `UserRepository.findUserWithoutPasswordById() method error: ${err}`
       );
       return null;
     }
@@ -289,8 +289,8 @@ export class UserRepository implements IUserRepository {
       return rows[0] ?? null;
     } catch (err: unknown) {
       this.fastify.logger.error(
-        { metadata: { query: queryConfig } },
-        `UserRepo.findUserWithoutPasswordByEmail() method error: ${err}`
+        { metadata: { queryConfig } },
+        `UserRepository.findUserWithoutPasswordByEmail() method error: ${err}`
       );
       return null;
     }
@@ -377,8 +377,8 @@ export class UserRepository implements IUserRepository {
       return rows[0] ?? null;
     } catch (err: unknown) {
       this.fastify.logger.error(
-        { metadata: { query: queryConfig } },
-        `UserRepo.findUserPasswordById() method error: ${err}`
+        { metadata: { queryConfig } },
+        `UserRepository.findUserById() method error: ${err}`
       );
       return null;
     }
@@ -465,8 +465,8 @@ export class UserRepository implements IUserRepository {
       return rows[0] ?? null;
     } catch (err: unknown) {
       this.fastify.logger.error(
-        { metadata: { query: queryConfig } },
-        `UserRepo.findUserPasswordByEmail() method error: ${err}`
+        { metadata: { queryConfig } },
+        `UserRepository.findUserByEmail() method error: ${err}`
       );
       return null;
     }
@@ -588,8 +588,8 @@ export class UserRepository implements IUserRepository {
       return userDetails[0] ?? null;
     } catch (error: unknown) {
       this.fastify.logger.error(
-        { metadata: { query: queryConfig } },
-        `UserRepo.findUserDetailById() method error: ${error}`
+        { metadata: { queryConfig } },
+        `UserRepository.findUserDetailById() method error: ${error}`
       );
       return null;
     }
@@ -656,6 +656,8 @@ export class UserRepository implements IUserRepository {
       queryString.push(`WHERE ${where.join(" AND ")}`);
     }
 
+    let queryConfig: QueryConfig = { text: "", values: [] };
+
     try {
       return await this.fastify.transaction(async (client) => {
         const { rows } = await client.query<{ count: string }>({
@@ -691,7 +693,7 @@ export class UserRepository implements IUserRepository {
         queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
         values.push(limit, offset);
 
-        const queryConfig: QueryConfig = {
+        queryConfig = {
           text: [newTable, queryString.join(" ")].join(" "),
           values,
         };
@@ -713,13 +715,21 @@ export class UserRepository implements IUserRepository {
         };
       });
     } catch (err: unknown) {
-      // this.fastify.logger.error(
-      //   { metadata: { query: queryConfig } },
-      //   `UserRepo.findUserRoles() method error: ${err}`
-      // );
-      throw new BadRequestError(
-        `PackagingStockRepo.findRolesByUserId() method error: ${err}`
+      this.fastify.logger.error(
+        { metadata: { queryConfig } },
+        `UserRepository.findRolesByUserId() method error: ${err}`
       );
+      return {
+        roles: [],
+        metadata: {
+          totalItem: 0,
+          totalPage: 0,
+          hasNextPage: false,
+          limit: 0,
+          itemStart: 0,
+          itemEnd: 0,
+        },
+      };
     }
   }
 
@@ -820,6 +830,7 @@ export class UserRepository implements IUserRepository {
           av.is_primary, av.created_at, f.original_name, f.mime_type, f.destination,
           f.file_name, f.size`);
 
+    let queryConfig: QueryConfig = { text: "", values: [] };
     try {
       return await this.fastify.transaction(async (client) => {
         const { rows } = await client.query<{ count: string }>({
@@ -852,7 +863,7 @@ export class UserRepository implements IUserRepository {
         queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
         values.push(limit, offset);
 
-        const queryConfig: QueryConfig = {
+        queryConfig = {
           text: queryString.join(" "),
           values,
         };
@@ -876,7 +887,21 @@ export class UserRepository implements IUserRepository {
         };
       });
     } catch (error: unknown) {
-      throw new BadRequestError(`UserRepo.query() method error: ${error}`);
+      this.fastify.logger.error(
+        { metadata: { queryConfig } },
+        `UserRepository.findRolesByUserId() method error: ${error}`
+      );
+      return {
+        users: [],
+        metadata: {
+          totalItem: 0,
+          totalPage: 0,
+          hasNextPage: false,
+          limit: 0,
+          itemStart: 0,
+          itemEnd: 0,
+        },
+      };
     }
   }
 
@@ -925,9 +950,12 @@ export class UserRepository implements IUserRepository {
     } catch (err: unknown) {
       this.fastify.log.error(
         { metadata: { query: queryConfig } },
-        `UserRepo.create() method error: ${err}`
+        `UserRepository.createNewUser() method error: ${err}`
       );
-      throw new BadRequestError("Tạo Người dùng thất bại");
+      throw new BadRequestError(
+        `UserRepository.createNewUser() method error: ${err}`,
+        "Tạo Người dùng thất bại"
+      );
     }
   }
 
@@ -1005,11 +1033,18 @@ export class UserRepository implements IUserRepository {
           }
         }
       });
-    } catch (error) {
-      throw new BadRequestError(`UserRepo.update() method error: ${error}`);
+    } catch (error: unknown) {
+      this.fastify.log.error(
+        { metadata: { query: queryConfig } },
+        `UserRepository.updateUserById() method error: ${error}`
+      );
+      throw new BadRequestError(
+        `UserRepository.updateUserById() method error: ${error}`,
+        `Cập nhật người dùng thất bại`
+      );
     }
   }
-  // error
+
   async updateAvatarById(userId: string, file: MulterFile) {
     try {
       await this.fastify.transaction(async (client) => {
@@ -1030,7 +1065,6 @@ export class UserRepository implements IUserRepository {
           ],
         };
         const { rows: files } = await client.query<FileUpload>(queryConfig);
-
         // xoá mềm avatar cũ
         await client.query({
           text: `
@@ -1052,9 +1086,13 @@ export class UserRepository implements IUserRepository {
         });
       });
     } catch (error) {
+      this.fastify.log.error(
+        `UserRepository.updateUserById() method error: ${error}`
+      );
       deleteFile(file.path);
       throw new BadRequestError(
-        `UserRepo.updateAvatarById() method error: ${error}`
+        `UserRepository.updateAvatarById() method error: ${error}`,
+        "Cập nhật avatar thất bại."
       );
     }
   }
@@ -1071,7 +1109,8 @@ export class UserRepository implements IUserRepository {
       });
     } catch (error) {
       throw new BadRequestError(
-        `UserRepo.deleteAvatarById() method error: ${error}`
+        `UserRepo.deleteAvatarById() method error: ${error}`,
+        "Xoá avatar thất bại."
       );
     }
   }
