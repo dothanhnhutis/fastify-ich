@@ -1,4 +1,4 @@
-import { BadRequestError } from "@shared/utils/error-handler";
+import { NotAuthorizedError } from "@shared/utils/error-handler";
 import { comparePassword } from "@shared/utils/password";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { StatusCodes } from "http-status-codes";
@@ -17,15 +17,12 @@ export const AuthController = {
       !user.password_hash ||
       !(await comparePassword(user.password_hash, password))
     )
-      // throw new BadRequestError(
-      //   "Email và mật khẩu không hợp lệ",
-      //   "UNAUTHORIZED"
-      // );
-      return reply.code(StatusCodes.UNAUTHORIZED).send({
-        error: "UNAUTHORIZED",
-        statusCode: StatusCodes.UNAUTHORIZED,
-        message: "Email và mật khẩu không hợp lệ",
-      });
+      throw new NotAuthorizedError("Email và mật khẩu không hợp lệ");
+    // return reply.code(StatusCodes.UNAUTHORIZED).send({
+    //   error: "UNAUTHORIZED",
+    //   statusCode: StatusCodes.UNAUTHORIZED,
+    //   message: "Email và mật khẩu không hợp lệ",
+    // });
 
     const { sessionId, cookie } = await req.sessions.create({
       userId: user.id,

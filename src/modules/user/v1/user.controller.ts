@@ -84,25 +84,25 @@ export const SuperUserController = {
     request: FastifyRequest<UserRequsetType["Create"]>,
     reply: FastifyReply
   ) {
-    const existsUser = await request.users.findUserWithoutPasswordByEmail(
-      request.body.email
-    );
-    if (existsUser)
-      throw new BadRequestError(
-        `SuperUserController.create function error: email=${request.body.email} đã tồn tại.`,
-        "Email đã tồn tại."
-      );
+    // const existsUser = await request.users.findUserWithoutPasswordByEmail(
+    //   request.body.email
+    // );
+    // if (existsUser)
+    //   throw new BadRequestError(
+    //     `SuperUserController.create function error: email=${request.body.email} đã tồn tại.`,
+    //     "Email đã tồn tại."
+    //   );
 
-    if (request.body.roleIds) {
-      for (const id of request.body.roleIds) {
-        const role = await request.roles.findRoleById(id);
-        if (!role)
-          throw new BadRequestError(
-            `SuperUserController.create function error: roleId=${id} không tồn tại.`,
-            `Quyền truy cập roleId='${id}' không tồn tại.`
-          );
-      }
-    }
+    // if (request.body.roleIds) {
+    //   for (const id of request.body.roleIds) {
+    //     const role = await request.roles.findRoleById(id);
+    //     if (!role)
+    //       throw new BadRequestError(
+    //         `SuperUserController.create function error: roleId=${id} không tồn tại.`,
+    //         `Quyền truy cập roleId='${id}' không tồn tại.`
+    //       );
+    //   }
+    // }
     await request.users.createNewUser(request.body);
 
     reply.code(StatusCodes.CREATED).send({

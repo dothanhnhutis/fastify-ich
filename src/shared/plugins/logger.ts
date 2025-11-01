@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { CustomError } from "@shared/utils/error-handler";
+import { CustomError, DatabaseError } from "@shared/utils/error-handler";
 import type {
   FastifyInstance,
   FastifyPluginOptions,
@@ -115,7 +115,7 @@ async function logger(
   // Tạo logger với multiple streams
   const logger = pino(
     {
-      level: "info",
+      level: "warn",
       timestamp: () => `,"time":"${new Date().toISOString()}"`,
       formatters: {
         level: (label: string) => {
@@ -196,22 +196,42 @@ async function logger(
   // Hook để log errors
   fastify.addHook("onError", async (request, _, error) => {
     if (hasZodFastifySchemaValidationErrors(error)) return;
-    logger.error(
-      {
-        requestId: request.id,
-        method: request.method,
-        url: request.url,
-        error: {
-          name: error.name,
-          message: error.message,
-          stack: error.stack,
-          statusCode: error.statusCode || 500,
-          validation: error.validation || null,
+
+    if (error instanceof CustomError) {
+      logger[error.level](
+        {
+          requestId: request.id,
+          method: request.method,
+          url: request.url,
+          error: {
+            name: error.name,
+            error: error.error,
+            message: error.message,
+            statusCode: error.statusCode,
+            details: error.details,
+          },
+          ip: request.ip,
         },
-        ip: request.ip,
-      },
-      "Request error"
-    );
+        "Request error"
+      );
+    } else {
+      logger.error(
+        {
+          requestId: request.id,
+          method: request.method,
+          url: request.url,
+          error: {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+            statusCode: error.statusCode || 500,
+            validation: error.validation || null,
+          },
+          ip: request.ip,
+        },
+        "Request error"
+      );
+    }
   });
 
   // Hook để log khi server ready

@@ -2,7 +2,12 @@ import type { FileUpload } from "@modules/shared/file/file.shared.types";
 import type { Role } from "@modules/shared/role/role.shared.types";
 import type { UserWithoutPassword } from "@modules/shared/user/user.shared.types";
 import type { MulterFile } from "@shared/middleware/multer";
-import { BadRequestError } from "@shared/utils/error-handler";
+import {
+  BadRequestError,
+  DatabaseError,
+  isPostgresError,
+  mapPostgresError,
+} from "@shared/utils/error-handler";
 import { deleteFile } from "@shared/utils/file";
 import { generatePassword, hashPassword } from "@shared/utils/password";
 import type { FastifyInstance } from "fastify";
@@ -96,11 +101,24 @@ export class UserRepository implements IUserRepository {
       );
       return rows;
     } catch (err: unknown) {
-      this.fastify.logger.error(
-        { metadata: { queryConfig } },
-        `UserRepository.findUserInList() method error: ${err}`
+      if (isPostgresError(err)) {
+        throw new DatabaseError(err.message, err.code, {
+          query: queryConfig.text,
+          values: queryConfig.values,
+          driverMessage: err.detail,
+          constraint: err.constraint,
+          table: err.table,
+          schema: err.schema,
+          routine: err.routine,
+        });
+      }
+      throw new DatabaseError(
+        "Lỗi không xác định trong cơ sở dữ liệu",
+        "UNKNOWN_DB_ERROR",
+        {
+          originalError: String(err),
+        }
       );
-      return [];
     }
   }
 
@@ -192,11 +210,24 @@ export class UserRepository implements IUserRepository {
       );
       return rows[0] ?? null;
     } catch (err: unknown) {
-      this.fastify.logger.error(
-        { metadata: { queryConfig } },
-        `UserRepository.findUserWithoutPasswordById() method error: ${err}`
+      if (isPostgresError(err)) {
+        throw new DatabaseError(err.message, err.code, {
+          query: queryConfig.text,
+          values: queryConfig.values,
+          driverMessage: err.detail,
+          constraint: err.constraint,
+          table: err.table,
+          schema: err.schema,
+          routine: err.routine,
+        });
+      }
+      throw new DatabaseError(
+        "Lỗi không xác định trong cơ sở dữ liệu",
+        "UNKNOWN_DB_ERROR",
+        {
+          originalError: String(err),
+        }
       );
-      return null;
     }
   }
 
@@ -288,11 +319,24 @@ export class UserRepository implements IUserRepository {
       );
       return rows[0] ?? null;
     } catch (err: unknown) {
-      this.fastify.logger.error(
-        { metadata: { queryConfig } },
-        `UserRepository.findUserWithoutPasswordByEmail() method error: ${err}`
+      if (isPostgresError(err)) {
+        throw new DatabaseError(err.message, err.code, {
+          query: queryConfig.text,
+          values: queryConfig.values,
+          driverMessage: err.detail,
+          constraint: err.constraint,
+          table: err.table,
+          schema: err.schema,
+          routine: err.routine,
+        });
+      }
+      throw new DatabaseError(
+        "Lỗi không xác định trong cơ sở dữ liệu",
+        "UNKNOWN_DB_ERROR",
+        {
+          originalError: String(err),
+        }
       );
-      return null;
     }
   }
 
@@ -376,11 +420,24 @@ export class UserRepository implements IUserRepository {
       const { rows } = await this.fastify.query<UserPassword>(queryConfig);
       return rows[0] ?? null;
     } catch (err: unknown) {
-      this.fastify.logger.error(
-        { metadata: { queryConfig } },
-        `UserRepository.findUserById() method error: ${err}`
+      if (isPostgresError(err)) {
+        throw new DatabaseError(err.message, err.code, {
+          query: queryConfig.text,
+          values: queryConfig.values,
+          driverMessage: err.detail,
+          constraint: err.constraint,
+          table: err.table,
+          schema: err.schema,
+          routine: err.routine,
+        });
+      }
+      throw new DatabaseError(
+        "Lỗi không xác định trong cơ sở dữ liệu",
+        "UNKNOWN_DB_ERROR",
+        {
+          originalError: String(err),
+        }
       );
-      return null;
     }
   }
 
@@ -464,11 +521,24 @@ export class UserRepository implements IUserRepository {
       const { rows } = await this.fastify.query<UserPassword>(queryConfig);
       return rows[0] ?? null;
     } catch (err: unknown) {
-      this.fastify.logger.error(
-        { metadata: { queryConfig } },
-        `UserRepository.findUserByEmail() method error: ${err}`
+      if (isPostgresError(err)) {
+        throw new DatabaseError(err.message, err.code, {
+          query: queryConfig.text,
+          values: queryConfig.values,
+          driverMessage: err.detail,
+          constraint: err.constraint,
+          table: err.table,
+          schema: err.schema,
+          routine: err.routine,
+        });
+      }
+      throw new DatabaseError(
+        "Lỗi không xác định trong cơ sở dữ liệu",
+        "UNKNOWN_DB_ERROR",
+        {
+          originalError: String(err),
+        }
       );
-      return null;
     }
   }
 
@@ -586,12 +656,25 @@ export class UserRepository implements IUserRepository {
         queryConfig
       );
       return userDetails[0] ?? null;
-    } catch (error: unknown) {
-      this.fastify.logger.error(
-        { metadata: { queryConfig } },
-        `UserRepository.findUserDetailById() method error: ${error}`
+    } catch (err: unknown) {
+      if (isPostgresError(err)) {
+        throw new DatabaseError(err.message, err.code, {
+          query: queryConfig.text,
+          values: queryConfig.values,
+          driverMessage: err.detail,
+          constraint: err.constraint,
+          table: err.table,
+          schema: err.schema,
+          routine: err.routine,
+        });
+      }
+      throw new DatabaseError(
+        "Lỗi không xác định trong cơ sở dữ liệu",
+        "UNKNOWN_DB_ERROR",
+        {
+          originalError: String(err),
+        }
       );
-      return null;
     }
   }
 
@@ -715,21 +798,24 @@ export class UserRepository implements IUserRepository {
         };
       });
     } catch (err: unknown) {
-      this.fastify.logger.error(
-        { metadata: { queryConfig } },
-        `UserRepository.findRolesByUserId() method error: ${err}`
+      if (isPostgresError(err)) {
+        throw new DatabaseError(err.message, err.code, {
+          query: queryConfig.text,
+          values: queryConfig.values,
+          driverMessage: err.detail,
+          constraint: err.constraint,
+          table: err.table,
+          schema: err.schema,
+          routine: err.routine,
+        });
+      }
+      throw new DatabaseError(
+        "Lỗi không xác định trong cơ sở dữ liệu",
+        "UNKNOWN_DB_ERROR",
+        {
+          originalError: String(err),
+        }
       );
-      return {
-        roles: [],
-        metadata: {
-          totalItem: 0,
-          totalPage: 0,
-          hasNextPage: false,
-          limit: 0,
-          itemStart: 0,
-          itemEnd: 0,
-        },
-      };
     }
   }
 
@@ -886,22 +972,25 @@ export class UserRepository implements IUserRepository {
           },
         };
       });
-    } catch (error: unknown) {
-      this.fastify.logger.error(
-        { metadata: { queryConfig } },
-        `UserRepository.findRolesByUserId() method error: ${error}`
+    } catch (err: unknown) {
+      if (isPostgresError(err)) {
+        throw new DatabaseError(err.message, err.code, {
+          query: queryConfig.text,
+          values: queryConfig.values,
+          driverMessage: err.detail,
+          constraint: err.constraint,
+          table: err.table,
+          schema: err.schema,
+          routine: err.routine,
+        });
+      }
+      throw new DatabaseError(
+        "Lỗi không xác định trong cơ sở dữ liệu",
+        "UNKNOWN_DB_ERROR",
+        {
+          originalError: String(err),
+        }
       );
-      return {
-        users: [],
-        metadata: {
-          totalItem: 0,
-          totalPage: 0,
-          hasNextPage: false,
-          limit: 0,
-          itemStart: 0,
-          itemEnd: 0,
-        },
-      };
     }
   }
 
@@ -948,13 +1037,23 @@ export class UserRepository implements IUserRepository {
 
       return newUser;
     } catch (err: unknown) {
-      this.fastify.log.error(
-        { metadata: { query: queryConfig } },
-        `UserRepository.createNewUser() method error: ${err}`
-      );
-      throw new BadRequestError(
-        `UserRepository.createNewUser() method error: ${err}`,
-        "Tạo Người dùng thất bại"
+      if (isPostgresError(err)) {
+        throw new DatabaseError(err.message, err.code, {
+          query: queryConfig.text,
+          values: queryConfig.values,
+          driverMessage: err.detail,
+          constraint: err.constraint,
+          table: err.table,
+          schema: err.schema,
+          routine: err.routine,
+        });
+      }
+      throw new DatabaseError(
+        "Lỗi không xác định trong cơ sở dữ liệu",
+        "UNKNOWN_DB_ERROR",
+        {
+          originalError: String(err),
+        }
       );
     }
   }
@@ -1033,14 +1132,24 @@ export class UserRepository implements IUserRepository {
           }
         }
       });
-    } catch (error: unknown) {
-      this.fastify.log.error(
-        { metadata: { query: queryConfig } },
-        `UserRepository.updateUserById() method error: ${error}`
-      );
-      throw new BadRequestError(
-        `UserRepository.updateUserById() method error: ${error}`,
-        `Cập nhật người dùng thất bại`
+    } catch (err: unknown) {
+      if (isPostgresError(err)) {
+        throw new DatabaseError(err.message, err.code, {
+          query: queryConfig.text,
+          values: queryConfig.values,
+          driverMessage: err.detail,
+          constraint: err.constraint,
+          table: err.table,
+          schema: err.schema,
+          routine: err.routine,
+        });
+      }
+      throw new DatabaseError(
+        "Lỗi không xác định trong cơ sở dữ liệu",
+        "UNKNOWN_DB_ERROR",
+        {
+          originalError: String(err),
+        }
       );
     }
   }
@@ -1085,32 +1194,58 @@ export class UserRepository implements IUserRepository {
           values: [userId, files[0].id, metadata.width, metadata.height, true],
         });
       });
-    } catch (error) {
-      this.fastify.log.error(
-        `UserRepository.updateUserById() method error: ${error}`
-      );
+    } catch (err: unknown) {
       deleteFile(file.path);
-      throw new BadRequestError(
-        `UserRepository.updateAvatarById() method error: ${error}`,
-        "Cập nhật avatar thất bại."
+      if (isPostgresError(err)) {
+        throw new DatabaseError(err.message, err.code, {
+          query: null,
+          values: null,
+          driverMessage: err.detail,
+          constraint: err.constraint,
+          table: err.table,
+          schema: err.schema,
+          routine: err.routine,
+        });
+      }
+      throw new DatabaseError(
+        "Lỗi không xác định trong cơ sở dữ liệu",
+        "UNKNOWN_DB_ERROR",
+        {
+          originalError: String(err),
+        }
       );
     }
   }
 
   async deleteAvatarById(userId: string) {
-    try {
-      await this.fastify.query({
-        text: `
+    const queryConfig: QueryConfig = {
+      text: `
             UPDATE user_avatars
             SET deleted_at = $1::timestamptz(3), is_primary = false
             WHERE user_id = $2::text AND is_primary = true
           `,
-        values: [new Date(), userId],
-      });
-    } catch (error) {
-      throw new BadRequestError(
-        `UserRepo.deleteAvatarById() method error: ${error}`,
-        "Xoá avatar thất bại."
+      values: [new Date(), userId],
+    };
+    try {
+      await this.fastify.query(queryConfig);
+    } catch (err: unknown) {
+      if (isPostgresError(err)) {
+        throw new DatabaseError(err.message, err.code, {
+          query: queryConfig.text,
+          values: queryConfig.values,
+          driverMessage: err.detail,
+          constraint: err.constraint,
+          table: err.table,
+          schema: err.schema,
+          routine: err.routine,
+        });
+      }
+      throw new DatabaseError(
+        "Lỗi không xác định trong cơ sở dữ liệu",
+        "UNKNOWN_DB_ERROR",
+        {
+          originalError: String(err),
+        }
       );
     }
   }

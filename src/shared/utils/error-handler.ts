@@ -7,6 +7,25 @@ import {
 import { StatusCodes } from "http-status-codes";
 import type { LevelWithSilent } from "pino";
 
+export interface PostgresError extends Error {
+  severity: string;
+  code: string;
+  detail?: string;
+  hint?: string;
+  position?: string;
+  internalPosition?: string;
+  internalQuery?: string;
+  where?: string;
+  schema?: string;
+  table?: string;
+  column?: string;
+  dataType?: string;
+  constraint?: string;
+  file?: string;
+  line?: string;
+  routine?: string;
+}
+
 interface ICustomError<
   D extends Record<string, unknown> = Record<string, unknown>
 > {
@@ -45,8 +64,8 @@ export class CustomError<
   serialize(): Omit<ICustomError<D>, "level"> {
     return {
       error: this.error,
-      message: this.message,
       statusCode: this.statusCode,
+      message: this.message,
       ...(this.details && { details: this.details }),
     };
   }
@@ -56,15 +75,15 @@ export class DatabaseError<
   D extends Record<string, unknown> = Record<string, unknown>
 > extends CustomError<D> {
   constructor(
-    message = "Permission denied",
-    error: string = "DatabaseError",
+    message = "Database operation failed",
+    error: string = "UNKNOWN_DB_ERROR",
     details?: D
   ) {
     super({
       level: "error",
       error,
       message,
-      statusCode: StatusCodes.FORBIDDEN,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
       details: details ?? ({} as D),
     });
   }
@@ -110,10 +129,77 @@ export class PermissionError<
       error,
       message,
       statusCode: StatusCodes.FORBIDDEN,
-      details: details ?? ({} as D),
+      details,
     });
   }
 }
+
+function extractConstraintField(constraint?: string): string {
+  if (!constraint) return "unknown";
+  const parts = constraint.split("_");
+  return parts.length > 1 ? parts[1] : constraint;
+}
+
+export function mapPostgresError(err: unknown): DatabaseError {
+  // Đảm bảo err thực sự là PostgresError
+  if (isPostgresError(err)) {
+    switch (err.code) {
+      case "23505":
+        // Unique constraint
+        return new DatabaseError("Dữ liệu đã tồn tại", err.code, {
+          constraint: err.constraint,
+          field: extractConstraintField(err.constraint),
+          detail: err.detail,
+        });
+
+      case "23503":
+        // Foreign key violation
+        return new DatabaseError("Tham chiếu không hợp lệ", err.code, {
+          constraint: err.constraint,
+          table: err.table,
+          detail: err.detail,
+        });
+
+      case "22P02":
+        // Invalid input syntax (e.g. UUID)
+        return new DatabaseError("Dữ liệu không hợp lệ", err.code, {
+          detail: err.detail,
+        });
+
+      case "23502":
+        // Not-null violation
+        return new DatabaseError("Thiếu dữ liệu bắt buộc", err.code, {
+          column: err.column,
+        });
+
+      default:
+        return new DatabaseError("Lỗi truy vấn cơ sở dữ liệu", err.code, {
+          detail: err.detail,
+          table: err.table,
+          constraint: err.constraint,
+        });
+    }
+  }
+
+  // Không phải lỗi Postgres
+  return new DatabaseError(
+    "Lỗi không xác định trong cơ sở dữ liệu",
+    "UNKNOWN_DB_ERROR",
+    {
+      originalError: String(err),
+    }
+  );
+}
+
+export function isPostgresError(err: unknown): err is PostgresError {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    typeof (err as { code: unknown }).code === "string"
+  );
+}
+
 export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
@@ -175,7 +261,14 @@ export async function errorHandler(
   }
 
   // app error
-  if (error instanceof CustomError) {
+  if (error instanceof DatabaseError) {
+    const err = error.serialize();
+    return reply.status(err.statusCode).send({
+      error: err.error,
+      statusCode: err.statusCode,
+      message: err.message,
+    });
+  } else if (error instanceof CustomError) {
     return reply.status(error.statusCode).send(error.serialize());
   }
 
