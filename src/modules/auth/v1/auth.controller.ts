@@ -17,11 +17,15 @@ export const AuthController = {
       !user.password_hash ||
       !(await comparePassword(user.password_hash, password))
     )
-      throw new BadRequestError(
-        "AuthController.signIn function error: invalid password.",
-        "Email và mật khẩu không hợp lệ.",
-        { metadata: { sdsd: "123" } }
-      );
+      // throw new BadRequestError(
+      //   "Email và mật khẩu không hợp lệ",
+      //   "UNAUTHORIZED"
+      // );
+      return reply.code(StatusCodes.UNAUTHORIZED).send({
+        error: "UNAUTHORIZED",
+        statusCode: StatusCodes.UNAUTHORIZED,
+        message: "Email và mật khẩu không hợp lệ",
+      });
 
     const { sessionId, cookie } = await req.sessions.create({
       userId: user.id,
@@ -35,9 +39,7 @@ export const AuthController = {
       .setSession(sessionId, { ...cookie })
       .send({
         statusCode: StatusCodes.OK,
-        data: {
-          message: "Đăng nhập thành công.",
-        },
+        message: "Đăng nhập thành công.",
       });
   },
 };

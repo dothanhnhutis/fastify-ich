@@ -5,10 +5,12 @@ import {
   isResponseSerializationError,
 } from "fastify-type-provider-zod";
 import { StatusCodes } from "http-status-codes";
+import type { LevelWithSilent } from "pino";
 
 interface ICustomError<
   D extends Record<string, unknown> = Record<string, unknown>
 > {
+  level: LevelWithSilent;
   error: string;
   message: string;
   statusCode: number;
@@ -16,16 +18,20 @@ interface ICustomError<
 }
 
 export class CustomError<
-  D extends Record<string, unknown> = Record<string, unknown>
-> extends Error {
+    D extends Record<string, unknown> = Record<string, unknown>
+  >
+  extends Error
+  implements ICustomError<D>
+{
+  level: LevelWithSilent;
   error: string;
   statusCode: number;
   details?: D;
 
-  constructor({ error, message, statusCode, details }: ICustomError<D>) {
+  constructor({ level, error, message, statusCode, details }: ICustomError<D>) {
     super(message);
-
     this.name = new.target.name;
+    this.level = level;
     this.error = error;
     this.statusCode = statusCode;
     this.details = details;
@@ -36,12 +42,7 @@ export class CustomError<
     }
   }
 
-  serialize(): {
-    details?: D | undefined;
-    error: string;
-    message: string;
-    statusCode: number;
-  } {
+  serialize(): Omit<ICustomError<D>, "level"> {
     return {
       error: this.error,
       message: this.message,
@@ -51,23 +52,31 @@ export class CustomError<
   }
 }
 
-// type ErrorCode =
-//   | "NOT_FOUND"
-//   | "BAD_REQUEST"
-//   | "TOO_MANY_REQUESTS"
-//   | "UNAUTHORIZED"
-//   | "FORBIDDEN"
-//   | "ERR_VALID";
-
-export class BadRequestError<
+export class DatabaseError<
   D extends Record<string, unknown> = Record<string, unknown>
 > extends CustomError<D> {
-  constructor(error: string, message: string, details?: D) {
+  constructor(
+    message = "Permission denied",
+    error: string = "DatabaseError",
+    details?: D
+  ) {
     super({
+      level: "error",
       error,
       message,
-      statusCode: StatusCodes.BAD_REQUEST,
+      statusCode: StatusCodes.FORBIDDEN,
       details: details ?? ({} as D),
+    });
+  }
+}
+
+export class BadRequestError extends CustomError {
+  constructor(message: string, error?: string) {
+    super({
+      level: "debug",
+      error: error ?? "BadRequestError",
+      statusCode: StatusCodes.BAD_REQUEST,
+      message,
     });
   }
 }
@@ -76,15 +85,14 @@ export class NotAuthorizedError<
   D extends Record<string, unknown> = Record<string, unknown>
 > extends CustomError<D> {
   constructor(
-    error: string,
     message: string = "Authentication failed",
-    details?: D
+    error: string = "UNAUTHORIZED"
   ) {
     super({
+      level: "debug",
       error,
-      message,
       statusCode: StatusCodes.UNAUTHORIZED,
-      details: details ?? ({} as D),
+      message,
     });
   }
 }
@@ -92,8 +100,13 @@ export class NotAuthorizedError<
 export class PermissionError<
   D extends Record<string, unknown> = Record<string, unknown>
 > extends CustomError<D> {
-  constructor(error: string, message = "Permission denied", details?: D) {
+  constructor(
+    message = "Permission denied",
+    error: string = "FORBIDDEN",
+    details?: D
+  ) {
     super({
+      level: "warn",
       error,
       message,
       statusCode: StatusCodes.FORBIDDEN,

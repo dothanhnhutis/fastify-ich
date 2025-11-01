@@ -9,6 +9,7 @@ import type {
   RouteOptions,
 } from "fastify";
 import fp from "fastify-plugin";
+import { hasZodFastifySchemaValidationErrors } from "fastify-type-provider-zod";
 import pino, { type Level, type Logger } from "pino";
 import { createStream } from "rotating-file-stream";
 
@@ -114,7 +115,7 @@ async function logger(
   // Tạo logger với multiple streams
   const logger = pino(
     {
-      level: "warn",
+      level: "info",
       timestamp: () => `,"time":"${new Date().toISOString()}"`,
       formatters: {
         level: (label: string) => {
@@ -194,6 +195,7 @@ async function logger(
 
   // Hook để log errors
   fastify.addHook("onError", async (request, _, error) => {
+    if (hasZodFastifySchemaValidationErrors(error)) return;
     logger.error(
       {
         requestId: request.id,
