@@ -1,29 +1,4 @@
-import path from "node:path";
-// import { Readable } from "node:stream";
-// import { createGzip } from "node:zlib";
-import fastifyCors from "@fastify/cors";
-import fastifyHelmet from "@fastify/helmet";
-import fastifyMultipart from "@fastify/multipart";
-import fastifyStatic from "@fastify/static";
-import rabbitMQPlugin from "@shared/plugins/amqp";
-import cookiePlugin from "@shared/plugins/cookie";
-import logger from "@shared/plugins/logger";
-import postgreSQLPlugin from "@shared/plugins/postgres";
-import redisPlugin from "@shared/plugins/redis";
-import sessionPlugin from "@shared/plugins/session";
-
-import { errorHandler } from "@shared/utils/error-handler";
-// import addErrors from "ajv-errors";
-// import addFormats from "ajv-formats";
-import fastify from "fastify";
-import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import {
-  serializerCompiler,
-  validatorCompiler,
-} from "fastify-type-provider-zod";
-import appRoutes from "./modules";
-import env from "./shared/config/env";
-
+import fs from "node:fs";
 // function getEncoder(req: FastifyRequest, reply: FastifyReply) {
 //   const accept = req.headers["accept-encoding"] || "";
 //   if (/\bbr\b/.test(accept)) {
@@ -39,10 +14,90 @@ import env from "./shared/config/env";
 //     return null; // không nén
 //   }
 // }
+import os from "node:os";
+import path from "node:path";
+// import { Readable } from "node:stream";
+// import { createGzip } from "node:zlib";
+import fastifyCors from "@fastify/cors";
+import fastifyHelmet from "@fastify/helmet";
+import fastifyMultipart from "@fastify/multipart";
+import fastifyStatic from "@fastify/static";
+import rabbitMQPlugin from "@shared/plugins/amqp";
+import cookiePlugin from "@shared/plugins/cookie";
+import logger from "@shared/plugins/logger";
+import { loggerHook, pinoConfig } from "@shared/plugins/loggerv1";
+import postgreSQLPlugin from "@shared/plugins/postgres";
+import redisPlugin from "@shared/plugins/redis";
+import sessionPlugin from "@shared/plugins/session";
+import { errorHandler } from "@shared/utils/error-handler";
+// import addErrors from "ajv-errors";
+// import addFormats from "ajv-formats";
+import fastify from "fastify";
+import type { ZodTypeProvider } from "fastify-type-provider-zod";
+import {
+  serializerCompiler,
+  validatorCompiler,
+} from "fastify-type-provider-zod";
+import type pino from "pino";
+import { createStream } from "rotating-file-stream";
+import appRoutes from "./modules";
+import env from "./shared/config/env";
+
+// Tạo thư mục logs nếu chưa tồn tại
+const logsDir = path.join(process.cwd(), "logs");
+if (!fs.existsSync(logsDir)) {
+  fs.mkdirSync(logsDir, { recursive: true });
+}
+
+// Cấu hình rotating file stream cho general logs
+const generalLogStream = createStream("general.log", {
+  path: logsDir,
+  size: "10M", // 10MB
+  interval: "1d",
+  compress: "gzip",
+  maxFiles: 30,
+});
+
+// Cấu hình rotating file stream cho error logs
+const errorLogStream = createStream("error.log", {
+  path: logsDir,
+  size: "10M",
+  interval: "1d",
+  compress: "gzip",
+  maxFiles: 30,
+});
+
+// Cấu hình rotating file stream cho access logs
+const accessLogStream = createStream("access.log", {
+  path: logsDir,
+  size: "10M",
+  interval: "1d",
+  compress: "gzip",
+  maxFiles: 30,
+});
+
+const streams: pino.StreamEntry[] = [
+  {
+    level: "info",
+    stream: process.stdout,
+  },
+  {
+    level: "debug",
+    stream: generalLogStream,
+  },
+  {
+    level: "error",
+    stream: errorLogStream,
+  },
+  {
+    level: "info",
+    stream: accessLogStream,
+  },
+];
 
 export async function buildServer() {
   const server = fastify({
-    logger: false,
+    logger: pinoConfig,
     trustProxy: true,
     // ajv: {
     //   customOptions: {
@@ -58,6 +113,8 @@ export async function buildServer() {
     //   ],
     // },
   });
+
+  loggerHook(server);
 
   server.setValidatorCompiler(validatorCompiler);
   server.setSerializerCompiler(serializerCompiler);
@@ -126,89 +183,91 @@ export async function buildServer() {
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
   });
 
-  await server
-    .register(logger)
-    .register(postgreSQLPlugin, {
-      connectionString: env.DATABASE_URL,
-      max: 100,
-      idleTimeoutMillis: 30_000,
-    })
-    .register(redisPlugin, {
-      host: env.REDIS_HOST,
-      port: env.REDIS_PORT,
-    })
-    .register(rabbitMQPlugin, {
-      server: {
-        username: env.RABBITMQ_USERNAME,
-        password: env.RABBITMQ_PASSWORD,
-        hostname: env.RABBITMQ_HOSTNAME,
-        port: env.RABBITMQ_PORT,
-        vhost: env.RABBITMQ_VHOST,
-        frameMax: env.RABBITMQ_FRAME_MAX,
-      },
-      connections: [
-        {
-          name: "publisher-conn",
-          channels: [
-            {
-              name: "publish-user-channel",
-            },
-          ],
-          maxRetries: 10,
-          retryDelay: 5000,
-          clientProperties: {
-            connection_name: "publisher-conn",
-            purpose: "publisher",
-          },
-        },
-        {
-          name: "consumer-conn",
-          channels: [
-            {
-              name: "consume-user-channel",
-            },
-          ],
-          maxRetries: 10,
-          retryDelay: 5000,
-          clientProperties: {
-            connection_name: "consumer-conn",
-            purpose: "consumer",
-          },
-        },
-      ],
-      exchanges: [
-        {
-          name: "user-mail-direct",
-          type: "direct",
-          options: {
-            durable: true,
-          },
-        },
-      ],
-      queues: [
-        {
-          type: "direct",
-          name: "create-new-user-mail-queue",
-          exchange: "user-mail-direct",
-          routingKey: "create-new-user",
-          options: { durable: true },
-        },
-      ],
-    });
+  // server.register(logger);
 
-  server.register(cookiePlugin, {
-    httpOnly: true,
-    secure: env.NODE_ENV === "production",
-  });
+  // await server
+  //   .register(logger)
+  //   .register(postgreSQLPlugin, {
+  //     connectionString: env.DATABASE_URL,
+  //     max: 100,
+  //     idleTimeoutMillis: 30_000,
+  //   })
+  //   .register(redisPlugin, {
+  //     host: env.REDIS_HOST,
+  //     port: env.REDIS_PORT,
+  //   })
+  //   .register(rabbitMQPlugin, {
+  //     server: {
+  //       username: env.RABBITMQ_USERNAME,
+  //       password: env.RABBITMQ_PASSWORD,
+  //       hostname: env.RABBITMQ_HOSTNAME,
+  //       port: env.RABBITMQ_PORT,
+  //       vhost: env.RABBITMQ_VHOST,
+  //       frameMax: env.RABBITMQ_FRAME_MAX,
+  //     },
+  //     connections: [
+  //       {
+  //         name: "publisher-conn",
+  //         channels: [
+  //           {
+  //             name: "publish-user-channel",
+  //           },
+  //         ],
+  //         maxRetries: 10,
+  //         retryDelay: 5000,
+  //         clientProperties: {
+  //           connection_name: "publisher-conn",
+  //           purpose: "publisher",
+  //         },
+  //       },
+  //       {
+  //         name: "consumer-conn",
+  //         channels: [
+  //           {
+  //             name: "consume-user-channel",
+  //           },
+  //         ],
+  //         maxRetries: 10,
+  //         retryDelay: 5000,
+  //         clientProperties: {
+  //           connection_name: "consumer-conn",
+  //           purpose: "consumer",
+  //         },
+  //       },
+  //     ],
+  //     exchanges: [
+  //       {
+  //         name: "user-mail-direct",
+  //         type: "direct",
+  //         options: {
+  //           durable: true,
+  //         },
+  //       },
+  //     ],
+  //     queues: [
+  //       {
+  //         type: "direct",
+  //         name: "create-new-user-mail-queue",
+  //         exchange: "user-mail-direct",
+  //         routingKey: "create-new-user",
+  //         options: { durable: true },
+  //       },
+  //     ],
+  //   });
 
-  server.register(sessionPlugin, {
-    secret: env.SESSION_SECRET_KEY,
-    cookieName: env.SESSION_KEY_NAME,
-    refreshCookie: true,
-  });
+  // server.register(cookiePlugin, {
+  //   httpOnly: true,
+  //   secure: env.NODE_ENV === "production",
+  // });
+
+  // server.register(sessionPlugin, {
+  //   secret: env.SESSION_SECRET_KEY,
+  //   cookieName: env.SESSION_KEY_NAME,
+  //   refreshCookie: true,
+  // });
 
   // Routes
-  server.register(appRoutes, { prefix: "/api" });
+  // server.register(appRoutes, { prefix: "/api" });
 
   // Error handling
   server.setErrorHandler(errorHandler);

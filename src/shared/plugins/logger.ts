@@ -77,10 +77,10 @@ async function logger(
   });
 
   const streams: pino.StreamEntry[] = [
-    {
-      level: "info",
-      stream: process.stdout,
-    },
+    // {
+    //   level: "info",
+    //   stream: process.stdout,
+    // },
     {
       level: "debug",
       stream: generalLogStream,
@@ -98,7 +98,7 @@ async function logger(
   // Route logger riêng biệt
   const routeLogger = pino(
     {
-      level: "info",
+      level: "debug",
       timestamp: () => `,"time":"${new Date().toISOString()}"`,
       formatters: {
         level: (label: string) => ({ level: label }),
@@ -115,7 +115,7 @@ async function logger(
   // Tạo logger với multiple streams
   const logger = pino(
     {
-      level: "warn",
+      level: "debug",
       timestamp: () => `,"time":"${new Date().toISOString()}"`,
       formatters: {
         level: (label: string) => {

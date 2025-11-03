@@ -11,7 +11,7 @@ async function start(): Promise<void> {
 
     await server.listen({ port, host });
 
-    server.logger.info(`Server started on ${host}:${port}`);
+    server.log.info(`Server started on ${host}:${port}`);
   } catch (err) {
     console.error("Error starting server:", err);
     process.exit(1);
