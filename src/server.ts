@@ -1,20 +1,3 @@
-import fs from "node:fs";
-// function getEncoder(req: FastifyRequest, reply: FastifyReply) {
-//   const accept = req.headers["accept-encoding"] || "";
-//   if (/\bbr\b/.test(accept)) {
-//     reply.header("Content-Encoding", "br");
-//     return zlib.createBrotliCompress();
-//   } else if (/\bgzip\b/.test(accept)) {
-//     reply.header("Content-Encoding", "gzip");
-//     return zlib.createGzip();
-//   } else if (/\bdeflate\b/.test(accept)) {
-//     reply.header("Content-Encoding", "deflate");
-//     return zlib.createDeflate();
-//   } else {
-//     return null; // không nén
-//   }
-// }
-import os from "node:os";
 import path from "node:path";
 // import { Readable } from "node:stream";
 // import { createGzip } from "node:zlib";
@@ -24,8 +7,8 @@ import fastifyMultipart from "@fastify/multipart";
 import fastifyStatic from "@fastify/static";
 import rabbitMQPlugin from "@shared/plugins/amqp";
 import cookiePlugin from "@shared/plugins/cookie";
-import logger from "@shared/plugins/logger";
-import { loggerHook, pinoConfig } from "@shared/plugins/loggerv1";
+// import logger from "@shared/plugins/logger";
+import { logger, loggerHook } from "@shared/plugins/loggerv1";
 import postgreSQLPlugin from "@shared/plugins/postgres";
 import redisPlugin from "@shared/plugins/redis";
 import sessionPlugin from "@shared/plugins/session";
@@ -38,84 +21,16 @@ import {
   serializerCompiler,
   validatorCompiler,
 } from "fastify-type-provider-zod";
-import type pino from "pino";
-import { createStream } from "rotating-file-stream";
 import appRoutes from "./modules";
 import env from "./shared/config/env";
 
-// Tạo thư mục logs nếu chưa tồn tại
-const logsDir = path.join(process.cwd(), "logs");
-if (!fs.existsSync(logsDir)) {
-  fs.mkdirSync(logsDir, { recursive: true });
-}
-
-// Cấu hình rotating file stream cho general logs
-const generalLogStream = createStream("general.log", {
-  path: logsDir,
-  size: "10M", // 10MB
-  interval: "1d",
-  compress: "gzip",
-  maxFiles: 30,
-});
-
-// Cấu hình rotating file stream cho error logs
-const errorLogStream = createStream("error.log", {
-  path: logsDir,
-  size: "10M",
-  interval: "1d",
-  compress: "gzip",
-  maxFiles: 30,
-});
-
-// Cấu hình rotating file stream cho access logs
-const accessLogStream = createStream("access.log", {
-  path: logsDir,
-  size: "10M",
-  interval: "1d",
-  compress: "gzip",
-  maxFiles: 30,
-});
-
-const streams: pino.StreamEntry[] = [
-  {
-    level: "info",
-    stream: process.stdout,
-  },
-  {
-    level: "debug",
-    stream: generalLogStream,
-  },
-  {
-    level: "error",
-    stream: errorLogStream,
-  },
-  {
-    level: "info",
-    stream: accessLogStream,
-  },
-];
-
 export async function buildServer() {
   const server = fastify({
-    logger: pinoConfig,
+    logger,
     trustProxy: true,
-    // ajv: {
-    //   customOptions: {
-    //     allErrors: true,
-    //     removeAdditional: true,
-    //     $data: true,
-    //     discriminator: true,
-    //     coerceTypes: "array",
-    //   },
-    //   plugins: [
-    //     addFormats, // Thêm format validation (email, date, etc.)
-    //     addErrors, // Thêm custom error messages
-    //   ],
-    // },
   });
 
-  loggerHook(server);
-
+  // zod validate
   server.setValidatorCompiler(validatorCompiler);
   server.setSerializerCompiler(serializerCompiler);
   server.withTypeProvider<ZodTypeProvider>();
@@ -170,9 +85,9 @@ export async function buildServer() {
       headerPairs: 2000, // header key=>value pairs
       parts: 1000, // tổng parts = fields + files
     },
-
     // Nếu attachFieldsToBody true thì các field + file được gắn vào req.body
-    attachFieldsToBody: false, // true: khi muốn chuyển toàn bộ file upload và req.body và file không quá lớn.
+    // true: khi muốn chuyển toàn bộ file upload và req.body và file không quá lớn.
+    attachFieldsToBody: false,
     // Nếu muốn khi vượt giới hạn fileSize ném lỗi
     throwFileSizeLimit: true,
   });
@@ -182,8 +97,6 @@ export async function buildServer() {
     credentials: true,
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
   });
-
-  // server.register(logger);
 
   // await server
   //   .register(logger)
@@ -265,6 +178,9 @@ export async function buildServer() {
   //   cookieName: env.SESSION_KEY_NAME,
   //   refreshCookie: true,
   // });
+
+  // Hook
+  loggerHook(server);
 
   // Routes
   // server.register(appRoutes, { prefix: "/api" });

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { CustomError, DatabaseError } from "@shared/utils/error-handler";
+import { CustomError } from "@shared/utils/error-handler";
 import type {
   FastifyInstance,
   FastifyPluginOptions,

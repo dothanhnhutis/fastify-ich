@@ -27,4 +27,6 @@ export default {
   SESSION_SECRET_KEY:
     process.env.SESSION_SECRET_KEY ||
     "sD3b+3dM7mW/0i6X4KpGb4XtYcwXAXuRCuRgfKoyh2U=",
+  // Logger
+  LEVEL: process.env.LEVEL || "debug",
 };

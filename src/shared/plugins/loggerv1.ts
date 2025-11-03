@@ -1,18 +1,19 @@
 import fs from "node:fs";
-import { request } from "node:http";
 import os from "node:os";
 import path from "node:path";
+import env from "@shared/config/env";
 import type {
   FastifyInstance,
-  FastifyLoggerOptions,
   FastifyReply,
+  FastifyRequest,
   FastifyServerOptions,
-  RawServerBase,
+  RouteOptions,
 } from "fastify";
-import type { PinoLoggerOptions } from "fastify/types/logger";
 import { hasZodFastifySchemaValidationErrors } from "fastify-type-provider-zod";
 import pino from "pino";
 import { createStream } from "rotating-file-stream";
+
+const SERVICE_NAME = "ich-backend";
 
 // Tạo thư mục logs nếu chưa tồn tại
 const logsDir = path.join(process.cwd(), "logs");
@@ -47,6 +48,15 @@ const accessLogStream = createStream("access.log", {
   maxFiles: 30,
 });
 
+// Cấu hình rotating file stream cho route logs
+const routeLogStream = createStream("routes.log", {
+  path: logsDir,
+  size: "10M",
+  interval: "1d",
+  compress: "gzip",
+  maxFiles: 30,
+});
+
 const streams: pino.StreamEntry[] = [
   {
     level: "info",
@@ -66,13 +76,30 @@ const streams: pino.StreamEntry[] = [
   },
 ];
 
-export const pinoConfig: FastifyServerOptions["logger"] = {
-  level: "info",
+// Route logger riêng biệt
+const routeLogger = pino(
+  {
+    level: "debug",
+    timestamp: () => `,"time":"${new Date().toISOString()}"`,
+    formatters: {
+      level: (label: string) => ({ level: label }),
+    },
+    base: {
+      pid: process.pid,
+      hostname: os.hostname(),
+      service: `${SERVICE_NAME}-routes`,
+    },
+  },
+  routeLogStream
+);
+
+export const logger: FastifyServerOptions["logger"] = {
+  level: env.LEVEL,
   redact: {
     paths: [
       "req.headers.authorization",
       "req.headers.cookie",
-      'req.headers["x-api-key"]',
+      "req.headers['x-api-key']",
       "req.headers.token",
       "password",
       "secret",
@@ -86,9 +113,17 @@ export const pinoConfig: FastifyServerOptions["logger"] = {
       return {
         method: request.method,
         url: request.url,
-        hostname: request.hostname,
-        remoteAddress: request.ip,
+        headers: {
+          host: request.headers.host,
+          "user-agent": request.headers["user-agent"],
+        },
+        remoteAddress: request.socket?.remoteAddress,
         remotePort: request.socket?.remotePort,
+        // method: request.method,
+        // url: request.url,
+        // hostname: request.hostname,
+        // remoteAddress: request.ip,
+        // remotePort: request.socket?.remotePort,
         // WARNING: Don't log all headers in production (GDPR violation)
         // headers: request.headers,
       };
@@ -105,33 +140,47 @@ export const pinoConfig: FastifyServerOptions["logger"] = {
     level: (label) => {
       return { level: label };
     },
-    bindings: (bindings) => {
-      return {
-        pid: bindings.pid,
-        hostname: bindings.hostname,
-        node_version: process.version,
-      };
-    },
   },
-
   // Timestamp format
   timestamp: pino.stdTimeFunctions.isoTime,
-
   // Base context (static fields)
   base: {
-    // env: process.env.NODE_ENV,
-    // service: "my-api-service",
-    // version: process.env.APP_VERSION || "1.0.0",
     pid: process.pid,
     hostname: os.hostname(),
-    // service: "fastify-app",
+    service: SERVICE_NAME,
   },
   stream: pino.multistream(streams),
 };
 
 export const loggerHook = (fastify: FastifyInstance) => {
+  // Hook để log khi server thêm route
+  fastify.addHook("onRoute", (routeOptions: RouteOptions) => {
+    routeLogger.info(
+      {
+        method: routeOptions.method,
+        url: routeOptions.url,
+        schema: routeOptions.schema ? "defined" : "none",
+        handler: routeOptions.handler?.name || "anonymous",
+        logLevel: routeOptions.logLevel,
+        config: routeOptions.config,
+      },
+      `Route registered: ${routeOptions.method} ${routeOptions.url}`
+    );
+  });
+
+  // Hook để log khi server ready
+  fastify.addHook("onReady", async () => {
+    fastify.log.info(
+      {
+        routes: fastify.printRoutes(),
+        plugins: fastify.printPlugins(),
+      },
+      "Server ready - all routes and plugins loaded"
+    );
+  });
+
   // Hook để log tất cả requests
-  fastify.addHook("onRequest", async (request, _) => {
+  fastify.addHook("onRequest", async (request: FastifyRequest, _) => {
     request.startTime = process.hrtime();
 
     request.log.info(
@@ -148,25 +197,28 @@ export const loggerHook = (fastify: FastifyInstance) => {
   });
 
   // Hook để log responses
-  fastify.addHook("onResponse", async (request, reply: FastifyReply) => {
-    const diff = process.hrtime(request.startTime);
-    const responseTime = (diff[0] * 1e3 + diff[1] / 1e6).toFixed(2); // ms
-    request.log.info(
-      {
-        requestId: request.id,
-        method: request.method,
-        url: request.url,
-        statusCode: reply.statusCode,
-        responseTime: `${responseTime}ms`,
-        contentLength: reply.getHeader("content-length"),
-        ip: request.ip,
-      },
-      "Request completed"
-    );
-  });
+  fastify.addHook(
+    "onResponse",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const diff = process.hrtime(request.startTime);
+      const responseTime = (diff[0] * 1e3 + diff[1] / 1e6).toFixed(2); // ms
+      request.log.info(
+        {
+          requestId: request.id,
+          method: request.method,
+          url: request.url,
+          statusCode: reply.statusCode,
+          responseTime: `${responseTime}ms`,
+          contentLength: reply.getHeader("content-length"),
+          ip: request.ip,
+        },
+        "Request completed"
+      );
+    }
+  );
 
   // Hook để log errors
-  fastify.addHook("onError", async (request, _, error) => {
+  fastify.addHook("onError", async (request: FastifyRequest, _, error) => {
     if (hasZodFastifySchemaValidationErrors(error)) return;
 
     request.log.error(
@@ -184,17 +236,6 @@ export const loggerHook = (fastify: FastifyInstance) => {
         ip: request.ip,
       },
       "Request error"
-    );
-  });
-
-  // Hook để log khi server ready
-  fastify.addHook("onReady", async () => {
-    fastify.log.info(
-      {
-        routes: fastify.printRoutes(),
-        plugins: fastify.printPlugins(),
-      },
-      "Server ready - all routes and plugins loaded"
     );
   });
 
